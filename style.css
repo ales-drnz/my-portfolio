@@ -284,6 +284,9 @@ body::after {
 }
 
 .contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--accent-dim);
   text-decoration: none;
   padding: 3px 10px;

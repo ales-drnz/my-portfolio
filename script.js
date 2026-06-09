@@ -4,8 +4,8 @@
    ============================================================ */
 
 const USERNAME = "ales-drnz";
-// repos hidden from the portfolio (profile readme, forks are filtered separately)
-const HIDDEN_REPOS = [USERNAME];
+// repos hidden from the portfolio (profile readme, this site; forks are filtered separately)
+const HIDDEN_REPOS = [USERNAME, "my-portfolio", "ales-drnz.github.io"];
 const FEATURED = "mpv_audio_kit";
 
 // shared state for the interactive terminal
@@ -38,7 +38,7 @@ const LANG_COLORS = {
   CSS: "#563d7c",
 };
 
-const STAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+const STAR_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
 
 // "3d ago" style relative time for the card footer
 function timeAgo(dateStr) {
@@ -163,7 +163,12 @@ async function loadPackages(names) {
     if (featScore) {
       document.getElementById("feat-likes").textContent = featScore.likeCount;
       document.getElementById("feat-downloads").textContent = featScore.downloadCount30Days;
-      document.getElementById("feat-points").textContent = `${featScore.grantedPoints}/${featScore.maxPoints}`;
+      const featPoints = document.getElementById("feat-points");
+      if (featScore.maxPoints) {
+        featPoints.textContent = `${featScore.grantedPoints}/${featScore.maxPoints}`;
+      } else {
+        featPoints.closest(".feat-badge").classList.add("hidden");
+      }
     }
 
     list.innerHTML = "";
@@ -174,10 +179,14 @@ async function loadPackages(names) {
       row.target = "_blank";
       row.rel = "noopener";
       const version = info?.latest?.version ? `v${info.latest.version}` : "";
+      // maxPoints is 0 while pub.dev is re-analyzing a fresh release — hide pts then
+      const pts = score?.maxPoints
+        ? `<span class="pkg-stat">${score.grantedPoints}/${score.maxPoints} pts</span>`
+        : "";
       const stats = score
         ? `<span class="pkg-stat">♥ ${score.likeCount}</span>
            <span class="pkg-stat">⇣ ${score.downloadCount30Days}/mo</span>
-           <span class="pkg-stat">${score.grantedPoints}/${score.maxPoints} pts</span>`
+           ${pts}`
         : "";
       row.innerHTML = `
         <span class="pkg-name">${name}</span>
