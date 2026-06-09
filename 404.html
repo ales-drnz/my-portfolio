@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — command not found</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="https://avatars.githubusercontent.com/u/82038599?v=4" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <main class="container">
+    <header class="terminal" style="margin-top: 10vh;">
+      <div class="term-bar">
+        <span class="dot dot-r"></span>
+        <span class="dot dot-y"></span>
+        <span class="dot dot-g"></span>
+        <span class="term-title">alessandro@ales-drnz:~</span>
+      </div>
+      <div class="term-body">
+        <p class="line"><span class="prompt">❯</span> <span class="cmd">cd <span id="bad-path">/unknown</span></span></p>
+        <p class="output err-msg">bash: cd: <span id="bad-path-2">/unknown</span>: No such file or directory <span class="err-code">(404)</span></p>
+
+        <p class="line"><span class="prompt">❯</span> <span class="cmd">cd ~</span></p>
+        <nav class="socials" style="margin-top: 10px;">
+          <a href="/">back home</a>
+        </nav>
+
+        <p class="line cursor-line"><span class="prompt">❯</span><span class="typed"></span><span class="cursor"></span></p>
+      </div>
+    </header>
+  </main>
+
+  <script>
+    var p = location.pathname || "/unknown";
+    document.getElementById("bad-path").textContent = p;
+    document.getElementById("bad-path-2").textContent = p;
+  </script>
+  <script data-goatcounter="https://ales-drnz.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
