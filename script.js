@@ -311,7 +311,7 @@ function setupTerminal() {
     },
     about() {
       print(
-        "Flutter & Dart developer building open source tools and apps.<br>Electronics & Telecommunication Engineering student at Sapienza University of Rome."
+        "Building open source tools and apps.<br>Electronics & Telecommunication Engineering student at Sapienza University of Rome."
       );
     },
     skills() {
