@@ -1,0 +1,77 @@
+---
+title: Vocem Overlay
+tagline: Discord voice overlay drawn inside the game, for Linux.
+summary: >-
+  Shows who is in your Discord voice channel, who is speaking and the messages you receive, rendered into the
+  game's own frame by a Vulkan implicit layer and an OpenGL interposer, so fullscreen can't hide it and no
+  compositor is involved.
+kind: system
+order: 2
+group: linux
+featured: true
+repo: vocem-overlay
+platforms: [Linux · X11, Linux · Wayland, Flatpak]
+stack: [C++17, Vulkan, OpenGL, Qt 6, QML, CMake]
+highlights:
+  - Vulkan implicit layer + 18 KB OpenGL preload shim, 32- and 64-bit
+  - Reaches sandboxed Flatpak games through a Vulkan layer extension
+  - HDR-aware drawing, live settings pushed into running games
+logo: ../../assets/projects/vocem-overlay/vocem-overlay.png
+cover: ../../assets/projects/vocem-overlay/in-game.png
+coverAlt: Voice channel panel and a direct message drawn inside a 3D game scene
+coverPosition: left center
+links:
+  - { label: GitHub, url: 'https://github.com/ales-drnz/vocem-overlay' }
+---
+import { Image } from 'astro:assets';
+import panel from '../../assets/projects/vocem-overlay/settings-panel.png';
+import appearance from '../../assets/projects/vocem-overlay/settings-appearance.png';
+import apps from '../../assets/projects/vocem-overlay/settings-applications.png';
+import tray from '../../assets/projects/vocem-overlay/settings-tray.png';
+
+## Background
+
+On Windows, Discord draws its overlay inside games; on Linux it doesn't. Window-based overlays get covered by
+exclusive fullscreen and depend on the compositor. Vocem draws directly into the frame the game renders.
+
+## How it gets into a game
+
+- **Vulkan**: an implicit layer. The loader finds its manifest and loads it into every Vulkan application;
+  the layer draws the panel on the swapchain image right before present.
+- **OpenGL / GLES**: OpenGL has no layer mechanism, so a tiny 18 KB shim is preloaded through
+  `environment.d` (or per-game with `vocem-run %command%` in Steam) and interposes the swap call.
+- **Flatpak games**: sandboxed games see neither the host's preload nor its layer manifests, so the project
+  publishes its own Flatpak **Vulkan layer extension** for each freedesktop runtime branch. The daemon stays on
+  the host and is reached through a directory Flatpak shares with the sandbox.
+
+Both 32-bit and 64-bit games are covered, and both paths can be active at once.
+
+## Architecture
+
+The project is split into separate modules with narrow responsibilities:
+
+- **vocemd**: a user daemon that talks to Discord's local RPC socket and owns voice and message state.
+- **layer / gl**: the renderers loaded into the game process; they read state from the daemon and draw.
+- **gui**: a Qt 6 / QML settings app; changes reach a running game within a couple of seconds.
+- **cli**: `vocem-run` and `vocem-why`, for launching games and diagnosing problems.
+
+It only draws in games: it identifies them from launcher identifiers (Lutris, Heroic, Prism), Steam app ids,
+umu/gamescope hints and desktop entries. Each app can be switched on or off from the **Applications** page.
+
+## Details
+
+- **Sized by the display**, not the game: a fixed fraction of the screen height, so it stays put when a game
+  changes resolution.
+- **HDR aware**: on HDR10 or scRGB swapchains the colours are encoded for the swapchain instead of blowing out.
+- **Full emoji and CJK** in names, from fonts bundled in the binary.
+- **Packaging**: an Arch `PKGBUILD`, a rootless CMake install with a systemd user unit, and the Flatpak layer
+  repository.
+
+## Settings app
+
+<div class="grid sm:grid-cols-2 gap-4 not-prose">
+  <Image src={panel} alt="Panel settings" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl border border-border" />
+  <Image src={appearance} alt="Appearance settings" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl border border-border" />
+  <Image src={apps} alt="Per-application settings" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl border border-border" />
+  <Image src={tray} alt="Tray settings" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl border border-border" />
+</div>

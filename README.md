@@ -1,20 +1,35 @@
 # ales-drnz.com
 
-Personal portfolio — plain HTML/CSS/JS, no build step, no dependencies.
+Personal portfolio, built with [Astro](https://astro.build), React islands, TypeScript and Tailwind CSS.
 
-Projects, stats and pub.dev package scores are fetched live from the GitHub and pub.dev APIs, so the page keeps itself up to date.
+All GitHub and pub.dev numbers (stars, likes, downloads, contribution calendar, merged upstream PRs) are
+fetched **at build time**, so the page ships as static HTML with no client-side API calls. A GitHub Action
+rebuilds and deploys it to GitHub Pages on every push and once a night.
 
 ## Structure
 
-- `index.html` — terminal-style hero, featured project, repo grid, package stats, contribution graph
-- `style.css` — dark theme, Flutter-blue accent, all colors in `:root` variables
-- `script.js` — live data loading + interactive terminal (click the prompt and type `help`)
-- `404.html` — terminal-style not-found page
+- `src/content/projects/*.mdx` — one case study per project (frontmatter schema in `src/content.config.ts`)
+- `src/lib/data.ts` — build-time GitHub / pub.dev fetching, memoized and failure-tolerant
+- `src/lib/site.ts` — name, socials, skills
+- `src/components/` — UI; `CommandPalette.tsx` is the only client-side React island (⌘K)
+- `src/styles/global.css` — design tokens (light/dark) and prose styles
+- `public/media/` — muted demo clips (GIFs converted to MP4)
 
-## Local preview
+## Adding a project
 
-Any static server works, e.g.:
+1. Put images in `src/assets/projects/<slug>/` (clips go in `public/media/<slug>/`).
+2. Create `src/content/projects/<slug>.mdx`, following an existing one.
+3. Set `featured: true` to show it as a large card on the home page.
+
+## Development
 
 ```sh
-npx serve .
+npm install
+npm run dev      # http://localhost:4321
+npm run build    # static output in dist/
 ```
+
+Set `GITHUB_TOKEN` locally to avoid GitHub's unauthenticated rate limit and to use the GraphQL
+contribution calendar.
+
+Easter eggs: press ⌘K and try `sudo hire-me`, or enter the Konami code.

@@ -1,0 +1,32 @@
+---
+interface Props {
+  values: number[];
+  width?: number;
+  height?: number;
+  label: string;
+  class?: string;
+}
+
+const { values, width = 120, height = 32, label, class: className } = Astro.props;
+const pts = values.length > 1 ? values : [0, 0];
+const max = Math.max(...pts, 1);
+const step = width / (pts.length - 1);
+const pad = 2;
+const coords = pts.map((v, i) => [i * step, height - pad - (v / max) * (height - pad * 2)] as const);
+const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+const area = `${line} L${width},${height} L0,${height} Z`;
+const id = `spark-${Math.random().toString(36).slice(2, 8)}`;
+const [lx, ly] = coords[coords.length - 1];
+---
+
+<svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} class={className} role="img" aria-label={label} preserveAspectRatio="none">
+  <defs>
+    <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="var(--c-accent)" stop-opacity="0.25" />
+      <stop offset="1" stop-color="var(--c-accent)" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <path d={area} fill={`url(#${id})`} />
+  <path d={line} fill="none" stroke="var(--c-accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+  <circle cx={lx} cy={ly} r="2.5" fill="var(--c-accent)" />
+</svg>

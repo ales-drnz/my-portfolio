@@ -1,0 +1,253 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ------------------------------------------------------------
+   Design tokens. Every color lives here; components only use
+   the semantic utilities below (bg-surface, text-muted, ...).
+   ------------------------------------------------------------ */
+:root {
+  --c-bg: #fbfbfa;
+  --c-surface: #ffffff;
+  --c-surface-2: #f3f3f1;
+  --c-border: #e6e6e3;
+  --c-border-strong: #d4d4d0;
+  --c-fg: #18181b;
+  --c-muted: #5f5f68;
+  --c-subtle: #8b8b94;
+  --c-accent: #0378b5;
+  --c-accent-soft: #e3f3fc;
+  --c-ok: #1a7f4b;
+  --c-star: #bf8700;
+  --c-merged: #8250df;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --c-bg: #0b0b0d;
+  --c-surface: #121215;
+  --c-surface-2: #18181c;
+  --c-border: #24242a;
+  --c-border-strong: #33333b;
+  --c-fg: #ededef;
+  --c-muted: #a0a0ab;
+  --c-subtle: #6e6e78;
+  --c-accent: #54c5f8;
+  --c-accent-soft: #0f2a38;
+  --c-ok: #4ade80;
+  --c-star: #e3b341;
+  --c-merged: #a371f7;
+  color-scheme: dark;
+}
+
+/* konami code easter egg: a nod to the old terminal site */
+[data-retro] {
+  --c-bg: #050805;
+  --c-surface: #0a100a;
+  --c-surface-2: #0f180f;
+  --c-border: #1a2e1a;
+  --c-border-strong: #244024;
+  --c-fg: #9dff9d;
+  --c-muted: #6fcf6f;
+  --c-subtle: #4a8f4a;
+  --c-accent: #39ff14;
+  --c-accent-soft: #0f2a0f;
+  color-scheme: dark;
+}
+[data-retro] body {
+  font-family: var(--font-mono);
+  text-shadow: 0 0 6px color-mix(in oklab, var(--c-accent) 35%, transparent);
+}
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-border: var(--c-border);
+  --color-border-strong: var(--c-border-strong);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-subtle: var(--c-subtle);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-ok: var(--c-ok);
+  --color-star: var(--c-star);
+  --color-merged: var(--c-merged);
+}
+
+@layer base {
+  html {
+    @apply bg-bg text-fg font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+    scroll-behavior: smooth;
+  }
+  ::selection {
+    background: var(--c-accent);
+    color: var(--c-bg);
+  }
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* brand logos keep their colour, lifted a little on dark backgrounds */
+.brand-icon {
+  color: var(--brand);
+}
+[data-theme="dark"] .brand-icon {
+  color: color-mix(in oklab, var(--brand) 72%, white);
+}
+[data-retro] .brand-icon {
+  color: currentColor;
+}
+
+/* subtle dotted grid behind the hero */
+.bg-grid {
+  background-image: radial-gradient(var(--c-border-strong) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+/* hover for interactive cards: a beam of light that travels around the border.
+   A conic gradient spins via an animated custom property, and a mask leaves
+   only a 1.5px ring visible. Drawn just inside the border so cards with
+   overflow:hidden don't clip it. */
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+.hover-card {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.35s;
+}
+.hover-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0%,
+    transparent 62%,
+    color-mix(in oklab, var(--c-accent) 35%, transparent) 78%,
+    var(--c-accent) 92%,
+    color-mix(in oklab, var(--c-accent) 40%, white) 96%,
+    transparent 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  opacity: 0;
+  transition: opacity 0.4s;
+  animation: beam-spin 3.2s linear infinite;
+  animation-play-state: paused;
+}
+.hover-card:hover,
+.hover-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px -22px color-mix(in oklab, var(--c-accent) 55%, transparent);
+}
+.hover-card:hover::before,
+.hover-card:focus-within::before {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* no spinning: a static accent ring instead */
+  .hover-card::before {
+    animation: none;
+    background: color-mix(in oklab, var(--c-accent) 60%, transparent);
+  }
+}
+
+/* long-form project pages */
+.prose-custom {
+  @apply text-muted leading-7;
+}
+.prose-custom :where(h2) {
+  @apply text-fg text-xl font-semibold tracking-tight mt-12 mb-4;
+}
+.prose-custom :where(h3) {
+  @apply text-fg text-base font-semibold mt-8 mb-3;
+}
+.prose-custom :where(p) {
+  @apply my-4;
+}
+.prose-custom :where(a) {
+  @apply text-accent underline decoration-accent/30 underline-offset-4 hover:decoration-accent;
+}
+.prose-custom :where(strong) {
+  @apply text-fg font-semibold;
+}
+.prose-custom :where(ul) {
+  @apply my-4 list-disc pl-5 space-y-2 marker:text-subtle;
+}
+.prose-custom :where(ol) {
+  @apply my-4 list-decimal pl-5 space-y-2 marker:text-subtle;
+}
+.prose-custom :where(:not(pre) > code) {
+  @apply font-mono text-[0.85em] text-fg bg-surface-2 border border-border rounded px-1.5 py-0.5;
+}
+.prose-custom :where(pre) {
+  @apply font-mono text-[13px] leading-6 my-6 p-4 rounded-xl border border-border overflow-x-auto;
+}
+.prose-custom :where(img, video) {
+  @apply my-8 rounded-xl border border-border;
+}
+.prose-custom :where(table) {
+  @apply w-full my-6 text-sm;
+}
+.prose-custom :where(th) {
+  @apply text-left text-fg font-medium border-b border-border py-2 pr-4;
+}
+.prose-custom :where(td) {
+  @apply border-b border-border py-2 pr-4;
+}
+
+/* shiki dual theme */
+[data-theme="dark"] .astro-code,
+[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--c-surface) !important;
+}
+.astro-code {
+  background-color: var(--c-surface) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

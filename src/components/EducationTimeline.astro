@@ -1,0 +1,70 @@
+---
+import Icon from './Icon.astro';
+import type { EducationEntry } from '../lib/site';
+
+interface Props {
+  entries: EducationEntry[];
+}
+
+const { entries } = Astro.props;
+---
+
+<ol class="relative">
+  {
+    entries.map((e, i) => {
+      const current = e.end === null;
+      const last = i === entries.length - 1;
+      return (
+        <li class="relative grid grid-cols-[24px_minmax(0,1fr)] sm:grid-cols-[132px_24px_minmax(0,1fr)] gap-x-4">
+          {/* dates (left column on wide screens) */}
+          <p class="hidden sm:block pt-5 text-right font-mono text-xs text-subtle tabular-nums">
+            {e.start} – {current ? <span class="text-accent">present</span> : e.end}
+          </p>
+
+          {/* rail + dot */}
+          <div class="relative flex justify-center">
+            {!last && <span class="absolute top-7 bottom-0 w-px bg-border" aria-hidden="true" />}
+            {i > 0 && <span class="absolute top-0 h-6 w-px bg-border" aria-hidden="true" />}
+            <span class="relative mt-6 flex size-3" aria-hidden="true">
+              {current && <span class="absolute inline-flex size-full rounded-full bg-accent opacity-50 animate-ping" />}
+              <span class:list={['relative inline-flex size-3 rounded-full border-2', current ? 'bg-accent border-accent' : 'bg-bg border-border-strong']} />
+            </span>
+          </div>
+
+          {/* card */}
+          <div class:list={['pb-4', last && 'pb-0']}>
+            <article class="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+              <p class="sm:hidden font-mono text-xs text-subtle tabular-nums mb-2">
+                {e.start} – {current ? <span class="text-accent">present</span> : e.end}
+              </p>
+              <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                <div class="min-w-0">
+                  <h3 class="font-semibold tracking-tight">{e.degree}</h3>
+                  <p class="mt-0.5 text-sm text-muted">
+                    {e.school} · {e.place}
+                  </p>
+                </div>
+                {e.grade && (
+                  <span class="shrink-0 font-mono text-xs px-2 py-1 rounded-md bg-accent-soft text-accent">{e.grade}</span>
+                )}
+                {current && (
+                  <span class="shrink-0 text-xs px-2 py-1 rounded-md border border-border text-muted">In progress</span>
+                )}
+              </div>
+
+              {e.thesis && (
+                <div class="mt-4 pt-4 border-t border-border">
+                  <p class="flex items-center gap-1.5 text-xs text-subtle">
+                    <Icon name="file-text" size={13} /> Thesis · supervised by {e.thesis.supervisor}
+                  </p>
+                  <p class="mt-1.5 text-sm text-fg font-medium leading-snug">{e.thesis.title}</p>
+                  <p class="mt-1.5 text-sm text-muted leading-relaxed">{e.thesis.summary}</p>
+                </div>
+              )}
+            </article>
+          </div>
+        </li>
+      );
+    })
+  }
+</ol>

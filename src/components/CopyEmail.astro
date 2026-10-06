@@ -1,0 +1,40 @@
+---
+import Icon from './Icon.astro';
+import { SITE } from '../lib/site';
+
+interface Props {
+  primary?: boolean;
+}
+
+const { primary = false } = Astro.props;
+---
+
+<!-- the address is assembled in the browser so it never appears in the HTML -->
+<button
+  type="button"
+  data-copy-email={SITE.emailParts.join('|')}
+  class:list={[
+    'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium transition-colors',
+    primary ? 'bg-fg text-bg hover:opacity-90' : 'border border-border bg-surface hover:border-border-strong',
+  ]}
+>
+  <Icon name="mail" size={15} />
+  <span data-label>Copy email</span>
+</button>
+
+<script>
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy-email]');
+    if (!btn) return;
+    const [user, domainA, domainB] = btn.dataset.copyEmail!.split('|');
+    const addr = `${user}.${domainA}@${domainB}`;
+    const label = btn.querySelector('[data-label]')!;
+    navigator.clipboard
+      .writeText(addr)
+      .then(() => {
+        label.textContent = 'Copied!';
+        setTimeout(() => (label.textContent = 'Copy email'), 1600);
+      })
+      .catch(() => (location.href = `mailto:${addr}`));
+  });
+</script>

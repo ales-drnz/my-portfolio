@@ -1,0 +1,27 @@
+---
+// Technology logos from simple-icons, shown in their brand colour
+import * as icons from 'simple-icons';
+
+export type BrandKey = Extract<keyof typeof icons, `si${string}`>;
+
+interface Props {
+  name: BrandKey;
+  size?: number;
+  class?: string;
+}
+
+const { name, size = 14, class: className } = Astro.props;
+const icon = icons[name] as { title: string; hex: string; path: string };
+---
+
+<svg
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="currentColor"
+  aria-hidden="true"
+  class:list={['brand-icon', className]}
+  style={`--brand:#${icon.hex}`}
+>
+  <path d={icon.path} />
+</svg>

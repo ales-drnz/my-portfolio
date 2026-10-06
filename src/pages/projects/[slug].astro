@@ -1,0 +1,164 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import { Image, getImage } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import Sparkline from '../../components/Sparkline.astro';
+import Phones from '../../components/Phones.astro';
+import Octicon from '../../components/Octicon.astro';
+import { getRepo, getPackage, compact, timeAgo } from '../../lib/data';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+  return projects.map((project, i) => ({
+    params: { slug: project.id },
+    props: { project, next: projects[(i + 1) % projects.length] },
+  }));
+}
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  next: CollectionEntry<'projects'>;
+}
+
+const { project, next } = Astro.props;
+const p = project.data;
+const { Content } = await render(project);
+const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.package ? getPackage(p.package) : null]);
+const ogImage = await getImage({ src: p.cover, width: 1200, format: 'png' });
+const poster = p.coverVideo ? await getImage({ src: p.cover, width: 1600, format: 'webp' }) : null;
+
+const facts = [
+  { label: 'Type', value: p.kind[0].toUpperCase() + p.kind.slice(1) },
+  { label: 'Platforms', value: p.platforms.join(', ') },
+  pkg?.version && { label: 'Latest', value: `v${pkg.version}` },
+  repo && { label: 'Last push', value: timeAgo(repo.pushed_at) },
+].filter(Boolean) as { label: string; value: string }[];
+---
+
+<Base title={p.title} description={p.summary} image={ogImage.src}>
+  <article class="mx-auto max-w-5xl px-4 sm:px-6 pt-10 sm:pt-14">
+    <a href="/#work" class="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg transition-colors">
+      <Icon name="arrow-left" size={14} /> All work
+    </a>
+
+    <!-- header -->
+    <header class="mt-8 grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+      <div class="max-w-2xl">
+        <div class="flex items-center gap-3">
+          {p.logo && <Image src={p.logo} alt="" width={48} height={48} loading="eager" class="size-12 rounded-xl object-contain" />}
+          <p class="font-mono text-xs text-accent uppercase tracking-[0.14em]">{p.kind}</p>
+        </div>
+        <h1 class="mt-4 text-3xl sm:text-5xl font-semibold tracking-tight">{p.title}</h1>
+        <p class="mt-4 text-lg text-muted leading-relaxed">{p.summary}</p>
+      </div>
+      <div class="flex flex-wrap gap-2 md:justify-end">
+        {p.links.slice(0, 2).map((l, i) => (
+          <a
+            href={l.url}
+            target="_blank"
+            rel="noopener"
+            class:list={[
+              'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium transition-colors',
+              i === 0 ? 'bg-fg text-bg hover:opacity-90' : 'border border-border bg-surface hover:border-border-strong',
+            ]}
+          >
+            {l.label} <Icon name="arrow-up-right" size={14} />
+          </a>
+        ))}
+      </div>
+    </header>
+
+    <!-- live stats -->
+    {(repo || pkg) && (
+      <dl class="mt-10 grid grid-cols-2 sm:grid-cols-4 rounded-2xl border border-border bg-surface divide-x divide-y sm:divide-y-0 divide-border overflow-hidden">
+        {repo && (
+          <div class="p-4 sm:p-5">
+            <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="star-fill" size={12} class="text-star" /> GitHub stars</dt>
+            <dd class="mt-1 text-2xl font-semibold tabular-nums">{repo.stargazers_count}</dd>
+          </div>
+        )}
+        {pkg && (
+          <>
+            <div class="p-4 sm:p-5">
+              <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="thumbsup" size={12} class="text-accent" /> pub.dev likes</dt>
+              <dd class="mt-1 text-2xl font-semibold tabular-nums">{pkg.likes}</dd>
+            </div>
+            <div class="p-4 sm:p-5">
+              <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="verified" size={12} class="text-ok" /> pub points</dt>
+              <dd class="mt-1 text-2xl font-semibold tabular-nums">{pkg.points != null ? `${pkg.points}/${pkg.maxPoints}` : '—'}</dd>
+            </div>
+            <div class="p-4 sm:p-5 flex items-end justify-between gap-2">
+              <div>
+                <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="download" size={12} /> Downloads /30d</dt>
+                <dd class="mt-1 text-2xl font-semibold tabular-nums">{compact(pkg.downloads30d)}</dd>
+              </div>
+              {pkg.weekly.length > 4 && <Sparkline values={pkg.weekly.slice(-26)} width={64} height={28} label="Weekly downloads" class="hidden lg:block" />}
+            </div>
+          </>
+        )}
+      </dl>
+    )}
+
+    <!-- cover -->
+    <div class="mt-6 rounded-2xl border border-border bg-surface-2 overflow-hidden">
+      {p.phones ? (
+        <Phones images={p.phones} alt={p.coverAlt} class="py-12 sm:py-16" />
+      ) : p.coverVideo && poster ? (
+        <video src={p.coverVideo} poster={poster.src} width={p.cover.width} height={p.cover.height} muted loop playsinline preload="metadata" data-autoplay class="w-full h-auto" aria-label={p.coverAlt} />
+      ) : (
+        <Image src={p.cover} alt={p.coverAlt} widths={[800, 1200, 1800]} sizes="(min-width: 1024px) 976px, 100vw" loading="eager" class="w-full h-auto max-h-[640px] object-contain" />
+      )}
+    </div>
+
+    <!-- body + sidebar -->
+    <div class="mt-4 grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px]">
+      <div class="prose-custom max-w-[68ch]">
+        <Content />
+      </div>
+
+      <aside class="lg:pt-12">
+        <div class="lg:sticky lg:top-20 space-y-8 text-sm">
+          <dl class="space-y-4">
+            {facts.map((f) => (
+              <div>
+                <dt class="text-xs text-subtle">{f.label}</dt>
+                <dd class="mt-0.5 text-fg">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div>
+            <p class="text-xs text-subtle mb-2">Stack</p>
+            <div class="flex flex-wrap gap-1.5">
+              {p.stack.map((s) => <span class="font-mono text-[11px] px-2 py-0.5 rounded-md bg-surface-2 text-muted">{s}</span>)}
+            </div>
+          </div>
+          <div>
+            <p class="text-xs text-subtle mb-2">Links</p>
+            <ul class="space-y-1.5">
+              {p.links.map((l) => (
+                <li>
+                  <a href={l.url} target="_blank" rel="noopener" class="group flex items-center gap-1.5 text-muted hover:text-fg transition-colors">
+                    {l.label} <Icon name="arrow-up-right" size={12} class="text-subtle group-hover:text-fg" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- next -->
+    {next.id !== project.id && (
+      <a href={`/projects/${next.id}`} class="hover-card group mt-20 flex items-center justify-between gap-6 rounded-2xl border border-border bg-surface p-6 sm:p-8">
+        <div>
+          <p class="text-xs text-subtle">Next project</p>
+          <p class="mt-1 text-xl font-semibold tracking-tight">{next.data.title}</p>
+          <p class="mt-1 text-sm text-muted">{next.data.tagline}</p>
+        </div>
+        <Icon name="arrow-right" size={20} class="shrink-0 text-subtle group-hover:text-fg group-hover:translate-x-1 transition-all" />
+      </a>
+    )}
+  </article>
+</Base>

@@ -1,0 +1,83 @@
+---
+title: dart_smb2
+tagline: SMB2/3 client for Dart & Flutter, built on libsmb2.
+summary: >-
+  Read, write and stream files from network shares on every platform Flutter runs on. FFI bindings to a
+  patched libsmb2, an isolate worker pool that reconnects transparently, and prebuilt native binaries for
+  five operating systems from a reproducible build pipeline.
+kind: library
+order: 3
+group: dart
+featured: true
+repo: dart_smb2
+package: dart_smb2
+platforms: [Android, iOS, macOS, Windows, Linux]
+stack: [Dart, Flutter, FFI, C, libsmb2, Go]
+highlights:
+  - SMB 2.02 → 3.1.1 with encryption, signing and version pinning
+  - Smb2Pool spreads work across isolates and retries dropped connections
+  - Streaming I/O with progress and cancellation over one persistent handle
+logo: ../../assets/projects/dart-smb2/dart_smb2.png
+cover: ../../assets/projects/dart-smb2/mobile_browse.png
+coverAlt: The dart_smb2 example app browsing a network share on a phone
+phones:
+  - ../../assets/projects/dart-smb2/mobile_servers.png
+  - ../../assets/projects/dart-smb2/mobile_browse.png
+  - ../../assets/projects/dart-smb2/mobile_read.png
+links:
+  - { label: GitHub, url: 'https://github.com/ales-drnz/dart_smb2' }
+  - { label: pub.dev, url: 'https://pub.dev/packages/dart_smb2' }
+  - { label: libsmb2 build system, url: 'https://github.com/ales-drnz/libsmb2-scripts' }
+---
+import { Image } from 'astro:assets';
+import servers from '../../assets/projects/dart-smb2/mobile_servers.png';
+import browse from '../../assets/projects/dart-smb2/mobile_browse.png';
+import read from '../../assets/projects/dart-smb2/mobile_read.png';
+import write from '../../assets/projects/dart-smb2/mobile_write.png';
+
+## What it is
+
+A Dart client for SMB2/3 file shares (the protocol used by Windows shares and most home NAS devices), with one
+API on desktop and mobile, built on the libsmb2 C library.
+
+## Design
+
+- **FFI, synchronous at the core**: bindings to libsmb2 via `dart:ffi`, with native binaries bundled for
+  every target.
+- **Smb2Pool on top**: requests are spread across N isolate workers, off the main isolate. Dropped
+  connections are re-established and the failed operation is retried automatically.
+- **Safe handles**: `withFile(path, body)` guarantees the handle is closed on every exit path, with a
+  `Finalizer` as a safety net for leaked handles.
+- **Semantic errors**: one `Smb2Exception` hierarchy with an `Smb2ErrorType` enum instead of raw NTSTATUS codes.
+
+```dart
+final pool = await Smb2Pool.connect(
+  host: '192.168.1.100',
+  share: 'Files',
+  user: 'user',
+  password: 'pass',
+);
+
+final entries = await pool.listDirectory('Documents/Projects');
+
+await pool.downloadToFile(
+  'Music/song.flac',
+  File('/tmp/song.flac'),
+  onProgress: (received, total) => print('${(received / total * 100).toStringAsFixed(1)}%'),
+);
+```
+
+## Native builds
+
+The binaries come from [libsmb2-scripts](https://github.com/ales-drnz/libsmb2-scripts): a pinned upstream
+libsmb2 with patches, cross-compiled for Android, iOS, macOS, Windows and Linux on multiple architectures. The
+same repository doubles as the LGPL corresponding-source offer for every shipped binary.
+
+## Example app
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 not-prose">
+  <Image src={servers} alt="Server list" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
+  <Image src={browse} alt="Browsing a share" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
+  <Image src={read} alt="Reading a file" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
+  <Image src={write} alt="Writing a file" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
+</div>

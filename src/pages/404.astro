@@ -1,0 +1,30 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<Base title="Not found">
+  <section class="mx-auto max-w-xl px-4 sm:px-6 pt-24 text-center">
+    <p class="font-mono text-sm text-accent">404</p>
+    <h1 class="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight">This page doesn't exist.</h1>
+    <div class="mt-8 rounded-xl border border-border bg-surface p-4 text-left font-mono text-sm">
+      <p><span class="text-accent">❯</span> cd <span data-path></span></p>
+      <p class="text-muted">cd: no such file or directory</p>
+      <p class="mt-2"><span class="text-accent">❯</span> <span class="text-subtle">try ⌘K to search, or head home</span></p>
+    </div>
+    <div class="mt-8 flex justify-center gap-3">
+      <a href="/" class="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-fg text-bg text-sm font-medium hover:opacity-90 transition-opacity">
+        <Icon name="arrow-left" size={15} /> Back home
+      </a>
+      <button type="button" data-open-palette class="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-surface text-sm hover:border-border-strong transition-colors">
+        <Icon name="search" size={15} /> Search
+      </button>
+    </div>
+  </section>
+  <script>
+    document.addEventListener('astro:page-load', () => {
+      const el = document.querySelector('[data-path]');
+      if (el) el.textContent = location.pathname;
+    });
+  </script>
+</Base>

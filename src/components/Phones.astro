@@ -1,0 +1,35 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  images: ImageMetadata[];
+  alt: string;
+  class?: string;
+}
+
+const { images, alt, class: className } = Astro.props;
+const mid = (images.length - 1) / 2;
+---
+
+<!-- portrait screenshots fanned out on a soft accent backdrop -->
+<div
+  class:list={['relative flex items-center justify-center overflow-hidden', className]}
+  style="background: radial-gradient(ellipse at 50% 120%, color-mix(in oklab, var(--c-accent) 22%, transparent), transparent 70%);"
+>
+  {
+    images.map((img, i) => {
+      const off = i - mid;
+      return (
+        <Image
+          src={img}
+          alt={i === Math.round(mid) ? alt : ''}
+          widths={[240, 480]}
+          sizes="200px"
+          class="relative w-[30%] max-w-[190px] h-auto rounded-[18px] border border-border shadow-xl shadow-black/25 transition-transform duration-500 group-hover:-translate-y-1"
+          style={`transform: translateY(${Math.abs(off) * 14}px) rotate(${off * 4}deg); margin-inline: -2%; z-index: ${10 - Math.abs(off)};`}
+        />
+      );
+    })
+  }
+</div>

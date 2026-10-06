@@ -1,0 +1,29 @@
+---
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: string;
+  poster: ImageMetadata;
+  caption?: string;
+}
+
+const { src, poster, caption } = Astro.props;
+const posterImg = await getImage({ src: poster, width: 1280, format: 'webp' });
+---
+
+<figure class="my-8 not-prose">
+  <video
+    src={src}
+    poster={posterImg.src}
+    width={poster.width}
+    height={poster.height}
+    muted
+    loop
+    playsinline
+    preload="none"
+    data-autoplay
+    class="w-full h-auto rounded-xl border border-border bg-surface-2"
+  ></video>
+  {caption && <figcaption class="mt-2 text-center text-xs text-subtle">{caption}</figcaption>}
+</figure>

@@ -1,0 +1,115 @@
+---
+title: mpv_audio_kit
+tagline: Audio engine for Flutter and Dart, built on mpv 0.41.
+summary: >-
+  A full audio stack for Flutter: libmpv driven over FFI from a background isolate, an ordered chain of
+  typed ffmpeg effects, real-time spectrum and waveform, native media sessions, and its own cross-platform
+  build of libmpv. Ships on Android, iOS, macOS, Windows and Linux.
+kind: library
+order: 1
+group: dart
+featured: true
+repo: mpv_audio_kit
+package: mpv_audio_kit
+platforms: [Android, iOS, macOS, Windows, Linux]
+stack: [Dart, Flutter, FFI, C, libmpv, FFmpeg, Go]
+highlights:
+  - 100+ reactive streams from a non-blocking event isolate
+  - 18-band EQ, compressor, pitch/tempo and any lavfi filter as a typed stage
+  - libmpv downloaded, checked against a pinned SHA-256 and bundled by a Dart build hook
+logo: ../../assets/projects/mpv-audio-kit/mpv_audio_kit.png
+cover: ../../assets/projects/mpv-audio-kit/playback-poster.jpg
+coverAlt: MPV Studio playing a track with a live waveform and spectrum
+coverVideo: /media/mpv-audio-kit/playback.mp4
+links:
+  - { label: GitHub, url: 'https://github.com/ales-drnz/mpv_audio_kit' }
+  - { label: pub.dev, url: 'https://pub.dev/packages/mpv_audio_kit' }
+  - { label: MPV Studio, url: 'https://github.com/ales-drnz/mpv_studio' }
+  - { label: libmpv build system, url: 'https://github.com/ales-drnz/libmpv-scripts' }
+---
+import { Image } from 'astro:assets';
+import Video from '../../components/mdx/Video.astro';
+import architecture from '../../assets/projects/mpv-audio-kit/architecture.png';
+import effectsChain from '../../assets/projects/mpv-audio-kit/effects_chain.png';
+import spectrum from '../../assets/projects/mpv-audio-kit/spectrum_pipeline.png';
+import effectsPoster from '../../assets/projects/mpv-audio-kit/effects-poster.jpg';
+import consolePoster from '../../assets/projects/mpv-audio-kit/console-poster.jpg';
+import streamPoster from '../../assets/projects/mpv-audio-kit/stream-poster.jpg';
+
+## Why I built it
+
+Many Flutter audio libraries are built on an old version of mpv, or are too restrictive and hide the audio
+processing features. mpv_audio_kit exposes the whole engine through a typed Dart API, without blocking the UI
+thread.
+
+The project is split across three repositories:
+
+- **mpv_audio_kit**: the Dart/Flutter library, published on pub.dev.
+- **[libmpv-scripts](https://github.com/ales-drnz/libmpv-scripts)**: an audio-only build of libmpv and FFmpeg
+  with custom patches, cross-compiled for five operating systems and driven by a Go TUI.
+- **[MPV Studio](https://github.com/ales-drnz/mpv_studio)**: the reference app built on the library.
+
+## Architecture
+
+The `Player` lives on your main isolate and exposes a synchronous state snapshot plus more than 100 streams.
+Commands go to libmpv through its async API; a dedicated isolate blocks on `mpv_wait_event` and posts state
+back, so slow network streams and heavy filter graphs don't block the UI.
+
+<Image src={architecture} alt="Architecture: UI and Player on the main isolate, event isolate and libmpv in the background, platform plugin bridging to OS media controls" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+Media sessions (Media3 on Android, Now Playing on Apple, MPRIS on Linux, SMTC on Windows) are driven from
+Dart, so lock-screen controls and notifications work the same way on every platform.
+
+## A typed effects chain
+
+Audio effects are an ordered list of typed stages (18-band graphic EQ, compressor, loudness normalisation,
+pitch and tempo, bass/treble, stereo width, headphone crossfeed, silence trim) compiled into a single ffmpeg
+filter graph. Anything not covered by a typed stage can still be dropped in as a raw lavfi filter. Dragging a
+slider that only changes a stage's parameters is applied to the running graph in place, with no audible rebuild.
+
+<Image src={effectsChain} alt="Effects chain: typed effect stages compiled into an ffmpeg lavfi graph" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+<Video src="/media/mpv-audio-kit/effects.mp4" poster={effectsPoster} caption="Tweaking the EQ and effects live in MPV Studio" />
+
+## Seeing the sound
+
+Spectrum, PCM, waveform overviews and loudness scans come out of patched FFmpeg filters and reach Dart as
+streams.
+
+<Image src={spectrum} alt="Spectrum pipeline from ffmpeg filter tap to Dart stream" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Getting libmpv into the app
+
+A Dart build hook downloads the libmpv build for each target from the project's releases, verifies it
+against a pinned SHA-256 and bundles it with the app. The builds
+themselves come from libmpv-scripts: Docker for Linux, Windows and Android, Xcode for Apple, with a verify
+stage that checks every artifact before release.
+
+```yaml
+dependencies:
+  mpv_audio_kit: ^0.5.0
+```
+
+```dart
+final player = Player();
+await player.open(Media('https://example.com/audio.mp3'));
+
+await player.setAudioEffects([
+  // +3 dB around 100 Hz, then compress and limit
+  EqualizerEffect(frequency: 100, width: 50, widthType: EqualizerWidthType.h, gain: 3),
+  AcompressorEffect(threshold: 0.1, ratio: 4),
+  AlimiterEffect(limit: 0.9),
+]);
+
+player.stream.audioEffects.listen((fx) => print('${fx.length} stages'));
+```
+
+## Streams and protocols
+
+HTTP(S), HLS, DASH and SMB2/3 are supported. For media servers, Jellyfin transcodes use seekable HLS, and
+Plex's per-stream `/decision` call is made from an `on_load` hook instead of a local proxy.
+
+<div class="grid sm:grid-cols-2 gap-4 not-prose">
+  <Video src="/media/mpv-audio-kit/stream.mp4" poster={streamPoster} caption="Network streams" />
+  <Video src="/media/mpv-audio-kit/console.mp4" poster={consolePoster} caption="Raw mpv console" />
+</div>

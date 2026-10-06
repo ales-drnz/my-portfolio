@@ -1,0 +1,66 @@
+---
+import Icon from './Icon.astro';
+import { SITE } from '../lib/site';
+
+const nav = [
+  { href: '/#work', label: 'Work' },
+  { href: '/#education', label: 'Education' },
+  { href: '/#packages', label: 'Packages' },
+  { href: '/#open-source', label: 'Open source' },
+  { href: '/#contact', label: 'Contact' },
+];
+---
+
+<header class="sticky top-0 z-40 border-b border-transparent backdrop-blur-md bg-bg/75 [&.scrolled]:border-border transition-colors" data-header>
+  <div class="mx-auto max-w-5xl px-4 sm:px-6 h-14 flex items-center gap-6">
+    <a href="/" class="flex items-center gap-2.5 font-medium tracking-tight shrink-0" aria-label="Home">
+      <img src={SITE.avatar} alt="" width="26" height="26" class="rounded-full ring-1 ring-border" />
+      <span class="hidden sm:inline">{SITE.name}</span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-1 text-sm text-muted" aria-label="Main">
+      {nav.map((n) => (
+        <a href={n.href} class="px-3 py-1.5 rounded-md hover:text-fg hover:bg-surface-2 transition-colors">{n.label}</a>
+      ))}
+    </nav>
+
+    <div class="ml-auto flex items-center gap-1.5">
+      <button
+        type="button"
+        data-open-palette
+        class="flex items-center gap-2 h-8 pl-2.5 pr-1.5 rounded-lg border border-border bg-surface text-sm text-subtle hover:text-fg hover:border-border-strong transition-colors"
+        aria-label="Open command palette"
+      >
+        <Icon name="search" size={14} />
+        <span class="hidden sm:inline">Search…</span>
+        <kbd class="hidden sm:inline font-mono text-[11px] px-1.5 py-0.5 rounded border border-border bg-surface-2">⌘K</kbd>
+      </button>
+      <button
+        type="button"
+        data-theme-toggle
+        class="size-8 grid place-items-center rounded-lg text-muted hover:text-fg hover:bg-surface-2 transition-colors"
+        aria-label="Toggle color theme"
+      >
+        <Icon name="sun" size={16} class="hidden dark:block" />
+        <Icon name="moon" size={16} class="dark:hidden" />
+      </button>
+    </div>
+  </div>
+</header>
+
+<script>
+  const onScroll = () => document.querySelector('[data-header]')?.classList.toggle('scrolled', window.scrollY > 8);
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  function setup() {
+    onScroll();
+    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try {
+        localStorage.setItem('theme', next);
+      } catch {}
+    });
+  }
+  document.addEventListener('astro:page-load', setup);
+</script>

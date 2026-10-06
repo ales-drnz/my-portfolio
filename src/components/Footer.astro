@@ -1,0 +1,32 @@
+---
+import Icon from './Icon.astro';
+import { SITE, SOCIALS } from '../lib/site';
+
+const builtAt = new Date().toISOString().slice(0, 10);
+---
+
+<footer class="border-t border-border mt-24">
+  <div class="mx-auto max-w-5xl px-4 sm:px-6 py-10 flex flex-col sm:flex-row gap-6 sm:items-center justify-between text-sm text-subtle">
+    <div class="space-y-1">
+      <p>© {new Date().getFullYear()} {SITE.name}</p>
+      <p class="font-mono text-xs">
+        Built with Astro · data refreshed <time datetime={builtAt}>{builtAt}</time> ·
+        <a href="https://github.com/ales-drnz/my-portfolio" class="hover:text-fg underline-offset-4 hover:underline">source</a>
+      </p>
+    </div>
+    <nav class="flex items-center gap-1" aria-label="Social links">
+      {SOCIALS.map((s) => (
+        <a
+          href={s.url}
+          target="_blank"
+          rel="noopener"
+          aria-label={s.label}
+          title={s.label}
+          class="size-9 grid place-items-center rounded-lg hover:text-fg hover:bg-surface-2 transition-colors"
+        >
+          <Icon name={s.id} size={16} />
+        </a>
+      ))}
+    </nav>
+  </div>
+</footer>

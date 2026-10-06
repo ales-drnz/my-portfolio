@@ -1,0 +1,91 @@
+---
+import type { ContributionDay } from '../lib/data';
+
+interface Props {
+  days: ContributionDay[];
+  total: number;
+}
+
+const { days, total } = Astro.props;
+
+// pad the start so the first column begins on a Sunday, like GitHub
+const first = days[0] ? new Date(days[0].date + 'T00:00:00Z').getUTCDay() : 0;
+const cells: (ContributionDay | null)[] = [...Array(first).fill(null), ...days];
+const weeks: (ContributionDay | null)[][] = [];
+for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
+const SIZE = 11;
+const GAP = 3;
+const width = weeks.length * (SIZE + GAP) - GAP;
+const height = 7 * (SIZE + GAP) - GAP + 18;
+
+// month labels at the first week that starts in a new month
+const months: { x: number; label: string }[] = [];
+let lastMonth = -1;
+weeks.forEach((w, i) => {
+  const d = w.find(Boolean);
+  if (!d) return;
+  const m = new Date(d.date + 'T00:00:00Z').getUTCMonth();
+  if (m !== lastMonth && i < weeks.length - 2) {
+    months.push({ x: i * (SIZE + GAP), label: new Date(d.date).toLocaleString('en', { month: 'short', timeZone: 'UTC' }) });
+    lastMonth = m;
+  }
+});
+
+const fill = (level: number) =>
+  level === 0
+    ? 'var(--c-surface-2)'
+    : `color-mix(in oklab, var(--c-accent) ${[0, 30, 55, 78, 100][level]}%, var(--c-surface-2))`;
+
+const busiest = days.reduce((a, b) => (b.count > a.count ? b : a), days[0] ?? { date: '', count: 0, level: 0 });
+const activeDays = days.filter((d) => d.count > 0).length;
+---
+
+{
+  days.length > 0 ? (
+    <figure class="space-y-4">
+      <div class="overflow-x-auto -mx-1 px-1 pb-1">
+        <svg viewBox={`0 0 ${width} ${height}`} class="w-full h-auto min-w-[640px]" role="img" aria-label={`${total} contributions in the last year`}>
+          {months.map((m) => (
+            <text x={m.x} y="10" class="fill-subtle" font-size="10" font-family="var(--font-sans)">
+              {m.label}
+            </text>
+          ))}
+          <g transform="translate(0,18)">
+            {weeks.map((w, wi) =>
+              w.map(
+                (d, di) =>
+                  d && (
+                    <rect x={wi * (SIZE + GAP)} y={di * (SIZE + GAP)} width={SIZE} height={SIZE} rx="2.5" fill={fill(d.level)}>
+                      <title>{`${d.count} contribution${d.count === 1 ? '' : 's'} on ${d.date}`}</title>
+                    </rect>
+                  ),
+              ),
+            )}
+          </g>
+        </svg>
+      </div>
+      <figcaption class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
+        <span><b class="text-fg font-semibold tabular-nums">{total}</b> contributions in the last year</span>
+        <span><b class="text-fg font-semibold tabular-nums">{activeDays}</b> active days</span>
+        {busiest.count > 0 && (
+          <span>
+            busiest day <b class="text-fg font-semibold tabular-nums">{busiest.count}</b>
+          </span>
+        )}
+        <span class="ml-auto flex items-center gap-1 text-xs text-subtle">
+          less
+          {[0, 1, 2, 3, 4].map((l) => (
+            <span class="inline-block size-2.5 rounded-[3px]" style={`background:${fill(l)}`} />
+          ))}
+          more
+        </span>
+      </figcaption>
+    </figure>
+  ) : (
+    <p class="text-sm text-subtle">
+      Contribution data unavailable —{' '}
+      <a href="https://github.com/ales-drnz" class="text-accent hover:underline">see it on GitHub</a>.
+    </p>
+  )
+}

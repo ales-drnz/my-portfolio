@@ -1,0 +1,52 @@
+---
+title: dart_jellyfin & dart_plex
+tagline: Typed Dart clients for Jellyfin and Plex Media Server.
+summary: >-
+  Two pure-Dart clients that cover libraries, playlists, audio streaming, search and playback reporting through
+  typed objects, and handle sign-in and session lifecycle for you. Built on the servers' own API contracts and
+  tested against real servers.
+kind: library
+order: 4
+group: dart
+repo: dart_jellyfin
+alsoCovers: [dart_plex]
+package: dart_jellyfin
+platforms: [Every Dart platform]
+stack: [Dart, OpenAPI, Integration tests]
+highlights:
+  - Credentials plus Quick Connect / plex.tv PIN sign-in
+  - Plex server discovery that prefers local, then HTTPS, then relay
+  - HLS / DASH / direct stream URLs ready for mpv_audio_kit
+logo: ../../assets/projects/media-clients/dart_jellyfin.png
+cover: ../../assets/projects/media-clients/dart_jellyfin.png
+coverAlt: dart_jellyfin logo
+links:
+  - { label: dart_jellyfin on GitHub, url: 'https://github.com/ales-drnz/dart_jellyfin' }
+  - { label: dart_jellyfin on pub.dev, url: 'https://pub.dev/packages/dart_jellyfin' }
+  - { label: dart_plex on GitHub, url: 'https://github.com/ales-drnz/dart_plex' }
+  - { label: dart_plex on pub.dev, url: 'https://pub.dev/packages/dart_plex' }
+---
+
+## Overview
+
+Both packages have the same structure: a client object (`JellyfinClient`, `PlexClient`) holds identity,
+server and token, and typed sub-APIs are accessed through it.
+
+## dart_jellyfin
+
+- **Built on the official OpenAPI spec**: endpoint names, field names and casing match api.jellyfin.org.
+- **Typed DTOs**: every response is a typed object that also keeps its `.raw` map, so
+  fields added by newer servers are kept.
+- **Both auth flows**: `authenticateByName()` and the Quick Connect link flow.
+- **Synced lyrics**: parsed lines with tick-to-ms helpers and `.toLrc()` output.
+
+## dart_plex
+
+- **plex.tv sign-in**: legacy credentials or the official 4-character PIN flow at plex.tv/link.
+- **Server discovery**: owned and shared servers with connection candidates; `bestConnection()` picks local
+  first, then HTTPS, then relay.
+- **Streaming URLs**: `universalAudioUrl()` builds HLS or DASH manifests, `directFileUrl()` the
+  zero-transcode original.
+- **Semantic errors**: every failure is a `PlexException` you can branch on, instead of raw network errors.
+
+Both are pure Dart (no native plugin, no Flutter dependency) and run anywhere Dart does.

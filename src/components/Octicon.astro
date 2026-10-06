@@ -1,0 +1,18 @@
+---
+// GitHub's own icon set, for GitHub / pub.dev concepts (stars, merges, downloads…)
+import octicons from '@primer/octicons';
+
+interface Props {
+  name: keyof typeof octicons;
+  size?: number;
+  class?: string;
+  style?: string;
+}
+
+const { name, size = 16, class: className, style } = Astro.props;
+const icon = octicons[name];
+const source = size > 20 && icon.heights[24] ? 24 : 16;
+const { width, path } = (icon.heights[source] ?? icon.heights[16])!;
+---
+
+<svg viewBox={`0 0 ${width} ${source}`} width={size} height={size} fill="currentColor" aria-hidden="true" class={className} style={style} set:html={path} />

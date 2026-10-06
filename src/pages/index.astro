@@ -1,0 +1,319 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import Icon from '../components/Icon.astro';
+import Sparkline from '../components/Sparkline.astro';
+import FeaturedProject from '../components/FeaturedProject.astro';
+import RepoCard from '../components/RepoCard.astro';
+import ContributionGraph from '../components/ContributionGraph.astro';
+import CopyEmail from '../components/CopyEmail.astro';
+import EducationTimeline from '../components/EducationTimeline.astro';
+import Octicon from '../components/Octicon.astro';
+import Flags from '../components/Flags.astro';
+import BrandIcon, { type BrandKey } from '../components/BrandIcon.astro';
+import { SITE, SKILLS, SOCIALS, EDUCATION, PROJECT_GROUPS } from '../lib/site';
+import { getRepos, getPackages, getContributions, getUpstreamPRs, compact, timeAgo } from '../lib/data';
+
+const HIDDEN_REPOS = new Set([SITE.handle, 'my-portfolio', 'svg-icons']);
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+const [repos, packages, contrib, prs] = await Promise.all([
+  getRepos(),
+  getPackages(),
+  getContributions(),
+  getUpstreamPRs(),
+]);
+
+const own = repos.filter((r) => !r.fork && !r.archived && !HIDDEN_REPOS.has(r.name));
+const totalStars = own.reduce((s, r) => s + r.stargazers_count, 0);
+const covered = new Set(projects.flatMap((p) => [p.data.repo, ...p.data.alsoCovers]).filter(Boolean));
+const moreRepos = own
+  .filter((r) => !covered.has(r.name))
+  .sort((a, b) => b.stargazers_count - a.stargazers_count || +new Date(b.pushed_at) - +new Date(a.pushed_at));
+
+// bucket case studies and leftover repos into groups; empty groups are dropped
+const placed = new Set(PROJECT_GROUPS.flatMap((g) => g.repos));
+const groups = PROJECT_GROUPS.map((g) => {
+  const inGroup = projects.filter((p) => p.data.group === g.id);
+  return {
+    ...g,
+    featured: inGroup.filter((p) => p.data.featured),
+    secondary: inGroup.filter((p) => !p.data.featured),
+    repos: moreRepos.filter((r) => (g.id === 'other' ? !placed.has(r.name) : g.repos.includes(r.name))),
+  };
+})
+  .map((g) => ({ ...g, count: g.featured.length + g.secondary.length + g.repos.length }))
+  .filter((g) => g.count > 0);
+
+const downloads30d = packages.reduce((s, p) => s + p.downloads30d, 0);
+const totalLikes = packages.reduce((s, p) => s + p.likes, 0);
+// sum weekly series aligned on the most recent week
+const weeks = Math.max(0, ...packages.map((p) => p.weekly.length));
+const weeklyTotal = Array.from({ length: weeks }, (_, i) =>
+  packages.reduce((s, p) => s + (p.weekly[p.weekly.length - weeks + i] ?? 0), 0),
+);
+
+const latest = own[0]; // repos come sorted by last push
+const latestProject = projects.find((p) => p.data.repo === latest?.name);
+
+// merged upstream PRs, grouped by repository
+const prGroups = Object.entries(
+  prs.reduce<Record<string, typeof prs>>((acc, pr) => ((acc[pr.repo] ??= []).push(pr), acc), {}),
+).sort((a, b) => b[1].length - a[1].length);
+---
+
+<Base>
+  <!-- ===================== HERO ===================== -->
+  <section class="relative">
+    <div class="absolute inset-0 bg-grid pointer-events-none" aria-hidden="true"></div>
+    <div class="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <!-- intro -->
+        <div class="md:col-span-2 md:row-span-2 rounded-2xl border border-border bg-surface/80 backdrop-blur p-6 sm:p-8 flex flex-col">
+          <div class="flex items-center gap-3">
+            <img src={SITE.avatar} alt={SITE.name} width="56" height="56" class="size-14 rounded-full ring-1 ring-border" />
+            <div>
+              <h1 class="font-semibold tracking-tight">{SITE.name}</h1>
+              <p class="text-sm text-muted flex items-center gap-1.5">
+                <Icon name="map-pin" size={13} /> Rome, Italy
+              </p>
+            </div>
+          </div>
+
+          <p class="mt-8 text-3xl sm:text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-balance">
+            <Flags class="mr-[0.25em] -translate-y-[0.06em]" /> Building <span class="text-accent whitespace-nowrap">open-source</span> tools and apps
+          </p>
+          <p class="mt-5 text-muted leading-relaxed max-w-xl">
+            {SITE.role}. I maintain an audio engine for Flutter, SMB and media server clients for Dart, and an
+            in-game Discord overlay for Linux.
+          </p>
+
+          <div class="mt-8 flex flex-wrap items-center gap-3">
+            <a href="#work" class="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-fg text-bg text-sm font-medium hover:opacity-90 transition-opacity">
+              See my work <Icon name="arrow-right" size={15} />
+            </a>
+            <CopyEmail />
+            <div class="flex items-center gap-0.5 ml-1">
+              {SOCIALS.slice(0, 3).map((s) => (
+                <a href={s.url} target="_blank" rel="noopener" aria-label={s.label} title={s.label} class="size-10 grid place-items-center rounded-lg text-muted hover:text-fg hover:bg-surface-2 transition-colors">
+                  <Icon name={s.id} size={17} />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <!-- pub.dev tile -->
+        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 flex flex-col">
+          <div class="flex items-center justify-between text-sm text-muted">
+            <span class="flex items-center gap-2"><Octicon name="download" size={14} /> pub.dev downloads</span>
+            <Icon name="arrow-up-right" size={14} class="text-subtle group-hover:text-fg transition-colors" />
+          </div>
+          <p class="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
+            {compact(downloads30d)}<span class="text-base font-normal text-subtle"> /30 days</span>
+          </p>
+          <Sparkline values={weeklyTotal.slice(-26)} width={260} height={44} label="Weekly pub.dev downloads across all packages" class="mt-auto pt-3 w-full h-11" />
+        </a>
+
+        <!-- numbers tile -->
+        <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 grid grid-cols-3 gap-2 text-center content-center">
+          <a href="https://github.com/ales-drnz?tab=repositories&sort=stargazers" target="_blank" rel="noopener" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
+            <Octicon name="star-fill" size={22} class="text-star" />
+            <p class="mt-2 text-2xl font-semibold tabular-nums">{totalStars}</p>
+            <p class="text-xs text-subtle mt-0.5">GitHub stars</p>
+          </a>
+          <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
+            <Octicon name="thumbsup" size={22} class="text-accent" />
+            <p class="mt-2 text-2xl font-semibold tabular-nums">{totalLikes}</p>
+            <p class="text-xs text-subtle mt-0.5">pub.dev likes</p>
+          </a>
+          <a href="#open-source" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
+            <Octicon name="git-merge" size={22} class="text-merged" />
+            <p class="mt-2 text-2xl font-semibold tabular-nums">{prs.length}</p>
+            <p class="text-xs text-subtle mt-0.5">upstream PRs</p>
+          </a>
+        </div>
+
+        <!-- currently building -->
+        {latest && (
+          <a href={latestProject ? `/projects/${latestProject.id}` : latest.html_url} class="hover-card group md:col-span-2 rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 flex items-center gap-4">
+            <Octicon name="repo-push" size={24} class="shrink-0 text-accent" />
+            <div class="min-w-0">
+              <p class="text-xs text-subtle">Latest push · {timeAgo(latest.pushed_at)}</p>
+              <p class="font-mono text-sm text-fg truncate">{latest.name}</p>
+              <p class="text-sm text-muted truncate">{latest.description}</p>
+            </div>
+            <Icon name="arrow-right" size={16} class="ml-auto shrink-0 text-subtle group-hover:text-fg group-hover:translate-x-0.5 transition-all" />
+          </a>
+        )}
+
+        <!-- stack tile -->
+        <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5">
+          <p class="text-sm text-muted mb-3">Stack</p>
+          <div class="flex flex-wrap gap-1.5">
+            {SKILLS.map((s) => (
+              <span class="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-surface-2 text-muted">
+                {s.icon && <BrandIcon name={s.icon as BrandKey} size={12} />}
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== WORK ===================== -->
+  <Section id="work" eyebrow="Work" title="Projects" lead="Grouped by area. Case studies have their own page with details, demos and code.">
+    <nav slot="aside" class="flex flex-wrap gap-2" aria-label="Project groups">
+      {groups.map((g) => (
+        <a href={`#group-${g.id}`} class="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-border bg-surface text-sm text-muted hover:text-fg hover:border-border-strong transition-colors">
+          {g.brand ? <BrandIcon name={g.brand as BrandKey} size={13} /> : <Octicon name={g.octicon as any} size={13} />}
+          {g.title}
+          <span class="font-mono text-xs text-subtle tabular-nums">{g.count}</span>
+        </a>
+      ))}
+    </nav>
+
+    <div class="space-y-16">
+      {groups.map((g) => (
+        <div id={`group-${g.id}`} class="scroll-mt-20">
+          <header class="flex items-center gap-3 mb-5 pb-4 border-b border-border">
+            <span class="shrink-0">
+              {g.brand ? <BrandIcon name={g.brand as BrandKey} size={26} /> : <Octicon name={g.octicon as any} size={26} class="text-muted" />}
+            </span>
+            <div class="min-w-0">
+              <h3 class="font-semibold tracking-tight">{g.title}</h3>
+              <p class="text-sm text-muted">{g.description}</p>
+            </div>
+            <span class="ml-auto shrink-0 font-mono text-xs text-subtle tabular-nums">
+              {g.count} {g.count === 1 ? 'project' : 'projects'}
+            </span>
+          </header>
+
+          {g.featured.length > 0 && (
+            <div class="space-y-5">
+              {g.featured.map((project, i) => <FeaturedProject project={project} index={i} />)}
+            </div>
+          )}
+
+          {(g.secondary.length > 0 || g.repos.length > 0) && (
+            <div class:list={['grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3', g.featured.length > 0 && 'mt-5']}>
+              {g.secondary.map((p) => (
+                <a href={`/projects/${p.id}`} class="hover-card group flex flex-col rounded-xl border border-border bg-surface p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <h4 class="text-sm font-medium text-fg group-hover:text-accent transition-colors">{p.data.title}</h4>
+                    <Icon name="arrow-right" size={14} class="shrink-0 mt-0.5 text-subtle group-hover:text-fg group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p class="mt-2 text-sm text-muted leading-relaxed">{p.data.tagline}</p>
+                  <div class="mt-auto pt-4 flex items-center gap-2 text-xs text-subtle">
+                    <Octicon name="book" size={12} /> Case study
+                  </div>
+                </a>
+              ))}
+              {g.repos.map((r) => <RepoCard repo={r} />)}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </Section>
+
+  <!-- ===================== EDUCATION ===================== -->
+  <Section id="education" eyebrow="Education" title="Studies">
+    <EducationTimeline entries={EDUCATION} />
+    <p class="mt-6 sm:pl-[172px] text-sm text-subtle">
+      Languages: Italian (native), English B2 (Cambridge B2 First).
+    </p>
+  </Section>
+
+  <!-- ===================== PACKAGES ===================== -->
+  {packages.length > 0 && (
+    <Section id="packages" eyebrow="pub.dev" title="Packages" lead={`Published under the verified publisher ${SITE.publisher}. Stats are updated daily.`}>
+      <div class="rounded-2xl border border-border bg-surface overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="text-left text-xs text-subtle border-b border-border">
+            <tr>
+              <th class="font-medium px-5 py-3"><span class="inline-flex items-center gap-1.5"><Octicon name="package" size={12} /> Package</span></th>
+              <th class="font-medium px-3 py-3 hidden sm:table-cell"><span class="inline-flex items-center gap-1.5"><Octicon name="thumbsup" size={12} /> Likes</span></th>
+              <th class="font-medium px-3 py-3 hidden sm:table-cell"><span class="inline-flex items-center gap-1.5"><Octicon name="verified" size={12} /> Points</span></th>
+              <th class="font-medium px-3 py-3 text-right sm:text-left"><span class="inline-flex items-center gap-1.5"><Octicon name="download" size={12} /> Downloads /30d</span></th>
+              <th class="font-medium px-5 py-3 hidden md:table-cell">Last 6 months</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+            {packages.map((p) => (
+              <tr class="group hover:bg-surface-2/60 transition-colors relative">
+                <td class="px-5 py-4">
+                  <a href={`https://pub.dev/packages/${p.name}`} target="_blank" rel="noopener" class="font-mono text-fg group-hover:text-accent transition-colors after:absolute after:inset-0">
+                    {p.name}
+                  </a>
+                  {p.version && <span class="ml-2 font-mono text-xs text-subtle">v{p.version}</span>}
+                </td>
+                <td class="px-3 py-4 tabular-nums text-muted hidden sm:table-cell">{p.likes}</td>
+                <td class="px-3 py-4 tabular-nums text-muted hidden sm:table-cell">{p.points != null ? `${p.points}/${p.maxPoints}` : '—'}</td>
+                <td class="px-3 py-4 tabular-nums text-fg font-medium text-right sm:text-left">{compact(p.downloads30d)}</td>
+                <td class="px-5 py-4 hidden md:table-cell">
+                  <Sparkline values={p.weekly.slice(-26)} width={120} height={26} label={`Weekly downloads of ${p.name}`} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Section>
+  )}
+
+  <!-- ===================== ACTIVITY ===================== -->
+  <Section id="activity" eyebrow="Activity" title="Last 12 months">
+    <div class="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+      <ContributionGraph days={contrib.days} total={contrib.total} />
+    </div>
+  </Section>
+
+  <!-- ===================== OPEN SOURCE ===================== -->
+  {prGroups.length > 0 && (
+    <Section id="open-source" eyebrow="Upstream" title="Open source contributions" lead="Pull requests merged into other projects.">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {prGroups.map(([repo, list]) => (
+          <div class="rounded-2xl border border-border bg-surface p-5">
+            <div class="flex items-center justify-between gap-3">
+              <a href={`https://github.com/${repo}`} target="_blank" rel="noopener" class="font-mono text-sm text-fg hover:text-accent transition-colors truncate">{repo}</a>
+              <span class="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-merged/12 text-merged"><Octicon name="git-merge" size={12} /> {list.length} merged</span>
+            </div>
+            <ul class="mt-3 space-y-1.5">
+              {list.slice(0, 4).map((pr) => (
+                <li>
+                  <a href={pr.url} target="_blank" rel="noopener" class="flex gap-2 text-sm text-muted hover:text-fg transition-colors">
+                    <Octicon name="git-merge" size={14} class="shrink-0 mt-0.5 text-merged/80" />
+                    <span class="line-clamp-1">{pr.title}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Section>
+  )}
+
+  <!-- ===================== CONTACT ===================== -->
+  <section id="contact" class="mx-auto max-w-5xl px-4 sm:px-6 pt-24 scroll-mt-14">
+    <div class="relative overflow-hidden rounded-3xl border border-border bg-surface px-6 py-14 sm:px-12 text-center">
+      <div class="absolute inset-0 bg-grid opacity-60 pointer-events-none" aria-hidden="true"></div>
+      <div class="relative">
+        <p class="font-mono text-xs text-accent uppercase tracking-[0.14em] mb-3">Contact</p>
+        <h2 class="text-2xl sm:text-4xl font-semibold tracking-tight text-balance">Get in touch</h2>
+        <p class="mt-4 text-muted max-w-lg mx-auto">Email is the quickest way to reach me.</p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <CopyEmail primary />
+          <a href={SOCIALS[2].url} target="_blank" rel="noopener" class="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-surface text-sm hover:border-border-strong transition-colors">
+            <Icon name="linkedin" size={15} /> LinkedIn
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

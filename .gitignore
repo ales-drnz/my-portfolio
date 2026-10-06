@@ -1,1 +1,16 @@
+# dependencies & build
+node_modules/
+dist/
+.astro/
+
+# env
+.env
+.env.production
+
+# logs
+npm-debug.log*
+
+# editors / os
+.idea/
+.DS_Store
 .claude/
