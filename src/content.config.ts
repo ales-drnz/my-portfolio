@@ -23,12 +23,9 @@ const projects = defineCollection({
       stack: z.array(z.string()).default([]),
       highlights: z.array(z.string()).default([]),
       logo: image().optional(),
-      cover: image(),
-      coverAlt: z.string(),
-      /** CSS object-position for the cropped home-page cover */
-      coverPosition: z.string().default('top'),
-      /** portrait phone screenshots, shown side by side instead of a cropped cover */
-      phones: z.array(image()).optional(),
+      /** shown in full on the home card and the project page; omit for a text-only card */
+      cover: image().optional(),
+      coverAlt: z.string().optional(),
       /** muted looping clip under /public, shown over the cover */
       coverVideo: z.string().optional(),
       links: z.array(z.object({ label: z.string(), url: z.url() })).default([]),

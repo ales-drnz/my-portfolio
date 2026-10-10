@@ -1,9 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { Image, getImage } from 'astro:assets';
-import Icon from './Icon.astro';
 import Sparkline from './Sparkline.astro';
-import Phones from './Phones.astro';
 import Octicon from './Octicon.astro';
 import { getRepo, getPackage, compact, timeAgo } from '../lib/data';
 
@@ -15,115 +13,103 @@ interface Props {
 const { project, index } = Astro.props;
 const p = project.data;
 const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.package ? getPackage(p.package) : null]);
-const poster = p.coverVideo ? await getImage({ src: p.cover, width: 1200, format: 'webp' }) : null;
+const poster = p.cover && p.coverVideo ? await getImage({ src: p.cover, width: 1200, format: 'webp' }) : null;
 const href = `/projects/${project.id}`;
-const flip = index % 2 === 1;
+
+// bento layout: media on the left, intro + one tile per number on the right
+const tile = 'rounded-[13px] border border-border bg-surface p-4 min-w-0';
+const label = 'flex items-center gap-1.5 text-xs text-subtle';
+const value = 'text-2xl font-semibold tracking-tight tabular-nums';
 ---
 
 <article
-  class="hover-card group relative grid grid-cols-1 md:grid-cols-[1.05fr_1fr] gap-0 rounded-2xl border border-border bg-surface overflow-hidden"
+  class="hover-card group grid grid-cols-2 md:grid-cols-4 md:auto-rows-[minmax(92px,auto)] gap-2 p-2 rounded-[20px] border border-border bg-surface-2"
 >
-  <!-- media -->
-  <a
-    href={href}
-    class:list={[
-      'relative block aspect-[16/11] md:aspect-auto md:min-h-[360px] bg-surface-2 overflow-hidden border-b md:border-b-0 border-border',
-      flip ? 'md:order-2 md:border-l' : 'md:border-r',
-    ]}
-    tabindex="-1"
-    aria-hidden="true"
-  >
-    {
-      p.phones ? (
-        <Phones images={p.phones} alt={p.coverAlt} class="absolute inset-0 py-8" />
-      ) : p.coverVideo && poster ? (
-        <video
-          src={p.coverVideo}
-          poster={poster.src}
-          muted
-          loop
-          playsinline
-          preload="none"
-          data-autoplay
-          class="absolute inset-0 size-full object-cover object-left-top transition-transform duration-700 group-hover:scale-[1.02]"
-        />
-      ) : (
-        <Image
-          src={p.cover}
-          alt={p.coverAlt}
-          widths={[600, 1000, 1400]}
-          sizes="(min-width: 768px) 520px, 100vw"
-          class="absolute inset-0 size-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-          style={`object-position: ${p.coverPosition}`}
-          loading={index === 0 ? 'eager' : 'lazy'}
-        />
-      )
-    }
-  </a>
-
-  <!-- copy -->
-  <div class="flex flex-col p-6 sm:p-8">
-    <div class="flex items-center gap-3">
-      {p.logo && <Image src={p.logo} alt="" width={36} height={36} class="size-9 rounded-lg object-contain" />}
-      <div class="min-w-0">
-        <h3 class="text-lg font-semibold tracking-tight">
-          <a href={href} class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">{p.title}</a>
-        </h3>
-        <p class="text-xs font-mono text-subtle uppercase tracking-wider">{p.kind}</p>
+  <!-- media: shown whole, at its own aspect ratio -->
+  {
+    p.cover && (
+      <div class="col-span-2 md:row-span-4 self-center rounded-[13px] border border-border bg-surface-2 overflow-hidden">
+        {p.coverVideo && poster ? (
+          <video
+            src={p.coverVideo}
+            poster={poster.src}
+            width={p.cover.width}
+            height={p.cover.height}
+            muted
+            loop
+            playsinline
+            preload="none"
+            data-autoplay
+            aria-label={p.coverAlt}
+            class="block w-full h-auto"
+          />
+        ) : (
+          <Image
+            src={p.cover}
+            alt={p.coverAlt ?? ''}
+            widths={[600, 1000, 1400]}
+            sizes="(min-width: 768px) 500px, 100vw"
+            class="block w-full h-auto"
+            loading={index === 0 ? 'eager' : 'lazy'}
+          />
+        )}
       </div>
+    )
+  }
+
+  <!-- intro -->
+  <div class:list={[tile, 'col-span-2 md:row-span-2 flex flex-col gap-3']}>
+    <div class="flex items-center gap-2.5">
+      {p.logo && <Image src={p.logo} alt="" width={36} height={36} class="size-9 rounded-lg object-contain" />}
+      <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">
+        {p.kind}{pkg?.version && ` · v${pkg.version}`}
+      </span>
     </div>
-
-    <p class="mt-4 text-muted leading-relaxed">{p.tagline}</p>
-
-    <ul class="mt-5 space-y-2 text-sm text-muted">
-      {
-        p.highlights.map((h) => (
-          <li class="flex gap-2.5">
-            <span class="mt-2 size-1 shrink-0 rounded-full bg-accent" />
-            <span>{h}</span>
-          </li>
-        ))
-      }
-    </ul>
-
-    <div class="mt-5 flex flex-wrap gap-1.5">
-      {p.stack.slice(0, 6).map((s) => <span class="font-mono text-[11px] px-2 py-0.5 rounded-md bg-surface-2 text-muted">{s}</span>)}
-    </div>
-
-    <div class="mt-auto pt-6 flex items-end justify-between gap-4">
-      <dl class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-        {
-          repo && (
-            <div class="flex items-center gap-1.5 text-muted" title="GitHub stars">
-              <Octicon name="star-fill" size={14} class="text-star" />
-              <dd class="tabular-nums text-fg font-medium">{repo.stargazers_count}</dd>
-              <dt class="sr-only">stars</dt>
-            </div>
-          )
-        }
-        {
-          pkg && (
-            <>
-              <div class="flex items-center gap-1.5 text-muted" title="pub.dev likes">
-                <Octicon name="thumbsup" size={14} class="text-accent" />
-                <dd class="tabular-nums text-fg font-medium">{pkg.likes}</dd>
-                <dt class="sr-only">likes</dt>
-              </div>
-              <div class="flex items-center gap-1.5 text-muted" title="pub.dev downloads, last 30 days">
-                <Octicon name="download" size={14} />
-                <dd class="tabular-nums text-fg font-medium">{compact(pkg.downloads30d)}</dd>
-                <dt class="text-subtle">/mo</dt>
-              </div>
-            </>
-          )
-        }
-        {repo && <div class="text-subtle">updated {timeAgo(repo.pushed_at)}</div>}
-      </dl>
-      {pkg && pkg.weekly.length > 4 && <Sparkline values={pkg.weekly.slice(-26)} width={96} height={28} label="Weekly downloads, last 6 months" class="shrink-0 hidden sm:block" />}
+    <h3 class="text-xl font-semibold tracking-tight">
+      <a href={href} class="after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:outline-none">{p.title}</a>
+    </h3>
+    <p class="text-sm text-muted leading-relaxed">{p.tagline}</p>
+    <div class="mt-auto flex flex-wrap gap-1.5">
+      {p.stack.slice(0, 4).map((s) => <span class="font-mono text-[11px] px-2 py-0.5 rounded-md bg-surface-2 text-muted">{s}</span>)}
     </div>
   </div>
 
-  <span class="absolute top-4 right-4 size-8 grid place-items-center rounded-full bg-bg/70 backdrop-blur border border-border text-muted opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all" aria-hidden="true">
-    <Icon name="arrow-up-right" size={14} />
-  </span>
+  <!-- numbers -->
+  <div class:list={[tile, 'flex flex-col justify-between gap-3']}>
+    <span class={label}><Octicon name="star-fill" size={12} class="text-star" /> GitHub stars</span>
+    <span class={value}>{repo?.stargazers_count ?? '—'}</span>
+  </div>
+
+  {
+    pkg ? (
+      <div class:list={[tile, 'flex flex-col justify-between gap-3']}>
+        <span class={label}><Octicon name="thumbsup" size={12} class="text-accent" /> pub.dev likes</span>
+        <span class={value}>{pkg.likes}</span>
+      </div>
+    ) : (
+      <div class:list={[tile, 'flex flex-col justify-between gap-3']}>
+        <span class={label}><Octicon name="repo-push" size={12} /> Last push</span>
+        <span class={value}>{repo ? timeAgo(repo.pushed_at) : '—'}</span>
+      </div>
+    )
+  }
+
+  <div class:list={[tile, 'col-span-2 flex items-center justify-between gap-4']}>
+    {
+      pkg ? (
+        <>
+          <div class="flex flex-col gap-1">
+            <span class={label}><Octicon name="download" size={12} /> Downloads /30d</span>
+            <span class={value}>{compact(pkg.downloads30d)}</span>
+          </div>
+          {pkg.weekly.length > 4 && <Sparkline values={pkg.weekly.slice(-26)} width={110} height={34} label="Weekly downloads, last 6 months" class="shrink-0" />}
+        </>
+      ) : (
+        <div class="flex flex-col gap-1 min-w-0">
+          <span class={label}>Platforms</span>
+          <span class="text-sm text-fg">{p.platforms.join(', ')}</span>
+        </div>
+      )
+    }
+  </div>
 </article>

@@ -1,0 +1,38 @@
+---
+title: dart_jellyfin
+tagline: Typed Dart client for Jellyfin.
+summary: >-
+  A pure-Dart client for Jellyfin that covers libraries, playlists, audio streaming, lyrics, playback reporting
+  and search through typed objects, and handles the session lifecycle for you. Built on Jellyfin's OpenAPI spec
+  and tested against a real server.
+kind: library
+order: 4
+group: dart
+repo: dart_jellyfin
+package: dart_jellyfin
+platforms: [Every Dart platform]
+stack: [Dart, OpenAPI, Integration tests]
+highlights:
+  - Credentials and Quick Connect sign-in
+  - Typed DTOs that keep the raw map for newer server fields
+  - Synced lyrics with LRC output
+logo: ../../assets/projects/media-servers/dart_jellyfin.png
+links:
+  - { label: GitHub, url: 'https://github.com/ales-drnz/dart_jellyfin' }
+  - { label: pub.dev, url: 'https://pub.dev/packages/dart_jellyfin' }
+---
+
+## Overview
+
+A client object, `JellyfinClient`, holds identity, server and token, and typed sub-APIs are accessed through
+it. [dart_plex](/projects/dart-plex) has the same structure, so an app can support both servers the same way.
+
+## Features
+
+- **Built on the official OpenAPI spec**: endpoint names, field names and casing match api.jellyfin.org.
+- **Typed DTOs**: every response is a typed object that also keeps its `.raw` map, so fields added by newer
+  servers are kept.
+- **Both auth flows**: `authenticateByName()` and the Quick Connect link flow.
+- **Synced lyrics**: parsed lines with tick-to-ms helpers and `.toLrc()` output.
+
+It's pure Dart (no native plugin, no Flutter dependency) and runs anywhere Dart does.

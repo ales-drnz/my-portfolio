@@ -1,0 +1,38 @@
+---
+title: dart_plex
+tagline: Typed Dart client for Plex Media Server.
+summary: >-
+  A pure-Dart client for Plex Media Server that covers libraries, hubs, playlists, audio streaming, playback
+  reporting, search and play queues through typed objects, and handles plex.tv sign-in and server discovery.
+kind: library
+order: 5
+group: dart
+repo: dart_plex
+package: dart_plex
+platforms: [Every Dart platform]
+stack: [Dart, Integration tests]
+highlights:
+  - plex.tv sign-in with credentials or the 4-character PIN flow
+  - Server discovery that prefers local, then HTTPS, then relay
+  - HLS / DASH / direct stream URLs
+logo: ../../assets/projects/media-servers/dart_plex.png
+links:
+  - { label: GitHub, url: 'https://github.com/ales-drnz/dart_plex' }
+  - { label: pub.dev, url: 'https://pub.dev/packages/dart_plex' }
+---
+
+## Overview
+
+A client object, `PlexClient`, holds identity, server and token, and typed sub-APIs are accessed through it.
+[dart_jellyfin](/projects/dart-jellyfin) has the same structure, so an app can support both servers the same way.
+
+## Features
+
+- **plex.tv sign-in**: legacy credentials or the official 4-character PIN flow at plex.tv/link.
+- **Server discovery**: owned and shared servers with connection candidates; `bestConnection()` picks local
+  first, then HTTPS, then relay.
+- **Streaming URLs**: `universalAudioUrl()` builds HLS or DASH manifests, `directFileUrl()` the
+  zero-transcode original.
+- **Semantic errors**: every failure is a `PlexException` you can branch on, instead of raw network errors.
+
+It's pure Dart (no native plugin, no Flutter dependency) and runs anywhere Dart does.

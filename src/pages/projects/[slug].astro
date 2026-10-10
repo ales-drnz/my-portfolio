@@ -4,7 +4,6 @@ import { Image, getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import Icon from '../../components/Icon.astro';
 import Sparkline from '../../components/Sparkline.astro';
-import Phones from '../../components/Phones.astro';
 import Octicon from '../../components/Octicon.astro';
 import { getRepo, getPackage, compact, timeAgo } from '../../lib/data';
 
@@ -25,8 +24,9 @@ const { project, next } = Astro.props;
 const p = project.data;
 const { Content } = await render(project);
 const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.package ? getPackage(p.package) : null]);
-const ogImage = await getImage({ src: p.cover, width: 1200, format: 'png' });
-const poster = p.coverVideo ? await getImage({ src: p.cover, width: 1600, format: 'webp' }) : null;
+const ogSource = p.cover ?? p.logo;
+const ogImage = ogSource ? await getImage({ src: ogSource, width: p.cover ? 1200 : 512, format: 'png' }) : null;
+const poster = p.cover && p.coverVideo ? await getImage({ src: p.cover, width: 1600, format: 'webp' }) : null;
 
 const facts = [
   { label: 'Type', value: p.kind[0].toUpperCase() + p.kind.slice(1) },
@@ -36,7 +36,7 @@ const facts = [
 ].filter(Boolean) as { label: string; value: string }[];
 ---
 
-<Base title={p.title} description={p.summary} image={ogImage.src}>
+<Base title={p.title} description={p.summary} image={ogImage?.src}>
   <article class="mx-auto max-w-5xl px-4 sm:px-6 pt-10 sm:pt-14">
     <a href="/#work" class="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg transition-colors">
       <Icon name="arrow-left" size={14} /> All work
@@ -101,15 +101,15 @@ const facts = [
     )}
 
     <!-- cover -->
-    <div class="mt-6 rounded-2xl border border-border bg-surface-2 overflow-hidden">
-      {p.phones ? (
-        <Phones images={p.phones} alt={p.coverAlt} class="py-12 sm:py-16" />
-      ) : p.coverVideo && poster ? (
-        <video src={p.coverVideo} poster={poster.src} width={p.cover.width} height={p.cover.height} muted loop playsinline preload="metadata" data-autoplay class="w-full h-auto" aria-label={p.coverAlt} />
-      ) : (
-        <Image src={p.cover} alt={p.coverAlt} widths={[800, 1200, 1800]} sizes="(min-width: 1024px) 976px, 100vw" loading="eager" class="w-full h-auto max-h-[640px] object-contain" />
-      )}
-    </div>
+    {p.cover && (
+      <div class="mt-6 rounded-2xl border border-border bg-surface-2 overflow-hidden">
+        {p.coverVideo && poster ? (
+          <video src={p.coverVideo} poster={poster.src} width={p.cover.width} height={p.cover.height} muted loop playsinline preload="metadata" data-autoplay class="block w-full h-auto" aria-label={p.coverAlt} />
+        ) : (
+          <Image src={p.cover} alt={p.coverAlt ?? ''} widths={[800, 1200, 1800]} sizes="(min-width: 1024px) 976px, 100vw" loading="eager" class="block w-full h-auto" />
+        )}
+      </div>
+    )}
 
     <!-- body + sidebar -->
     <div class="mt-4 grid gap-12 lg:grid-cols-[minmax(0,1fr)_240px]">
@@ -151,8 +151,9 @@ const facts = [
 
     <!-- next -->
     {next.id !== project.id && (
-      <a href={`/projects/${next.id}`} class="hover-card group mt-20 flex items-center justify-between gap-6 rounded-2xl border border-border bg-surface p-6 sm:p-8">
-        <div>
+      <a href={`/projects/${next.id}`} class="hover-card group mt-20 flex items-center gap-5 rounded-2xl border border-border bg-surface p-6 sm:p-8">
+        {next.data.logo && <Image src={next.data.logo} alt="" width={56} height={56} class="size-12 sm:size-14 shrink-0 rounded-xl object-contain" />}
+        <div class="min-w-0 mr-auto">
           <p class="text-xs text-subtle">Next project</p>
           <p class="mt-1 text-xl font-semibold tracking-tight">{next.data.title}</p>
           <p class="mt-1 text-sm text-muted">{next.data.tagline}</p>

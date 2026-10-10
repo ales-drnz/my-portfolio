@@ -1,10 +1,8 @@
 ---
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
-import { getCollection } from 'astro:content';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import CommandPalette from '../components/CommandPalette.tsx';
 import { SITE, SOCIALS } from '../lib/site';
 
 interface Props {
@@ -17,11 +15,6 @@ const { title, description = SITE.description, image = SITE.avatar } = Astro.pro
 const fullTitle = title ? `${title} · ${SITE.name}` : SITE.title;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(image, Astro.site).href;
-
-const projects = (await getCollection('projects'))
-  .sort((a, b) => a.data.order - b.data.order)
-  .map((p) => ({ id: p.id, title: p.data.title, tagline: p.data.tagline }));
-const socials = SOCIALS.map((s) => ({ label: s.label, url: s.url }));
 ---
 
 <!doctype html>
@@ -79,7 +72,6 @@ const socials = SOCIALS.map((s) => ({ label: s.label, url: s.url }));
       <slot />
     </main>
     <Footer />
-    <CommandPalette client:idle projects={projects} socials={socials} emailParts={[...SITE.emailParts]} transition:persist />
 
     <script>
       // clips play only while on screen, and never with reduced motion

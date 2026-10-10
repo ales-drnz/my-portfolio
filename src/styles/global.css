@@ -42,25 +42,6 @@
   color-scheme: dark;
 }
 
-/* konami code easter egg: a nod to the old terminal site */
-[data-retro] {
-  --c-bg: #050805;
-  --c-surface: #0a100a;
-  --c-surface-2: #0f180f;
-  --c-border: #1a2e1a;
-  --c-border-strong: #244024;
-  --c-fg: #9dff9d;
-  --c-muted: #6fcf6f;
-  --c-subtle: #4a8f4a;
-  --c-accent: #39ff14;
-  --c-accent-soft: #0f2a0f;
-  color-scheme: dark;
-}
-[data-retro] body {
-  font-family: var(--font-mono);
-  text-shadow: 0 0 6px color-mix(in oklab, var(--c-accent) 35%, transparent);
-}
-
 @theme inline {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
@@ -104,9 +85,6 @@
 [data-theme="dark"] .brand-icon {
   color: color-mix(in oklab, var(--brand) 72%, white);
 }
-[data-retro] .brand-icon {
-  color: currentColor;
-}
 
 /* subtle dotted grid behind the hero */
 .bg-grid {
@@ -115,7 +93,7 @@
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
-/* hover for interactive cards: a beam of light that travels around the border.
+/* hover for interactive cards: a small lift and a beam of light that travels around the border.
    A conic gradient spins via an animated custom property, and a mask leaves
    only a 1.5px ring visible. Drawn just inside the border so cards with
    overflow:hidden don't clip it. */
@@ -134,9 +112,7 @@
 .hover-card {
   position: relative;
   isolation: isolate;
-  transition:
-    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.35s;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .hover-card::before {
   content: "";
@@ -171,7 +147,6 @@
 .hover-card:hover,
 .hover-card:focus-within {
   transform: translateY(-2px);
-  box-shadow: 0 16px 40px -22px color-mix(in oklab, var(--c-accent) 55%, transparent);
 }
 .hover-card:hover::before,
 .hover-card:focus-within::before {

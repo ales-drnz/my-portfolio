@@ -64,6 +64,28 @@ export const EDUCATION: EducationEntry[] = [
   },
 ];
 
+export const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+
+export interface Language {
+  name: string;
+  flag: 'it' | 'gb';
+  /** a CEFR level, or 'native' */
+  level: (typeof CEFR)[number] | 'native';
+  levelLabel: string;
+  certificate?: { name: string; score?: string };
+}
+
+export const LANGUAGES: Language[] = [
+  { name: 'Italian', flag: 'it', level: 'native', levelLabel: 'Mother tongue' },
+  {
+    name: 'English',
+    flag: 'gb',
+    level: 'B2',
+    levelLabel: 'Upper intermediate',
+    certificate: { name: 'Cambridge B2 First', score: '179' },
+  },
+];
+
 /* Project groups on the home page. Case studies pick a group in their frontmatter;
    plain GitHub repos are placed by name, and anything unlisted lands in "other". */
 export type ProjectGroupId = 'dart' | 'linux' | 'build' | 'other';
@@ -105,6 +127,11 @@ export const PROJECT_GROUPS: {
     repos: [],
   },
 ];
+
+/** logos for plain GitHub repos (case studies set theirs in frontmatter) */
+export const REPO_LOGOS: Record<string, string> = {
+  mpv_studio: 'mpv-audio-kit/mpv_studio.png',
+};
 
 // icon: a simple-icons export name
 export const SKILLS: { label: string; icon?: string }[] = [
