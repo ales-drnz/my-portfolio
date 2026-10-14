@@ -1,10 +1,10 @@
 ---
 title: dart_smb2
-tagline: SMB2/3 client for Dart & Flutter, built on libsmb2.
+tagline: SMB2/3 client for Dart and Flutter, built on libsmb2.
 summary: >-
-  Read, write and stream files from network shares on every platform Flutter runs on. FFI bindings to a
-  patched libsmb2, an isolate worker pool that reconnects transparently, and prebuilt native binaries for
-  five operating systems from a reproducible build pipeline.
+  Lists, reads, streams, downloads and writes files on Samba, Windows and NAS shares from worker isolates that
+  reconnect on their own. A plain Dart package: a build hook bundles a patched libsmb2 for five operating
+  systems, so Flutter apps, command-line tools and servers all use it.
 kind: library
 order: 3
 group: dart
@@ -12,11 +12,11 @@ featured: true
 repo: dart_smb2
 package: dart_smb2
 platforms: [Android, iOS, macOS, Windows, Linux]
-stack: [Dart, Flutter, FFI, C, libsmb2, Go]
+stack: [Dart, FFI, C, libsmb2, Go]
 highlights:
-  - SMB 2.02 → 3.1.1 with encryption, signing and version pinning
-  - Smb2Pool spreads work across isolates and retries dropped connections
-  - Streaming I/O with progress and cancellation over one persistent handle
+  - One connection per worker isolate, each call sent to the least busy one
+  - Reconnects for every caller and repeats the call when that is safe
+  - Cancel tokens, typed NT status errors and reads with no extra copies
 logo: ../../assets/projects/dart-smb2/dart_smb2.png
 links:
   - { label: GitHub, url: 'https://github.com/ales-drnz/dart_smb2' }
@@ -24,54 +24,78 @@ links:
   - { label: libsmb2 build system, url: 'https://github.com/ales-drnz/libsmb2-scripts' }
 ---
 import { Image } from 'astro:assets';
-import servers from '../../assets/projects/dart-smb2/mobile_servers.png';
-import browse from '../../assets/projects/dart-smb2/mobile_browse.png';
-import read from '../../assets/projects/dart-smb2/mobile_read.png';
-import write from '../../assets/projects/dart-smb2/mobile_write.png';
+import architecture from '../../assets/projects/dart-smb2/diagram_architecture.png';
+import poolLifecycle from '../../assets/projects/dart-smb2/diagram_pool_lifecycle.png';
+import streaming from '../../assets/projects/dart-smb2/diagram_streaming.png';
+import reconnect from '../../assets/projects/dart-smb2/diagram_reconnect.png';
 
 ## What it is
 
-A Dart client for SMB2/3 file shares (the protocol used by Windows shares and most home NAS devices), with one
-API on desktop and mobile, built on the libsmb2 C library.
+A Dart client for SMB2 and SMB3 file shares (the protocol used by Windows shares and most home NAS devices).
+It's a plain Dart package with no Flutter plugin: a build hook bundles libsmb2 for Android, iOS, Linux, macOS
+and Windows, checked against pinned SHA-256s, so the same API works in a Flutter app, a command-line tool or
+a server.
 
-## Design
+## Architecture
 
-- **FFI, synchronous at the core**: bindings to libsmb2 via `dart:ffi`, with native binaries bundled for
-  every target.
-- **Smb2Pool on top**: requests are spread across N isolate workers, off the main isolate. Dropped
-  connections are re-established and the failed operation is retried automatically.
-- **Safe handles**: `withFile(path, body)` guarantees the handle is closed on every exit path, with a
-  `Finalizer` as a safety net for leaked handles.
-- **Semantic errors**: one `Smb2Exception` hierarchy with an `Smb2ErrorType` enum instead of raw NTSTATUS codes.
+`Smb2Pool` is the entry point. It runs a few worker isolates, each with its own connection to the share and
+its own `Smb2Client`, the synchronous client over libsmb2. Your code calls the pool from any isolate; each
+call goes to the least busy worker, so the UI isolate never waits on the network.
+
+<Image src={architecture} alt="Architecture: your code calls Smb2Pool, which sends each request to one of its worker isolates; each worker runs an Smb2Client over its own libsmb2 context" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ```dart
 final pool = await Smb2Pool.connect(
-  host: '192.168.1.100',
-  share: 'Files',
-  user: 'user',
-  password: 'pass',
+  host: 'nas.local',
+  share: 'Music',
+  user: 'alice',
+  password: 'secret',
+  workers: 4,
 );
 
-final entries = await pool.listDirectory('Documents/Projects');
+for (final entry in await pool.listDirectory('')) {
+  print('${entry.name}  ${entry.isDirectory ? 'dir' : '${entry.size} B'}');
+}
 
-await pool.downloadToFile(
-  'Music/song.flac',
-  File('/tmp/song.flac'),
-  onProgress: (received, total) => print('${(received / total * 100).toStringAsFixed(1)}%'),
+final written = await pool.downloadToFile(
+  'Album/01 - Intro.flac',
+  '/storage/music/01 - Intro.flac',
+  onProgress: (received, total) => print('${received * 100 ~/ total}%'),
 );
 ```
+
+<Image src={poolLifecycle} alt="Pool lifecycle: Smb2Pool.connect, calls, withFile and streamFile, disconnect" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Streaming and downloads
+
+`streamFile()` keeps one file handle open and reads the next chunk while your code handles the current one,
+so at most two chunks are in memory. `downloadToFile()` writes at the pace the disk takes, into a temporary
+file that is renamed to the destination only once the download is complete. Reads land in native buffers
+that reach your isolate without a copy.
+
+<Image src={streaming} alt="Streaming: the worker reads the next chunk while your isolate writes the current one" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Reconnecting
+
+When a connection drops, the pool reconnects once for every caller that was waiting on it, repeats the call
+when that is safe and reopens open files. Calls that change the share (`mkdir`, `rmdir`, `deleteFile`,
+`rename`) reconnect but aren't tried a second time.
+
+<Image src={reconnect} alt="Reconnect: a worker loses its connection, the pool spawns a new worker and repeats the call" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Also included
+
+- **Cancellation**: every call on a connected pool takes an `Smb2CancelToken`, the same as in dart_plex and
+  dart_jellyfin.
+- **Typed errors**: every failure is an `Smb2Exception` classified from the server's NT status: auth, not
+  found, network, transient or cancelled.
+- **SMB3 security**: NTLM sign-in, encryption and signing, and the dialect you choose, up to SMB 3.1.1.
+- **Files and directories**: listings with metadata, byte ranges, handles, writes, renames, timestamps,
+  share space and share enumeration.
 
 ## Native builds
 
 The binaries come from [libsmb2-scripts](https://github.com/ales-drnz/libsmb2-scripts): a pinned upstream
-libsmb2 with patches, cross-compiled for Android, iOS, macOS, Windows and Linux on multiple architectures. The
-same repository doubles as the LGPL corresponding-source offer for every shipped binary.
-
-## Example app
-
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 not-prose">
-  <Image src={servers} alt="Server list" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
-  <Image src={browse} alt="Browsing a share" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
-  <Image src={read} alt="Reading a file" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
-  <Image src={write} alt="Writing a file" widths={[300, 600]} sizes="180px" class="rounded-xl border border-border" />
-</div>
+libsmb2 commit with a small set of patches, cross-compiled for Android, iOS, macOS, Windows and Linux on
+multiple architectures. The same repository is the corresponding source of the LGPL-2.1 binaries the
+package ships.

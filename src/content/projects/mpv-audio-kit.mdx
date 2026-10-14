@@ -2,9 +2,10 @@
 title: mpv_audio_kit
 tagline: Audio engine for Flutter and Dart, built on mpv 0.41.
 summary: >-
-  A full audio stack for Flutter: libmpv driven over FFI from a background isolate, an ordered chain of
-  typed ffmpeg effects, real-time spectrum and waveform, native media sessions, and its own cross-platform
-  build of libmpv. Ships on Android, iOS, macOS, Windows and Linux.
+  The audio engine for Flutter apps that play from your own server. It talks to Jellyfin, Plex and Samba,
+  plays live PCM as it arrives, and puts everything mpv and ffmpeg can do behind a typed Dart API: libmpv
+  driven from a background isolate, a chain of typed effects, live spectrum and waveform, and native media
+  sessions on Android, iOS, macOS, Windows and Linux.
 kind: library
 order: 1
 group: dart
@@ -16,10 +17,10 @@ stack: [Dart, Flutter, FFI, C, libmpv, FFmpeg, Go]
 highlights:
   - 100+ reactive streams from a non-blocking event isolate
   - 18-band EQ, compressor, pitch/tempo and any lavfi filter as a typed stage
-  - libmpv downloaded, checked against a pinned SHA-256 and bundled by a Dart build hook
+  - Live PCM input for audio that arrives in chunks, such as generated speech
 logo: ../../assets/projects/mpv-audio-kit/mpv_audio_kit.png
 cover: ../../assets/projects/mpv-audio-kit/playback-poster.jpg
-coverAlt: MPV Studio playing a track with a live waveform and spectrum
+coverAlt: MPV Studio playing a track with its waveform, chapters, A-B loop and live spectrum
 coverVideo: /media/mpv-audio-kit/playback.mp4
 links:
   - { label: GitHub, url: 'https://github.com/ales-drnz/mpv_audio_kit' }
@@ -40,7 +41,12 @@ import streamPoster from '../../assets/projects/mpv-audio-kit/stream-poster.jpg'
 
 Many Flutter audio libraries are built on an old version of mpv, or are too restrictive and hide the audio
 processing features. mpv_audio_kit exposes the whole engine through a typed Dart API, without blocking the UI
-thread.
+thread, and is made for apps that play from your own media library:
+
+- **Jellyfin**: direct or transcoded streams, and transcoded HLS stays seekable while the server converts.
+- **Plex**: each track asks the server for its stream only when it loads, through a source resolver, so a
+  long queue starts at once and the server isn't flooded with requests.
+- **Samba**: play straight from a NAS or any network share over SMB2 and SMB3.
 
 The project is split across three repositories:
 
@@ -57,8 +63,8 @@ back, so slow network streams and heavy filter graphs don't block the UI.
 
 <Image src={architecture} alt="Architecture: UI and Player on the main isolate, event isolate and libmpv in the background, platform plugin bridging to OS media controls" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-Media sessions (Media3 on Android, Now Playing on Apple, MPRIS on Linux, SMTC on Windows) are driven from
-Dart, so lock-screen controls and notifications work the same way on every platform.
+Media sessions (the media notification on Android, Now Playing on Apple, MPRIS on Linux, SMTC on Windows)
+are driven from Dart, so lock-screen controls and notifications work the same way on every platform.
 
 ## A typed effects chain
 
@@ -77,6 +83,29 @@ Spectrum, PCM, waveform overviews and loudness scans come out of patched FFmpeg 
 streams.
 
 <Image src={spectrum} alt="Spectrum pipeline from ffmpeg filter tap to Dart stream" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Live PCM input
+
+New in 0.5.0: a `PcmSource` plays raw PCM chunks while they arrive, such as speech generated piece by piece or
+samples sent over a socket. There's no file, no local server and no header: the chunks go straight to mpv,
+and playback starts about 0.2 s after the first one (about 0.13 s with `lowLatency: true`).
+
+```dart
+final socket = await WebSocket.connect('wss://example.com/speech');
+final source = await player.openPcmStream(
+  const PcmFormat(sampleRate: 24000, channels: 1), // s16le by default
+);
+await source.addStream(
+  socket.where((m) => m is List<int>).map(
+    (m) => m is Uint8List ? m : Uint8List.fromList(m as List<int>),
+  ),
+);
+await source.close();
+```
+
+`close` plays out what's buffered and ends the entry after its last sample; `abort` cuts it at once. Sources
+can also be queued in the playlist, each starting when the previous one ends. This needed a new `mak-pcm`
+protocol patched into mpv in libmpv-scripts.
 
 ## Getting libmpv into the app
 
@@ -106,8 +135,9 @@ player.stream.audioEffects.listen((fx) => print('${fx.length} stages'));
 
 ## Streams and protocols
 
-HTTP(S), HLS, DASH and SMB2/3 are supported. For media servers, Jellyfin transcodes use seekable HLS, and
-Plex's per-stream `/decision` call is made from an `on_load` hook instead of a local proxy.
+HTTP(S), HLS, DASH and SMB2/3 play like local files, with control over the cache size, where it's kept and
+the pause on an empty cache. Hooks run your code while a file loads, prefetch included, to resolve URLs,
+redirect or add headers.
 
 <div class="grid sm:grid-cols-2 gap-4 not-prose">
   <Video src="/media/mpv-audio-kit/stream.mp4" poster={streamPoster} caption="Network streams" />
