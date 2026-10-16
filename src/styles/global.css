@@ -9,7 +9,7 @@
    the semantic utilities below (bg-surface, text-muted, ...).
    ------------------------------------------------------------ */
 :root {
-  /* grounds and ink from the brand banners (brand/README.md) */
+  /* grounds and ink from the brand banners (~/Scrivania/Brand/README.md) */
   --c-bg: #f2f2ef;
   --c-surface: #ffffff;
   --c-surface-2: #ebebe7;

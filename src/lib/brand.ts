@@ -1,6 +1,6 @@
-// The ales-drnz identity, mirrored from brand/source/build.py (the generator of the logo and the
-// banners). Keep the two in sync: colours live in global.css (--c-ramp-*, --c-mark*), geometry and
-// the code listing live here.
+// The ales-drnz identity, mirrored from the brand kit in ~/Scrivania/Brand (source/build.py generates
+// the logo and the banners; source/sync.sh rewrites MARK below and the --c-mark* colours in global.css).
+// The code listing is kept in sync by hand.
 
 // The mark, "al_": one monoline stroke (a geometric a running along a filleted baseline into the l)
 // plus an underscore cursor, in a construction space fitted by MARK.fit into the r36 guide circle
