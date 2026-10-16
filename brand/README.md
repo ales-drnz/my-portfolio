@@ -47,7 +47,7 @@ gradient on "open-source".
 
 | File | Size | Use |
 |---|---|---|
-| `banners/linkedin-{dark,light}.png` (+ `@2x`) | 1584×396 | LinkedIn background, with the mark |
+| `banners/linkedin-{dark,light}.png` (+ `@2x`) | 1584×396 | LinkedIn background, with the mark; the code starts at x 410, clear of the profile photo (bottom left) |
 | `banners/github-{dark,light}.png` (+ `@2x`) | 1280×320 | static header (README, anywhere) |
 | `banners/x-{dark,light}.png` (+ `@2x`) | 1500×500 | X/Twitter header: content kept inside x 400–1330, y 130–440, clear of the desktop avatar (bottom left), the ~135 px the phone app crops from each side, and the status bar and back/search buttons it draws over the top |
 | `banners/og-{dark,light}.png` | 1200×630 | link preview of the website (`og-dark` is `public/og.png`), with the mark |

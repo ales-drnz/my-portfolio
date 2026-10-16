@@ -44,6 +44,9 @@ HOT = {(0, 1): 0, (1, 1): 1, (3, 1): 0, (4, 2): 2, (8, 0): 1, (9, 1): 3, (10, 0)
 # phrase sit together in the upper band, clear of both.
 FORMATS = {
     'wide': {'w': 1584, 'h': 396, 'code': 'left: 64px; top: 46px; bottom: 46px', 'side': 'right: 96px; top: 0; bottom: 0', 'phrase': 50},
+    # LinkedIn: the profile photo covers the bottom-left corner (about x 50–365 from y 200 down), so the
+    # code starts to the right of it and the mark is a little smaller to leave room
+    'linkedin': {'w': 1584, 'h': 396, 'code': 'left: 410px; top: 46px; bottom: 46px', 'side': 'right: 96px; top: 0; bottom: 0', 'phrase': 50, 'mark': 120, 'fade': (30, 70)},
     'og':   {'w': 1200, 'h': 630, 'code': 'left: 72px; top: 189px; height: 252px', 'side': 'right: 80px; top: 0; bottom: 0', 'phrase': 44},
     'x':    {'w': 1500, 'h': 500, 'code': 'left: 400px; top: 132px; height: 252px', 'side': 'right: 170px; top: 318px; height: 120px', 'phrase': 46},
 }
@@ -88,6 +91,7 @@ def banner_html(theme, logo=False, animated=False, frame_t=None, fmt='wide'):
     frame_t is set (that instant of the loop, frozen through the Web Animations API, for GIF frames)."""
     p = THEMES[theme]
     F = FORMATS[fmt]
+    fade = F.get('fade', (18, 62))  # where the dots fade in, left to right (% of the width)
     ramp = MIX[theme]
     # on the light ground the palest tone is too faint for text: the word starts one step darker
     text_ramp = ramp[1:] if theme == 'light' else ramp
@@ -113,7 +117,7 @@ def banner_html(theme, logo=False, animated=False, frame_t=None, fmt='wide'):
 
     mark = ''
     if logo:
-        mark = logo_svg(ramp, size=150).replace('<svg ', '<svg class="mark" ', 1)
+        mark = logo_svg(ramp, size=F.get('mark', 150)).replace('<svg ', '<svg class="mark" ', 1)
 
     anim_css = ''
     if animated:
@@ -132,8 +136,8 @@ def banner_html(theme, logo=False, animated=False, frame_t=None, fmt='wide'):
   .dots {{ position: absolute; inset: 0;
           background-image: radial-gradient(circle, {p['dots']} 1.4px, transparent 1.9px);
           background-size: 22px 22px; background-position: 11px 11px;
-          -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 18%, #000 62%);
-          mask-image: linear-gradient(90deg, transparent 0%, transparent 18%, #000 62%); }}
+          -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent {fade[0]}%, #000 {fade[1]}%);
+          mask-image: linear-gradient(90deg, transparent 0%, transparent {fade[0]}%, #000 {fade[1]}%); }}
   .code {{ position: absolute; {F['code']}; display: flex; flex-direction: column; justify-content: space-between; }}
   .line {{ display: flex; align-items: center; gap: 20px; }}
   .num {{ font-family: 'Geist Mono', monospace; font-size: 14px; color: {p['num']}; width: 22px; }}
@@ -166,7 +170,7 @@ def main():
     (out / 'logo' / 'tent-on-dark.svg').write_text(logo_svg(MIX['dark']))
 
     for theme in THEMES:
-        (out / 'html' / f'linkedin-{theme}.html').write_text(banner_html(theme, logo=True))
+        (out / 'html' / f'linkedin-{theme}.html').write_text(banner_html(theme, logo=True, fmt='linkedin'))
         (out / 'html' / f'github-{theme}.html').write_text(banner_html(theme, logo=False))
         (out / 'html' / f'og-{theme}.html').write_text(banner_html(theme, logo=True, fmt='og'))
         (out / 'html' / f'x-{theme}.html').write_text(banner_html(theme, logo=False, fmt='x'))
