@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------- identity
-# Cyan → Navy, top row of the Tent to the bottom: the blues of the package icons and README diagrams.
+# Cyan → Navy: the blues of the package icons and README diagrams.
 # On dark grounds the navy end (#0D2A75) disappears, so the dark ramp is shifted one step lighter.
 MIX = {
     'light': ['#A8EBF9', '#5B9BEF', '#3261B6', '#0D2A75'],
@@ -25,11 +25,18 @@ THEMES = {
     'light': {'bg': '#F7F7F5', 'disc': '#FFFFFF', 'ink': '#111318', 'dots': '#1113181F', 'bar': '#11131824', 'num': '#11131855'},
 }
 
-# The Tent: 5x4 cells, one colour per row
-TENT = ['..#..', '.###.', '##.##', '#...#']
-# optical centring on a 100-unit disc: the cells' area centroid (2.2 rows down) sits on the
-# centre and the farthest corner touches a concentric guide circle of radius 36
-CELL, GAP_K, CENTROID_ROW = 12.125, 0.16, 2.2
+# The mark, "al_": a geometric a (full circle + stem) whose stem runs along a filleted baseline into
+# the l, followed by an underscore cursor. One monoline stroke plus the cursor, drawn in a construction
+# space and fitted by MARK_FIT so the ink's visual centre sits on the disc centre and the farthest ink
+# touches a concentric guide circle of radius 36 (it survives circle crops).
+MARK_STROKE = ('M42.15,37.85 L42.15,50 A12.15,12.15 0 0 1 17.85,50 A12.15,12.15 0 0 1 42.15,50 '
+               'L42.15,57.15 A5,5 0 0 0 47.15,62.15 L55.15,62.15 A5,5 0 0 0 60.15,57.15 L60.15,20.35')
+MARK_CURSOR = 'M71.15,62.15 h8'
+MARK_WEIGHT = 10.36
+MARK_FIT = (0.86, 9.08, 10.82)  # scale, dx, dy
+# letters in the darkest tone the ground allows, the cursor in the mid blue on both
+MARK_INK = {'light': '#0D2A75', 'dark': '#A8EBF9'}
+MARK_CURSOR_INK = '#5B9BEF'
 
 # Abstract code listing on the banners: (indent px, token widths px); HOT maps (line, token) → MIX index
 CODE = [
@@ -45,9 +52,9 @@ HOT = {(0, 1): 0, (1, 1): 1, (3, 1): 0, (4, 2): 2, (8, 0): 1, (9, 1): 3, (10, 0)
 FORMATS = {
     'wide': {'w': 1584, 'h': 396, 'code': 'left: 64px; top: 46px; bottom: 46px', 'side': 'right: 96px; top: 0; bottom: 0', 'phrase': 50},
     # LinkedIn: the profile photo covers the bottom-left corner (about x 50–365 from y 200 down), so the
-    # code starts to the right of it and the mark is a little smaller to leave room
-    'linkedin': {'w': 1584, 'h': 396, 'code': 'left: 410px; top: 46px; bottom: 46px', 'side': 'right: 96px; top: 0; bottom: 0', 'phrase': 50, 'mark': 120, 'fade': (30, 70)},
-    'og':   {'w': 1200, 'h': 630, 'code': 'left: 72px; top: 189px; height: 252px', 'side': 'right: 80px; top: 0; bottom: 0', 'phrase': 44},
+    # code starts to the right of it and the mark is sized to leave room
+    'linkedin': {'w': 1584, 'h': 396, 'code': 'left: 410px; top: 46px; bottom: 46px', 'side': 'right: 96px; top: 0; bottom: 0', 'phrase': 50, 'mark': 140, 'fade': (30, 70)},
+    'og':   {'w': 1200, 'h': 630, 'code': 'left: 72px; top: 189px; height: 252px', 'side': 'right: 80px; top: 0; bottom: 0', 'phrase': 44, 'mark': 170},
     'x':    {'w': 1500, 'h': 500, 'code': 'left: 400px; top: 132px; height: 252px', 'side': 'right: 170px; top: 318px; height: 120px', 'phrase': 46},
 }
 
@@ -59,20 +66,14 @@ FADE = (9.6, 10.4)  # everything fades out together, then the screen stays empty
 
 
 # ---------------------------------------------------------------- logo
-def tent_cells(ramp):
-    s, g = CELL, CELL * GAP_K
-    x0, y0 = 50 - 2.5 * s, 50 - CENTROID_ROW * s
-    for r, row in enumerate(TENT):
-        for c, ch in enumerate(row):
-            if ch == '#':
-                yield x0 + c * s + g / 2, y0 + r * s + g / 2, s - g, ramp[r]
-
-
-def logo_svg(ramp, disc=None, size=None):
+def logo_svg(theme, disc=None, size=None):
+    """The mark for a light or dark ground, optionally on its disc."""
     dims = f' width="{size}" height="{size}"' if size else ''
-    body = ''.join(
-        f'<rect x="{x:.3f}" y="{y:.3f}" width="{w:.3f}" height="{w:.3f}" rx="{w * 0.2:.3f}" fill="{fill}"/>'
-        for x, y, w, fill in tent_cells(ramp))
+    k, dx, dy = MARK_FIT
+    body = (f'<g transform="matrix({k} 0 0 {k} {dx} {dy})" fill="none" stroke-width="{MARK_WEIGHT}" '
+            f'stroke-linecap="round" stroke-linejoin="round">'
+            f'<path d="{MARK_STROKE}" stroke="{MARK_INK[theme]}"/>'
+            f'<path d="{MARK_CURSOR}" stroke="{MARK_CURSOR_INK}"/></g>')
     back = f'<circle cx="50" cy="50" r="50" fill="{disc}"/>' if disc else ''
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"{dims}>{back}{body}</svg>\n'
 
@@ -117,7 +118,7 @@ def banner_html(theme, logo=False, animated=False, frame_t=None, fmt='wide'):
 
     mark = ''
     if logo:
-        mark = logo_svg(ramp, size=F.get('mark', 150)).replace('<svg ', '<svg class="mark" ', 1)
+        mark = logo_svg(theme, size=F.get('mark', 150)).replace('<svg ', '<svg class="mark" ', 1)
 
     anim_css = ''
     if animated:
@@ -163,11 +164,11 @@ def main():
     (out / 'html').mkdir(parents=True, exist_ok=True)
     (out / 'frames').mkdir(parents=True, exist_ok=True)
 
-    (out / 'logo' / 'tent-dark.svg').write_text(logo_svg(MIX['dark'], disc=THEMES['dark']['disc']))
-    (out / 'logo' / 'tent-light.svg').write_text(logo_svg(MIX['light'], disc=THEMES['light']['disc']))
+    (out / 'logo' / 'mark-dark.svg').write_text(logo_svg('dark', disc=THEMES['dark']['disc']))
+    (out / 'logo' / 'mark-light.svg').write_text(logo_svg('light', disc=THEMES['light']['disc']))
     # transparent marks: one for light backgrounds, one for dark ones
-    (out / 'logo' / 'tent.svg').write_text(logo_svg(MIX['light']))
-    (out / 'logo' / 'tent-on-dark.svg').write_text(logo_svg(MIX['dark']))
+    (out / 'logo' / 'mark.svg').write_text(logo_svg('light'))
+    (out / 'logo' / 'mark-on-dark.svg').write_text(logo_svg('dark'))
 
     for theme in THEMES:
         (out / 'html' / f'linkedin-{theme}.html').write_text(banner_html(theme, logo=True, fmt='linkedin'))

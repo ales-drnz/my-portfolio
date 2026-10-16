@@ -23,7 +23,7 @@
   --c-ok: #1a7f4b;
   --c-star: #bf8700;
   --c-merged: #8250df;
-  /* Cyan → Navy, one tone per row of the Tent */
+  /* Cyan → Navy, light to dark */
   --c-ramp-1: #a8ebf9;
   --c-ramp-2: #5b9bef;
   --c-ramp-3: #3261b6;
@@ -31,6 +31,9 @@
   /* the palest cyan is too faint for text on white: text gradients start one step darker */
   --c-grad: linear-gradient(90deg, var(--c-ramp-2), var(--c-ramp-3), var(--c-ramp-4));
   --c-disc: #ffffff;
+  /* the al_ mark: letters in the darkest tone the ground allows, cursor in the mid blue */
+  --c-mark: #0d2a75;
+  --c-mark-cursor: #5b9bef;
   --c-dots: #1113181f;
   --c-code-bar: #11131824;
   --c-code-num: #11131855;
@@ -58,6 +61,8 @@
   --c-ramp-4: #3261b6;
   --c-grad: linear-gradient(90deg, var(--c-ramp-1), var(--c-ramp-2), var(--c-ramp-3), var(--c-ramp-4));
   --c-disc: #0b0b0d;
+  --c-mark: #a8ebf9;
+  --c-mark-cursor: #5b9bef;
   --c-dots: #ededed1c;
   --c-code-bar: #ededed26;
   --c-code-num: #ededed55;

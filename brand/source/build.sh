@@ -37,18 +37,18 @@ mkdir -p "$BRAND/logo"
 cp "$BUILD/logo/"*.svg "$BRAND/logo/"
 for theme in dark light; do
   for px in 1024 512 400; do
-    rsvg-convert -w "$px" -h "$px" "$BUILD/logo/tent-$theme.svg" -o "$BRAND/logo/avatar-$theme-$px.png"
+    rsvg-convert -w "$px" -h "$px" "$BUILD/logo/mark-$theme.svg" -o "$BRAND/logo/avatar-$theme-$px.png"
   done
 done
-rsvg-convert -w 1024 -h 1024 "$BUILD/logo/tent.svg" -o "$BRAND/logo/tent-transparent-1024.png"
-rsvg-convert -w 1024 -h 1024 "$BUILD/logo/tent-on-dark.svg" -o "$BRAND/logo/tent-transparent-on-dark-1024.png"
+rsvg-convert -w 1024 -h 1024 "$BUILD/logo/mark.svg" -o "$BRAND/logo/mark-transparent-1024.png"
+rsvg-convert -w 1024 -h 1024 "$BUILD/logo/mark-on-dark.svg" -o "$BRAND/logo/mark-transparent-on-dark-1024.png"
 mkdir -p "$BRAND/logo/favicon"
 for px in 16 32 48 180 192 512; do
-  rsvg-convert -w "$px" -h "$px" "$BUILD/logo/tent-dark.svg" -o "$BRAND/logo/favicon/favicon-$px.png"
+  rsvg-convert -w "$px" -h "$px" "$BUILD/logo/mark-dark.svg" -o "$BRAND/logo/favicon/favicon-$px.png"
 done
 magick "$BRAND/logo/favicon/favicon-16.png" "$BRAND/logo/favicon/favicon-32.png" "$BRAND/logo/favicon/favicon-48.png" \
   "$BRAND/logo/favicon/favicon.ico"
-cp "$BUILD/logo/tent-dark.svg" "$BRAND/logo/favicon/favicon.svg"
+cp "$BUILD/logo/mark-dark.svg" "$BRAND/logo/favicon/favicon.svg"
 
 # ---------------------------------------------------------------- static banners
 mkdir -p "$BRAND/banners"

@@ -1,6 +1,6 @@
 ---
-// The Tent mark, drawn inline so its colours follow the theme (--c-ramp-1..4, --c-disc)
-import { TENT_CELLS } from '../lib/brand';
+// The al_ mark, drawn inline so its colours follow the theme (--c-mark, --c-mark-cursor, --c-disc)
+import { MARK } from '../lib/brand';
 
 interface Props {
   size?: number;
@@ -21,7 +21,8 @@ const { size = 32, disc = false, class: className, label } = Astro.props;
   aria-hidden={label ? undefined : 'true'}
 >
   {disc && <circle cx="50" cy="50" r="50" fill="var(--c-disc)" />}
-  {TENT_CELLS.map((c) => (
-    <rect x={c.x.toFixed(3)} y={c.y.toFixed(3)} width={c.size.toFixed(3)} height={c.size.toFixed(3)} rx={(c.size * 0.2).toFixed(3)} fill={`var(--c-ramp-${c.row + 1})`} />
-  ))}
+  <g transform={MARK.fit} fill="none" stroke-width={MARK.weight} stroke-linecap="round" stroke-linejoin="round">
+    <path d={MARK.stroke} stroke="var(--c-mark)" />
+    <path d={MARK.cursor} stroke="var(--c-mark-cursor)" />
+  </g>
 </svg>

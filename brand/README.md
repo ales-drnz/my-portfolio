@@ -1,12 +1,12 @@
 # ales-drnz brand
 
-Personal identity for Alessandro Di Ronza: the **Tent** mark and the code banners.
+Personal identity for Alessandro Di Ronza: the **al_** mark and the code banners.
 
 Design canvas (all boards, editable): https://claude.ai/artifact/Wz3CCG4GZxHGVbJ66fUrPA
 
 ## Palette — Cyan → Navy
 
-The blues of the package icons and README diagrams, one per row of the Tent, top to bottom.
+The blues of the package icons and README diagrams, light to dark.
 
 | Row | Light grounds | Dark grounds |
 |---|---|---|
@@ -24,18 +24,20 @@ Ink: `#EDEDED` on dark, `#111318` on light. Typeface: **Geist** (text) and **Gei
 
 ## The mark
 
-The Tent is a 5×4 grid of rounded cells, one colour per row, top to bottom.
+**al_**: the initials as one monoline stroke, followed by an underscore cursor. A geometric a (a full
+circle plus its stem) runs along a filleted baseline into the l; the cursor after it says "still typing".
 
-- **Optical centring**: the cells' area centroid sits on the disc centre, not the bounding box.
-  The farthest corner touches a concentric guide circle of radius 36 on a 100-unit disc, so the
-  mark survives circle crops (GitHub, LinkedIn) with margin.
-- Cell gap 16% of the cell, corner radius 20% of the cell.
+- Letters in navy `#0D2A75` on light grounds, cyan `#A8EBF9` on dark; the cursor is `#5B9BEF` on both.
+- Built from circular arcs and straight lines only, one stroke weight, round caps.
+- Fitted so the ink's visual centre sits on the disc centre and the farthest ink touches a concentric
+  guide circle of radius 36 on a 100-unit disc, so it survives circle crops (GitHub, LinkedIn).
+- Geometry and colours are constants at the top of `source/build.py` (`MARK_*`).
 
 | File | Use |
 |---|---|
-| `logo/tent-dark.svg`, `logo/tent-light.svg` | mark on its disc |
-| `logo/tent.svg`, `logo/tent-transparent-1024.png` | mark alone, for light backgrounds |
-| `logo/tent-on-dark.svg`, `logo/tent-transparent-on-dark-1024.png` | mark alone, for dark backgrounds |
+| `logo/mark-dark.svg`, `logo/mark-light.svg` | mark on its disc |
+| `logo/mark.svg`, `logo/mark-transparent-1024.png` | mark alone, for light backgrounds |
+| `logo/mark-on-dark.svg`, `logo/mark-transparent-on-dark-1024.png` | mark alone, for dark backgrounds |
 | `logo/avatar-{dark,light}-{1024,512,400}.png` | profile pictures (GitHub, LinkedIn, pub.dev, X…) |
 | `logo/favicon/` | `favicon.ico` (16/32/48), `favicon.svg`, PNGs 16–512 (180 = Apple touch icon) |
 
@@ -72,7 +74,7 @@ uses the static PNG.
 
 ## Rebuilding
 
-Everything is generated from `source/build.py` (colours, the Tent, the code layout and the
+Everything is generated from `source/build.py` (colours, the mark, the code layout and the
 animation timing are constants at the top):
 
 ```sh

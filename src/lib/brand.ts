@@ -1,21 +1,17 @@
 // The ales-drnz identity, mirrored from brand/source/build.py (the generator of the logo and the
-// banners). Keep the two in sync: colours live in global.css as --c-ramp-*, geometry and the code
-// listing live here.
+// banners). Keep the two in sync: colours live in global.css (--c-ramp-*, --c-mark*), geometry and
+// the code listing live here.
 
-// The Tent: 5x4 cells, one colour per row (row r takes --c-ramp-{r+1})
-const TENT = ['..#..', '.###.', '##.##', '#...#'];
-// optical centring on a 100-unit disc: the cells' area centroid (2.2 rows down) sits on the
-// centre and the farthest corner touches a concentric guide circle of radius 36
-const CELL = 12.125;
-const GAP = CELL * 0.16;
-
-export const TENT_CELLS = TENT.flatMap((row, r) =>
-  [...row].flatMap((ch, c) =>
-    ch === '#'
-      ? [{ x: 50 - 2.5 * CELL + c * CELL + GAP / 2, y: 50 - 2.2 * CELL + r * CELL + GAP / 2, size: CELL - GAP, row: r }]
-      : [],
-  ),
-);
+// The mark, "al_": one monoline stroke (a geometric a running along a filleted baseline into the l)
+// plus an underscore cursor, in a construction space fitted by MARK.fit into the r36 guide circle
+export const MARK = {
+  stroke:
+    'M42.15,37.85 L42.15,50 A12.15,12.15 0 0 1 17.85,50 A12.15,12.15 0 0 1 42.15,50 ' +
+    'L42.15,57.15 A5,5 0 0 0 47.15,62.15 L55.15,62.15 A5,5 0 0 0 60.15,57.15 L60.15,20.35',
+  cursor: 'M71.15,62.15 h8',
+  weight: 10.36,
+  fit: 'matrix(0.86 0 0 0.86 9.08 10.82)',
+};
 
 // Abstract code listing: (indent px, token widths px); HOT maps "line:token" to a ramp index
 export const CODE: [number, number[]][] = [
