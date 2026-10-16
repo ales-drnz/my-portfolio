@@ -9,36 +9,58 @@
    the semantic utilities below (bg-surface, text-muted, ...).
    ------------------------------------------------------------ */
 :root {
-  --c-bg: #fbfbfa;
+  /* grounds and ink from the brand banners (brand/README.md) */
+  --c-bg: #f2f2ef;
   --c-surface: #ffffff;
-  --c-surface-2: #f3f3f1;
-  --c-border: #e6e6e3;
-  --c-border-strong: #d4d4d0;
-  --c-fg: #18181b;
-  --c-muted: #5f5f68;
-  --c-subtle: #8b8b94;
-  --c-accent: #0378b5;
-  --c-accent-soft: #e3f3fc;
+  --c-surface-2: #ebebe7;
+  --c-border: #e4e4e0;
+  --c-border-strong: #d1d1cc;
+  --c-fg: #111318;
+  --c-muted: #5c5f68;
+  --c-subtle: #898c94;
+  --c-accent: #3261b6;
+  --c-accent-soft: #e6eefb;
   --c-ok: #1a7f4b;
   --c-star: #bf8700;
   --c-merged: #8250df;
+  /* Cyan → Navy, one tone per row of the Tent */
+  --c-ramp-1: #a8ebf9;
+  --c-ramp-2: #5b9bef;
+  --c-ramp-3: #3261b6;
+  --c-ramp-4: #0d2a75;
+  /* the palest cyan is too faint for text on white: text gradients start one step darker */
+  --c-grad: linear-gradient(90deg, var(--c-ramp-2), var(--c-ramp-3), var(--c-ramp-4));
+  --c-disc: #ffffff;
+  --c-dots: #1113181f;
+  --c-code-bar: #11131824;
+  --c-code-num: #11131855;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
   --c-bg: #0b0b0d;
-  --c-surface: #121215;
-  --c-surface-2: #18181c;
-  --c-border: #24242a;
-  --c-border-strong: #33333b;
-  --c-fg: #ededef;
-  --c-muted: #a0a0ab;
+  --c-surface: #141417;
+  --c-surface-2: #1c1c20;
+  --c-border: #25252a;
+  --c-border-strong: #34343a;
+  --c-fg: #ededed;
+  --c-muted: #a0a0aa;
   --c-subtle: #6e6e78;
-  --c-accent: #54c5f8;
-  --c-accent-soft: #0f2a38;
+  --c-accent: #7fb3f5;
+  --c-accent-soft: #14233d;
   --c-ok: #4ade80;
   --c-star: #e3b341;
   --c-merged: #a371f7;
+  /* navy vanishes on black (1.6:1): the dark ramp is one step lighter */
+  --c-ramp-1: #a8ebf9;
+  --c-ramp-2: #7fb3f5;
+  --c-ramp-3: #5b9bef;
+  --c-ramp-4: #3261b6;
+  --c-grad: linear-gradient(90deg, var(--c-ramp-1), var(--c-ramp-2), var(--c-ramp-3), var(--c-ramp-4));
+  --c-disc: #0b0b0d;
+  --c-dots: #ededed1c;
+  --c-code-bar: #ededed26;
+  --c-code-num: #ededed55;
   color-scheme: dark;
 }
 
@@ -86,11 +108,30 @@
   color: color-mix(in oklab, var(--brand) 72%, white);
 }
 
-/* subtle dotted grid behind the hero */
+/* the dot grid of the banners */
 .bg-grid {
-  background-image: radial-gradient(var(--c-border-strong) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--c-dots) 1.2px, transparent 1.7px);
   background-size: 22px 22px;
+  background-position: 11px 11px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+/* the hero's code listing sits in the top-right corner and fades out before it reaches the
+   headline, to the left and downwards (the two masks intersect) */
+.hero-code {
+  -webkit-mask-image: linear-gradient(270deg, #000 30%, transparent 90%), linear-gradient(180deg, #000 20%, transparent 62%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(270deg, #000 30%, transparent 90%), linear-gradient(180deg, #000 20%, transparent 62%);
+  mask-composite: intersect;
+}
+
+/* "open-source" and other brand words: the Cyan → Navy ramp clipped to the text */
+.text-grad {
+  background: var(--c-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 /* hover for interactive cards: a small lift and a beam of light that travels around the border.
@@ -125,10 +166,11 @@
   background: conic-gradient(
     from var(--beam-angle),
     transparent 0%,
-    transparent 62%,
-    color-mix(in oklab, var(--c-accent) 35%, transparent) 78%,
-    var(--c-accent) 92%,
-    color-mix(in oklab, var(--c-accent) 40%, white) 96%,
+    transparent 58%,
+    color-mix(in oklab, var(--c-ramp-4) 50%, transparent) 72%,
+    var(--c-ramp-3) 84%,
+    var(--c-ramp-2) 92%,
+    var(--c-ramp-1) 97%,
     transparent 100%
   );
   /* longhands on purpose: the mask shorthand gets mangled by the CSS minifier
@@ -188,22 +230,22 @@
   @apply my-4 list-decimal pl-5 space-y-2 marker:text-subtle;
 }
 .prose-custom :where(:not(pre) > code) {
-  @apply font-mono text-[0.85em] text-fg bg-surface-2 border border-border rounded px-1.5 py-0.5;
+  @apply font-mono text-[0.85em] text-fg bg-surface-2 rounded px-1.5 py-0.5;
 }
 .prose-custom :where(pre) {
-  @apply font-mono text-[13px] leading-6 my-6 p-4 rounded-xl border border-border overflow-x-auto;
+  @apply font-mono text-[13px] leading-6 my-6 p-4 rounded-xl overflow-x-auto;
 }
 .prose-custom :where(img, video) {
-  @apply my-8 rounded-xl border border-border;
+  @apply my-8 rounded-xl;
 }
 .prose-custom :where(table) {
   @apply w-full my-6 text-sm;
 }
 .prose-custom :where(th) {
-  @apply text-left text-fg font-medium border-b border-border py-2 pr-4;
+  @apply text-left text-fg font-medium py-2 pr-4;
 }
 .prose-custom :where(td) {
-  @apply border-b border-border py-2 pr-4;
+  @apply py-2 pr-4;
 }
 
 /* shiki dual theme */

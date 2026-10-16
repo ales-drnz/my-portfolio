@@ -19,13 +19,9 @@ highlights:
   - 18-band EQ, compressor, pitch/tempo and any lavfi filter as a typed stage
   - Live PCM input for audio that arrives in chunks, such as generated speech
 logo: ../../assets/projects/mpv-audio-kit/mpv_audio_kit.png
-cover: ../../assets/projects/mpv-audio-kit/playback-poster.jpg
-coverAlt: MPV Studio playing a track with its waveform, chapters, A-B loop and live spectrum
-coverVideo: /media/mpv-audio-kit/playback.mp4
 links:
   - { label: GitHub, url: 'https://github.com/ales-drnz/mpv_audio_kit' }
   - { label: pub.dev, url: 'https://pub.dev/packages/mpv_audio_kit' }
-  - { label: MPV Studio, url: 'https://github.com/ales-drnz/mpv_studio' }
   - { label: libmpv build system, url: 'https://github.com/ales-drnz/libmpv-scripts' }
 ---
 import { Image } from 'astro:assets';
@@ -53,7 +49,7 @@ The project is split across three repositories:
 - **mpv_audio_kit**: the Dart/Flutter library, published on pub.dev.
 - **[libmpv-scripts](https://github.com/ales-drnz/libmpv-scripts)**: an audio-only build of libmpv and FFmpeg
   with custom patches, cross-compiled for five operating systems and driven by a Go TUI.
-- **[MPV Studio](https://github.com/ales-drnz/mpv_studio)**: the reference app built on the library.
+- **[MPV Studio](/projects/mpv-studio)**: the reference app built on the library.
 
 ## Architecture
 

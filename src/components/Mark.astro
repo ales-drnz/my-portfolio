@@ -1,0 +1,27 @@
+---
+// The Tent mark, drawn inline so its colours follow the theme (--c-ramp-1..4, --c-disc)
+import { TENT_CELLS } from '../lib/brand';
+
+interface Props {
+  size?: number;
+  disc?: boolean;
+  class?: string;
+  label?: string;
+}
+const { size = 32, disc = false, class: className, label } = Astro.props;
+---
+
+<svg
+  viewBox="0 0 100 100"
+  width={size}
+  height={size}
+  class={className}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  {disc && <circle cx="50" cy="50" r="50" fill="var(--c-disc)" />}
+  {TENT_CELLS.map((c) => (
+    <rect x={c.x.toFixed(3)} y={c.y.toFixed(3)} width={c.size.toFixed(3)} height={c.size.toFixed(3)} rx={(c.size * 0.2).toFixed(3)} fill={`var(--c-ramp-${c.row + 1})`} />
+  ))}
+</svg>

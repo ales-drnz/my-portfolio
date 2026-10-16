@@ -27,13 +27,13 @@ const { entries } = Astro.props;
             {i > 0 && <span class="absolute top-0 h-6 w-px bg-border" aria-hidden="true" />}
             <span class="relative mt-6 flex size-3" aria-hidden="true">
               {current && <span class="absolute inline-flex size-full rounded-full bg-accent opacity-50 animate-ping" />}
-              <span class:list={['relative inline-flex size-3 rounded-full border-2', current ? 'bg-accent border-accent' : 'bg-bg border-border-strong']} />
+              <span class:list={['relative inline-flex size-3 rounded-full', current ? 'bg-accent' : 'bg-border-strong']} />
             </span>
           </div>
 
           {/* card */}
           <div class:list={['pb-4', last && 'pb-0']}>
-            <article class="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+            <article class="rounded-2xl bg-surface p-5 sm:p-6">
               <p class="sm:hidden font-mono text-xs text-subtle tabular-nums mb-2">
                 {e.start} – {current ? <span class="text-accent">present</span> : e.end}
               </p>
@@ -48,12 +48,12 @@ const { entries } = Astro.props;
                   <span class="shrink-0 font-mono text-xs px-2 py-1 rounded-md bg-accent-soft text-accent">{e.grade}</span>
                 )}
                 {current && (
-                  <span class="shrink-0 text-xs px-2 py-1 rounded-md border border-border text-muted">In progress</span>
+                  <span class="shrink-0 text-xs px-2 py-1 rounded-md bg-surface-2 text-muted">In progress</span>
                 )}
               </div>
 
               {e.thesis && (
-                <div class="mt-4 pt-4 border-t border-border">
+                <div class="mt-4 pt-4">
                   <p class="flex items-center gap-1.5 text-xs text-subtle">
                     <Icon name="file-text" size={13} /> Thesis · supervised by {e.thesis.supervisor}
                   </p>

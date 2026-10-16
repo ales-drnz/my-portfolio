@@ -1,0 +1,48 @@
+---
+title: MPV Studio
+tagline: Cross-platform audio player built on mpv_audio_kit.
+summary: >-
+  The reference client for the mpv_audio_kit engine: an audio player with a signal chain rack, real-time
+  visualizers, Jellyfin, Plex and Samba streaming, an engine inspector and a built-in mpv command console. It
+  adapts to every window, from a phone in portrait to an ultrawide desktop.
+kind: app
+order: 6
+group: flutter
+featured: true
+repo: mpv_studio
+platforms: [Android, iOS, macOS, Windows, Linux]
+stack: [Flutter, Dart, mpv_audio_kit, dart_smb2, dart_jellyfin, dart_plex]
+highlights:
+  - Waveform seekbar, chapters, A-B loop, spectrum and VU meters
+  - Jellyfin, Plex and Samba sources next to plain URLs
+  - Signal chain rack and a raw mpv command console
+logo: ../../assets/projects/mpv-audio-kit/mpv_studio.png
+cover: ../../assets/projects/mpv-audio-kit/playback-poster.jpg
+coverAlt: MPV Studio playing a track with its waveform, chapters, A-B loop and live spectrum
+coverVideo: /media/mpv-audio-kit/playback.mp4
+links:
+  - { label: GitHub, url: 'https://github.com/ales-drnz/mpv_studio' }
+  - { label: mpv_audio_kit, url: 'https://pub.dev/packages/mpv_audio_kit' }
+---
+
+## Overview
+
+MPV Studio is where [mpv_audio_kit](/projects/mpv-audio-kit) gets used the way a real app would use it, and
+where new engine features are tried first. The media server clients plug into it as well:
+[dart_smb2](/projects/dart-smb2), [dart_jellyfin](/projects/dart-jellyfin) and [dart_plex](/projects/dart-plex).
+
+## Features
+
+- **Playback**: cover art, metadata, a scrubbable waveform, chapters, an A-B loop with a repeat count, speed
+  and volume, all driven by the engine's reactive streams.
+- **Visualizers**: a log-spaced spectrum, a VU meter and a waveform seekbar that fills in as network tracks
+  decode.
+- **Queue**: reorderable, gapless, and each row says where the track comes from and whether it played, was
+  skipped or failed.
+- **Stream**: reference streams in every common codec, any URL with its own HTTP options, a source resolver
+  for links that expire, and Jellyfin, Plex and Samba libraries.
+- **Effects**: the signal chain rack, with interactive editors for each stage.
+- **Engine and console**: an inspector for the engine's state and a raw mpv command console.
+
+The layout adapts from a phone in portrait to an ultrawide desktop, in a dark and a light theme, with a
+right-click menu and keyboard control on desktop and long press and swipe on phones.

@@ -8,7 +8,7 @@ interface Props {
 const { code, class: className } = Astro.props;
 // the UK cross needs a clip path; give each instance its own id
 const clip = `flag-gb-${Math.random().toString(36).slice(2, 8)}`;
-const cls = ['w-auto rounded-[0.08em] ring-1 ring-black/10', className];
+const cls = ['w-auto rounded-[0.08em]', className];
 ---
 
 {

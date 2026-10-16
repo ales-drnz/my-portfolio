@@ -15,7 +15,7 @@ const { primary = false } = Astro.props;
   data-copy-email={SITE.emailParts.join('|')}
   class:list={[
     'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium transition-colors',
-    primary ? 'bg-fg text-bg hover:opacity-90' : 'border border-border bg-surface hover:border-border-strong',
+    primary ? 'bg-fg text-bg hover:opacity-90' : 'bg-surface-2 hover:bg-border',
   ]}
 >
   <Icon name="mail" size={15} />

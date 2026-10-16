@@ -12,7 +12,7 @@ const projects = defineCollection({
       kind: z.enum(['library', 'app', 'tool', 'system']),
       order: z.number(),
       featured: z.boolean().default(false),
-      group: z.enum(['dart', 'linux', 'build', 'other']),
+      group: z.enum(['dart', 'flutter', 'linux', 'build', 'other']),
       /** other repos this page already covers, hidden from the repo grid */
       alsoCovers: z.array(z.string()).default([]),
       /** GitHub repo name under ales-drnz, for live stars / last push */

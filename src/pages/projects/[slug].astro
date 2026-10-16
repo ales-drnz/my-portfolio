@@ -46,7 +46,7 @@ const facts = [
     <header class="mt-8 grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
       <div class="max-w-2xl">
         <div class="flex items-center gap-3">
-          {p.logo && <Image src={p.logo} alt="" width={48} height={48} loading="eager" class="size-12 rounded-xl object-contain" />}
+          {p.logo && <Image src={p.logo} alt="" width={48} height={48} densities={[1, 2, 3]} loading="eager" class="size-12 rounded-xl object-contain" />}
           <p class="font-mono text-xs text-accent uppercase tracking-[0.14em]">{p.kind}</p>
         </div>
         <h1 class="mt-4 text-3xl sm:text-5xl font-semibold tracking-tight">{p.title}</h1>
@@ -60,7 +60,7 @@ const facts = [
             rel="noopener"
             class:list={[
               'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium transition-colors',
-              i === 0 ? 'bg-fg text-bg hover:opacity-90' : 'border border-border bg-surface hover:border-border-strong',
+              i === 0 ? 'bg-fg text-bg hover:opacity-90' : 'bg-surface-2 hover:bg-border',
             ]}
           >
             {l.label} <Icon name="arrow-up-right" size={14} />
@@ -71,7 +71,7 @@ const facts = [
 
     <!-- live stats -->
     {(repo || pkg) && (
-      <dl class="mt-10 grid grid-cols-2 sm:grid-cols-4 rounded-2xl border border-border bg-surface divide-x divide-y sm:divide-y-0 divide-border overflow-hidden">
+      <dl class="mt-10 grid grid-cols-2 sm:grid-cols-4 rounded-2xl bg-surface overflow-hidden">
         {repo && (
           <div class="p-4 sm:p-5">
             <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="star-fill" size={12} class="text-star" /> GitHub stars</dt>
@@ -102,7 +102,7 @@ const facts = [
 
     <!-- cover -->
     {p.cover && (
-      <div class="mt-6 rounded-2xl border border-border bg-surface-2 overflow-hidden">
+      <div class="mt-6 rounded-2xl bg-surface-2 overflow-hidden">
         {p.coverVideo && poster ? (
           <video src={p.coverVideo} poster={poster.src} width={p.cover.width} height={p.cover.height} muted loop playsinline preload="metadata" data-autoplay class="block w-full h-auto" aria-label={p.coverAlt} />
         ) : (
@@ -151,8 +151,8 @@ const facts = [
 
     <!-- next -->
     {next.id !== project.id && (
-      <a href={`/projects/${next.id}`} class="hover-card group mt-20 flex items-center gap-5 rounded-2xl border border-border bg-surface p-6 sm:p-8">
-        {next.data.logo && <Image src={next.data.logo} alt="" width={56} height={56} class="size-12 sm:size-14 shrink-0 rounded-xl object-contain" />}
+      <a href={`/projects/${next.id}`} class="hover-card group mt-20 flex items-center gap-5 rounded-2xl bg-surface p-6 sm:p-8">
+        {next.data.logo && <Image src={next.data.logo} alt="" width={56} height={56} densities={[1, 2, 3]} class="size-12 sm:size-14 shrink-0 rounded-xl object-contain" />}
         <div class="min-w-0 mr-auto">
           <p class="text-xs text-subtle">Next project</p>
           <p class="mt-1 text-xl font-semibold tracking-tight">{next.data.title}</p>

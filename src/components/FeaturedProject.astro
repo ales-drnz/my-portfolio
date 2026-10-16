@@ -17,18 +17,18 @@ const poster = p.cover && p.coverVideo ? await getImage({ src: p.cover, width: 1
 const href = `/projects/${project.id}`;
 
 // bento layout: media on the left, intro + one tile per number on the right
-const tile = 'rounded-[13px] border border-border bg-surface p-4 min-w-0';
+const tile = 'rounded-[13px] bg-surface p-4 min-w-0';
 const label = 'flex items-center gap-1.5 text-xs text-subtle';
 const value = 'text-2xl font-semibold tracking-tight tabular-nums';
 ---
 
 <article
-  class="hover-card group grid grid-cols-2 md:grid-cols-4 md:auto-rows-[minmax(92px,auto)] gap-2 p-2 rounded-[20px] border border-border bg-surface-2"
+  class="hover-card group grid grid-cols-2 md:grid-cols-4 md:auto-rows-[minmax(92px,auto)] gap-2 p-2 rounded-[20px] bg-surface-2"
 >
   <!-- media: shown whole, at its own aspect ratio -->
   {
     p.cover && (
-      <div class="col-span-2 md:row-span-4 self-center rounded-[13px] border border-border bg-surface-2 overflow-hidden">
+      <div class="col-span-2 md:row-span-4 self-center rounded-[13px] bg-surface-2 overflow-hidden">
         {p.coverVideo && poster ? (
           <video
             src={p.coverVideo}
@@ -60,7 +60,7 @@ const value = 'text-2xl font-semibold tracking-tight tabular-nums';
   <!-- intro -->
   <div class:list={[tile, 'col-span-2 md:row-span-2 flex flex-col gap-3']}>
     <div class="flex items-center gap-2.5">
-      {p.logo && <Image src={p.logo} alt="" width={36} height={36} class="size-9 rounded-lg object-contain" />}
+      {p.logo && <Image src={p.logo} alt="" width={36} height={36} densities={[1, 2, 3]} class="size-9 rounded-lg object-contain" />}
       <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">
         {p.kind}{pkg?.version && ` · v${pkg.version}`}
       </span>

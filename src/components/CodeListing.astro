@@ -1,0 +1,83 @@
+---
+// The abstract code listing from the banners, typing in on the same 12 s loop
+import { CODE, HOT, TIMING } from '../lib/brand';
+
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+const { period, typeStep, tokenStep, typeTime, fade } = TIMING;
+const pct = (t: number) => ((t / period) * 100).toFixed(2) + '%';
+const f0 = pct(fade[0]);
+const f1 = pct(fade[1]);
+
+const css: string[] = [];
+const lines = CODE.map(([indent, widths], i) => {
+  const ns = i * typeStep;
+  css.push(`@keyframes cl-n${i}{0%,${pct(ns)}{opacity:0}${pct(ns + 0.2)},${f0}{opacity:1}${f1},100%{opacity:0}}`);
+  const bars = widths.map((w, j) => {
+    const s = ns + j * tokenStep;
+    css.push(
+      `@keyframes cl-t${i}-${j}{0%,${pct(s)}{transform:scaleX(0);opacity:1}${pct(s + typeTime)},${f0}{transform:scaleX(1);opacity:1}${f1},100%{transform:scaleX(1);opacity:0}}`,
+    );
+    const hot = HOT[`${i}:${j}`];
+    return {
+      style: `width:${w}px;margin-left:${j === 0 ? indent : 0}px;background:${hot != null ? `var(--c-ramp-${hot + 1})` : 'var(--c-code-bar)'};animation-name:cl-t${i}-${j}`,
+    };
+  });
+  return { num: String(i + 1).padStart(2, '0'), numStyle: `animation-name:cl-n${i}`, bars };
+});
+---
+
+<div class:list={['code-listing', className]} aria-hidden="true">
+  {lines.map((l) => (
+    <div class="cl-line">
+      <span class="cl-num" style={l.numStyle}>{l.num}</span>
+      <div class="cl-bars">{l.bars.map((b) => <span class="cl-bar" style={b.style} />)}</div>
+    </div>
+  ))}
+</div>
+
+<Fragment set:html={`<style>${css.join('')}</style>`} />
+
+<style>
+  .cl-line {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: 12px;
+  }
+  /* no display on the root, so callers can hide it with utilities */
+  .cl-line + .cl-line {
+    margin-top: 6px;
+  }
+  .cl-num {
+    width: 22px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--c-code-num);
+  }
+  .cl-bars {
+    display: flex;
+    gap: 9px;
+  }
+  .cl-bar {
+    display: block;
+    height: 10px;
+    border-radius: 5px;
+    transform-origin: left center;
+  }
+  .cl-num,
+  .cl-bar {
+    animation-duration: 12s; /* TIMING.period */
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cl-num,
+    .cl-bar {
+      animation: none !important;
+    }
+  }
+</style>

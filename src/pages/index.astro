@@ -12,7 +12,8 @@ import CopyEmail from '../components/CopyEmail.astro';
 import EducationTimeline from '../components/EducationTimeline.astro';
 import Languages from '../components/Languages.astro';
 import Octicon from '../components/Octicon.astro';
-import Flags from '../components/Flags.astro';
+import Mark from '../components/Mark.astro';
+import CodeListing from '../components/CodeListing.astro';
 import BrandIcon, { type BrandKey } from '../components/BrandIcon.astro';
 import { SITE, SKILLS, SOCIALS, EDUCATION, PROJECT_GROUPS, LANGUAGES } from '../lib/site';
 import { getRepos, getPackages, getContributions, getUpstreamPRs, compact, timeAgo } from '../lib/data';
@@ -73,9 +74,11 @@ const prGroups = Object.entries(
     <div class="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <!-- intro -->
-        <div class="md:col-span-2 md:row-span-2 rounded-2xl border border-border bg-surface/80 backdrop-blur p-6 sm:p-8 flex flex-col">
-          <div class="flex items-center gap-3">
-            <img src={SITE.avatar} alt={SITE.name} width="56" height="56" class="size-14 rounded-full ring-1 ring-border" />
+        <div class="relative overflow-hidden md:col-span-2 md:row-span-2 rounded-2xl bg-surface/80 backdrop-blur p-6 sm:p-8 flex flex-col">
+          <!-- the code listing of the banners, typing in behind the intro -->
+          <CodeListing class="hero-code hidden sm:block absolute top-8 right-8" />
+          <div class="relative flex items-center gap-3">
+            <Mark size={56} disc label={SITE.name} class="size-14 rounded-full" />
             <div>
               <h1 class="font-semibold tracking-tight">{SITE.name}</h1>
               <p class="text-sm text-muted flex items-center gap-1.5">
@@ -84,15 +87,15 @@ const prGroups = Object.entries(
             </div>
           </div>
 
-          <p class="mt-8 text-3xl sm:text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-balance">
-            <Flags class="mr-[0.25em] -translate-y-[0.06em]" /> Building <span class="text-accent whitespace-nowrap">open-source</span> tools and apps
+          <p class="relative mt-8 text-3xl sm:text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-balance">
+            Building <span class="text-grad whitespace-nowrap">open-source</span><br /> tools and apps
           </p>
-          <p class="mt-5 text-muted leading-relaxed max-w-xl">
+          <p class="relative mt-5 text-muted leading-relaxed max-w-xl">
             {SITE.role}. I maintain an audio engine for Flutter, SMB and media server clients for Dart, and an
             in-game Discord overlay for Linux.
           </p>
 
-          <div class="mt-8 flex flex-wrap items-center gap-3">
+          <div class="relative mt-8 flex flex-wrap items-center gap-3">
             <a href="#work" class="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-fg text-bg text-sm font-medium hover:opacity-90 transition-opacity">
               See my work <Icon name="arrow-right" size={15} />
             </a>
@@ -108,7 +111,7 @@ const prGroups = Object.entries(
         </div>
 
         <!-- pub.dev tile -->
-        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 flex flex-col">
+        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group rounded-2xl bg-surface/80 backdrop-blur p-5 flex flex-col">
           <div class="flex items-center justify-between text-sm text-muted">
             <span class="flex items-center gap-2"><Octicon name="download" size={14} /> pub.dev downloads</span>
             <Icon name="arrow-up-right" size={14} class="text-subtle group-hover:text-fg transition-colors" />
@@ -120,7 +123,7 @@ const prGroups = Object.entries(
         </a>
 
         <!-- numbers tile -->
-        <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 grid grid-cols-3 gap-2 text-center content-center">
+        <div class="rounded-2xl bg-surface/80 backdrop-blur p-5 grid grid-cols-3 gap-2 text-center content-center">
           <a href="https://github.com/ales-drnz?tab=repositories&sort=stargazers" target="_blank" rel="noopener" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
             <Octicon name="star-fill" size={22} class="text-star" />
             <p class="mt-2 text-2xl font-semibold tabular-nums">{totalStars}</p>
@@ -140,7 +143,7 @@ const prGroups = Object.entries(
 
         <!-- currently building -->
         {latest && (
-          <a href={latestProject ? `/projects/${latestProject.id}` : latest.html_url} class="hover-card group md:col-span-2 rounded-2xl border border-border bg-surface/80 backdrop-blur p-5 flex items-center gap-4">
+          <a href={latestProject ? `/projects/${latestProject.id}` : latest.html_url} class="hover-card group md:col-span-2 rounded-2xl bg-surface/80 backdrop-blur p-5 flex items-center gap-4">
             <Octicon name="repo-push" size={24} class="shrink-0 text-accent" />
             <div class="min-w-0">
               <p class="text-xs text-subtle">Latest push · {timeAgo(latest.pushed_at)}</p>
@@ -152,7 +155,7 @@ const prGroups = Object.entries(
         )}
 
         <!-- stack tile -->
-        <div class="rounded-2xl border border-border bg-surface/80 backdrop-blur p-5">
+        <div class="rounded-2xl bg-surface/80 backdrop-blur p-5">
           <p class="text-sm text-muted mb-3">Stack</p>
           <div class="flex flex-wrap gap-1.5">
             {SKILLS.map((s) => (
@@ -171,7 +174,7 @@ const prGroups = Object.entries(
   <Section id="work" eyebrow="Work" title="Projects" lead="Grouped by area. Case studies have their own page with details, demos and code.">
     <nav slot="aside" class="flex flex-wrap gap-2" aria-label="Project groups">
       {groups.map((g) => (
-        <a href={`#group-${g.id}`} class="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-border bg-surface text-sm text-muted hover:text-fg hover:border-border-strong transition-colors">
+        <a href={`#group-${g.id}`} class="inline-flex items-center gap-2 h-8 px-3 rounded-full bg-surface text-sm text-muted hover:text-fg hover:bg-surface-2 transition-colors">
           {g.brand ? <BrandIcon name={g.brand as BrandKey} size={13} /> : <Octicon name={g.octicon as any} size={13} />}
           {g.title}
           <span class="font-mono text-xs text-subtle tabular-nums">{g.count}</span>
@@ -182,7 +185,7 @@ const prGroups = Object.entries(
     <div class="space-y-16">
       {groups.map((g) => (
         <div id={`group-${g.id}`} class="scroll-mt-20">
-          <header class="flex items-center gap-3 mb-5 pb-4 border-b border-border">
+          <header class="flex items-center gap-3 mb-5 pb-4">
             <span class="shrink-0">
               {g.brand ? <BrandIcon name={g.brand as BrandKey} size={26} /> : <Octicon name={g.octicon as any} size={26} class="text-muted" />}
             </span>
@@ -223,9 +226,9 @@ const prGroups = Object.entries(
   <!-- ===================== PACKAGES ===================== -->
   {packages.length > 0 && (
     <Section id="packages" eyebrow="pub.dev" title="Packages" lead={`Published under the verified publisher ${SITE.publisher}. Stats are updated daily.`}>
-      <div class="rounded-2xl border border-border bg-surface overflow-hidden">
+      <div class="rounded-2xl bg-surface overflow-hidden">
         <table class="w-full text-sm">
-          <thead class="text-left text-xs text-subtle border-b border-border">
+          <thead class="text-left text-xs text-subtle">
             <tr>
               <th class="font-medium px-5 py-3"><span class="inline-flex items-center gap-1.5"><Octicon name="package" size={12} /> Package</span></th>
               <th class="font-medium px-3 py-3 hidden sm:table-cell"><span class="inline-flex items-center gap-1.5"><Octicon name="thumbsup" size={12} /> Likes</span></th>
@@ -234,7 +237,7 @@ const prGroups = Object.entries(
               <th class="font-medium px-5 py-3 hidden md:table-cell">Last 6 months</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-border">
+          <tbody>
             {packages.map((p) => (
               <tr class="group hover:bg-surface-2/60 transition-colors relative">
                 <td class="px-5 py-4">
@@ -259,7 +262,7 @@ const prGroups = Object.entries(
 
   <!-- ===================== ACTIVITY ===================== -->
   <Section id="activity" eyebrow="Activity" title="Last 12 months">
-    <div class="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+    <div class="rounded-2xl bg-surface p-5 sm:p-6">
       <ContributionGraph days={contrib.days} total={contrib.total} />
     </div>
   </Section>
@@ -269,7 +272,7 @@ const prGroups = Object.entries(
     <Section id="open-source" eyebrow="Upstream" title="Open source contributions" lead="Pull requests merged into other projects.">
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {prGroups.map(([repo, list]) => (
-          <div class="rounded-2xl border border-border bg-surface p-5">
+          <div class="rounded-2xl bg-surface p-5">
             <div class="flex items-center justify-between gap-3">
               <a href={`https://github.com/${repo}`} target="_blank" rel="noopener" class="font-mono text-sm text-fg hover:text-accent transition-colors truncate">{repo}</a>
               <span class="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-merged/12 text-merged"><Octicon name="git-merge" size={12} /> {list.length} merged</span>
@@ -292,7 +295,7 @@ const prGroups = Object.entries(
 
   <!-- ===================== CONTACT ===================== -->
   <section id="contact" class="mx-auto max-w-5xl px-4 sm:px-6 pt-24 scroll-mt-14">
-    <div class="relative overflow-hidden rounded-3xl border border-border bg-surface px-6 py-14 sm:px-12 text-center">
+    <div class="relative overflow-hidden rounded-3xl bg-surface px-6 py-14 sm:px-12 text-center">
       <div class="absolute inset-0 bg-grid opacity-60 pointer-events-none" aria-hidden="true"></div>
       <div class="relative">
         <p class="font-mono text-xs text-accent uppercase tracking-[0.14em] mb-3">Contact</p>
@@ -300,7 +303,7 @@ const prGroups = Object.entries(
         <p class="mt-4 text-muted max-w-lg mx-auto">Email is the quickest way to reach me.</p>
         <div class="mt-8 flex flex-wrap justify-center gap-3">
           <CopyEmail primary />
-          <a href={SOCIALS[2].url} target="_blank" rel="noopener" class="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-border bg-surface text-sm hover:border-border-strong transition-colors">
+          <a href={SOCIALS[2].url} target="_blank" rel="noopener" class="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-surface-2 text-sm hover:bg-border transition-colors">
             <Icon name="linkedin" size={15} /> LinkedIn
           </a>
         </div>

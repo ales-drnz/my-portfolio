@@ -6,7 +6,8 @@ export const SITE = {
   description:
     'Building open-source tools and apps. M.Sc. Telecommunications Engineering student at Sapienza University of Rome.',
   role: 'M.Sc. student in Telecommunications Engineering · Sapienza University of Rome',
-  avatar: 'https://avatars.githubusercontent.com/u/82038599?v=4',
+  avatar: '/avatar.png', // the Tent mark on its disc (brand/logo)
+  ogImage: '/og.png',
   publisher: 'ales-drnz.com',
   // assembled at runtime to keep it away from naive scrapers
   emailParts: ['ales', 'drnz', 'gmail.com'] as const,
@@ -88,7 +89,7 @@ export const LANGUAGES: Language[] = [
 
 /* Project groups on the home page. Case studies pick a group in their frontmatter;
    plain GitHub repos are placed by name, and anything unlisted lands in "other". */
-export type ProjectGroupId = 'dart' | 'linux' | 'build' | 'other';
+export type ProjectGroupId = 'dart' | 'flutter' | 'linux' | 'build' | 'other';
 
 export const PROJECT_GROUPS: {
   id: ProjectGroupId;
@@ -100,10 +101,17 @@ export const PROJECT_GROUPS: {
 }[] = [
   {
     id: 'dart',
-    title: 'Flutter & Dart',
-    description: 'Packages published on pub.dev, and the apps built on them.',
+    title: 'Dart & Flutter libraries',
+    description: 'Packages published on pub.dev.',
     brand: 'siDart',
-    repos: ['mpv_studio'],
+    repos: [],
+  },
+  {
+    id: 'flutter',
+    title: 'Flutter apps',
+    description: 'Apps built on those packages.',
+    brand: 'siFlutter',
+    repos: [],
   },
   {
     id: 'linux',
@@ -129,9 +137,7 @@ export const PROJECT_GROUPS: {
 ];
 
 /** logos for plain GitHub repos (case studies set theirs in frontmatter) */
-export const REPO_LOGOS: Record<string, string> = {
-  mpv_studio: 'mpv-audio-kit/mpv_studio.png',
-};
+export const REPO_LOGOS: Record<string, string> = {};
 
 // icon: a simple-icons export name
 export const SKILLS: { label: string; icon?: string }[] = [
