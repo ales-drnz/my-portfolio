@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Banner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+  <div style="{{dotsStyle}}"></div>
+
+  <div style="position: absolute; left: 64px; top: 46px; bottom: 46px; display: flex; flex-direction: column; justify-content: space-between">
+    <sc-for list="{{lines}}" as="l" hint-placeholder-count="14">
+      <div style="display: flex; align-items: center; gap: 20px">
+        <span class="num" style="{{l.numStyle}}">{{l.num}}</span>
+        <div style="display: flex; gap: 9px">
+          <sc-for list="{{l.bars}}" as="b" hint-placeholder-count="3">
+            <span class="bar" style="{{b.style}}"></span>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; right: 96px; top: 0; bottom: 0; display: flex; align-items: center; gap: 36px">
+    <sc-if value="{{showMark}}" hint-placeholder-val="{{false}}">
+      <dc-import name="Mark" mix="{{mixId}}" theme="{{theme}}" disc="{{noDisc}}" size="{{markSize}}" hint-size="150px,150px"></dc-import>
+    </sc-if>
+    <div style="{{phraseStyle}}">Building <span style="{{accentText}}">open-source</span><br>tools and apps</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mix":{"editor":"enum","options":["pkg-ink","pkg-blues","pkg-deep","pkg-site","pkg-orange","pkg-white","orange-green","ember","lagoon","grape","forest","dusk","steel","arcade","copper","aurora","signal"],"default":"pkg-blues"},"theme":{"editor":"enum","options":["dark","light","navy"],"default":"dark"},"mode":{"editor":"enum","options":["live","static"],"default":"live"},"mark":{"editor":"boolean","default":false},"$preview":{"width":1584,"height":396}}'>
+const MIXES = {
+  'pkg-ink':    ['#A8EBF9', 'INK', 'INK', 'INK'],
+  'pkg-blues':  ['#A8EBF9', '#5B9BEF', '#3261B6', '#0D2A75'],
+  'pkg-deep':   ['#0D2A75', '#3261B6', '#5B9BEF', '#A8EBF9'],
+  'pkg-site':   ['#54C5F8', '#2F8FD8', '#1B5CB0', '#0D2A75'],
+  'pkg-orange': ['#FB9C00', 'INK', 'INK', 'INK'],
+  'pkg-white':  ['INK', 'INK', 'INK', 'INK'],
+  'orange-green': ['#FB9C00', '#E36900', '#008C00', '#005B1F'],
+  ember:  ['#FFD166', '#FF9F1C', '#F3722C', '#C1121F'],
+  lagoon: ['#7FDBDA', '#2EC4B6', '#1C8AA6', '#145DA0'],
+  grape:  ['#F72585', '#B5179E', '#7209B7', '#3A0CA3'],
+  forest: ['#B7E4C7', '#74C69D', '#40916C', '#1B4332'],
+  dusk:   ['#FFB4A2', '#E5989B', '#B5838D', '#6D6875'],
+  steel:  ['#E9ECEF', '#ADB5BD', '#6C757D', '#343A40'],
+  arcade: ['#FFE600', '#00E5FF', '#FF2E88', '#7C4DFF'],
+  copper: ['#F6BD60', '#E09F3E', '#C46D2B', '#7F3B1A'],
+  aurora: ['#A7F3D0', '#34D399', '#22D3EE', '#6366F1'],
+  signal: ['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF'],
+};
+const DARK_RAMPS = { 'pkg-blues': ['#A8EBF9', '#7FB3F5', '#5B9BEF', '#3261B6'] };
+const THEME = {
+  navy:  { bg: '#0D2A75', ink: '#FFFFFF', accent: '#A8EBF9', dots: '#FFFFFF1F', bar: '#FFFFFF30' },
+  dark:  { bg: '#121214', ink: '#EDEDED', accent: '#5B9BEF', dots: '#EDEDED1C', bar: '#EDEDED26' },
+  light: { bg: '#F7F7F5', ink: '#111318', accent: '#3261B6', dots: '#1113181F', bar: '#11131824' },
+};
+// an abstract code listing: indent + token widths per line; some tokens take the Orange → Green colours
+const CODE = [
+  [0, [64, 110]], [28, [52, 88, 40]], [28, [120, 60]], [56, [80, 150]], [56, [44, 72, 98]],
+  [28, [36]], [0, []], [0, [96, 58]], [28, [138, 52]], [56, [66, 112, 30]], [56, [90, 46]],
+  [28, [48]], [0, [24]], [0, []],
+];
+const HOT = { '0,1': 0, '1,1': 1, '3,1': 0, '4,2': 2, '8,0': 1, '9,1': 3, '10,0': 2 };
+// one shared 12 s timeline: each token types in on its turn, everything holds,
+// fades out together, then the screen stays empty until the loop restarts
+const PERIOD = 12, TYPE_STEP = 0.42, TOKEN_STEP = 0.14, TYPE_TIME = 0.5, FADE = [9.6, 10.4];
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const clamp = (x) => Math.max(0, Math.min(1, x));
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t0: Date.now(), now: Date.now() };
+  }
+  componentDidMount() {
+    if ((this.props.mode ?? 'live') !== 'live') return;
+    if (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    this.timer = setInterval(() => this.setState({ now: Date.now() }), 50);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+  renderVals() {
+    const theme = THEME[this.props.theme] ? this.props.theme : 'dark';
+    const p = THEME[theme];
+    const INK = { dark: '#E5EBF3', light: '#0D2A75', navy: '#FFFFFF' }[theme];
+    const mixId = this.props.mix ?? 'pkg-blues';
+    const mix = ((theme === 'dark' && DARK_RAMPS[mixId]) || MIXES[mixId] || MIXES['pkg-blues']).map((c) => (c === 'INK' ? INK : c));
+    const live = (this.props.mode ?? 'live') === 'live' && this.timer !== undefined;
+    const t = ((this.state.now - this.state.t0) / 1000) % PERIOD;
+    const fade = t < FADE[0] ? 1 : 1 - clamp((t - FADE[0]) / (FADE[1] - FADE[0]));
+    // in the animated version each token types in after the one before it, line by line
+    const lines = CODE.map(([indent, widths], i) => ({
+      num: String(i + 1).padStart(2, '0'),
+      numStyle: 'font-family: "Geist Mono", ui-monospace, monospace; font-size: 14px; color: ' + p.ink + '55; width: 22px' + (live ? '; opacity: ' + (clamp((t - i * TYPE_STEP) / 0.2) * fade).toFixed(3) : ''),
+      bars: widths.map((w, j) => {
+        const hot = HOT[i + ',' + j];
+        const typed = easeOut(clamp((t - (i * TYPE_STEP + j * TOKEN_STEP)) / TYPE_TIME));
+        return {
+          style: 'display: block; height: 12px; border-radius: 6px; width: ' + w + 'px; margin-left: ' + (j === 0 ? indent : 0) + 'px; transform-origin: left center; background: ' + (hot !== undefined ? mix[hot] : p.bar) + (live ? '; transform: scaleX(' + typed.toFixed(3) + '); opacity: ' + fade.toFixed(3) : ''),
+        };
+      }),
+    }));
+    const showMark = this.props.mark === true || this.props.mark === 'true';
+    return {
+      lines, theme, showMark, mixId, noDisc: false, markSize: 150,
+      rootStyle: 'width: 1584px; height: 396px; position: relative; overflow: hidden; background: ' + p.bg + '; color: ' + p.ink + '; font-family: Geist, ui-sans-serif, system-ui, sans-serif',
+      // the dot grid fades out towards the code on the left
+      dotsStyle: 'position: absolute; inset: 0; background-image: radial-gradient(circle, ' + p.dots + ' 1.4px, transparent 1.9px); background-size: 22px 22px; background-position: 11px 11px; -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 18%, #000 62%); mask-image: linear-gradient(90deg, transparent 0%, transparent 18%, #000 62%)',
+      phraseStyle: 'font-size: 50px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.12; text-align: ' + (showMark ? 'left' : 'right') + '; color: ' + p.ink,
+      // "open-source" painted with the Orange → Green gradient (text-clipped)
+      accentText: 'background: linear-gradient(90deg, ' + (theme === 'light' ? mix.slice(1) : mix).join(', ') + '); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent',
+    };
+  }
+}
+</script>
+</body>
+</html>

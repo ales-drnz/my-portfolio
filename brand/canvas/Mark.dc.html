@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="{{rootStyle}}" role="img" aria-label="ales-drnz mark">
+  <sc-for list="{{cells}}" as="c" hint-placeholder-count="10">
+    <span style="{{c.style}}"></span>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mix":{"editor":"enum","options":["pkg-ink","pkg-blues","pkg-deep","pkg-site","pkg-orange","pkg-white","orange-green","ember","lagoon","grape","forest","dusk","steel","arcade","copper","aurora","signal"],"default":"pkg-blues"},"theme":{"editor":"enum","options":["dark","light","navy"],"default":"dark"},"disc":{"editor":"boolean","default":true},"size":{"editor":"int","default":200,"min":12,"max":600},"$preview":{"width":200,"height":200}}'>
+// Tent, one colour per row, top to bottom
+const MIXES = {
+  'pkg-ink':    ['#A8EBF9', 'INK', 'INK', 'INK'],
+  'pkg-blues':  ['#A8EBF9', '#5B9BEF', '#3261B6', '#0D2A75'],
+  'pkg-deep':   ['#0D2A75', '#3261B6', '#5B9BEF', '#A8EBF9'],
+  'pkg-site':   ['#54C5F8', '#2F8FD8', '#1B5CB0', '#0D2A75'],
+  'pkg-orange': ['#FB9C00', 'INK', 'INK', 'INK'],
+  'pkg-white':  ['INK', 'INK', 'INK', 'INK'],
+  'orange-green': ['#FB9C00', '#E36900', '#008C00', '#005B1F'],
+  ember:  ['#FFD166', '#FF9F1C', '#F3722C', '#C1121F'],
+  lagoon: ['#7FDBDA', '#2EC4B6', '#1C8AA6', '#145DA0'],
+  grape:  ['#F72585', '#B5179E', '#7209B7', '#3A0CA3'],
+  forest: ['#B7E4C7', '#74C69D', '#40916C', '#1B4332'],
+  dusk:   ['#FFB4A2', '#E5989B', '#B5838D', '#6D6875'],
+  steel:  ['#E9ECEF', '#ADB5BD', '#6C757D', '#343A40'],
+  arcade: ['#FFE600', '#00E5FF', '#FF2E88', '#7C4DFF'],
+  copper: ['#F6BD60', '#E09F3E', '#C46D2B', '#7F3B1A'],
+  aurora: ['#A7F3D0', '#34D399', '#22D3EE', '#6366F1'],
+  signal: ['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF'],
+};
+// on dark grounds the navy end of a ramp disappears: those mixes use a ramp one step lighter
+const DARK_RAMPS = { 'pkg-blues': ['#A8EBF9', '#7FB3F5', '#5B9BEF', '#3261B6'] };
+const DISC = { dark: '#0B0B0D', light: '#FFFFFF', navy: '#0D2A75' };
+// 'INK' cells take the ground's ink: navy on white, near-white on black, white on navy (like the package icons)
+const INK = { dark: '#E5EBF3', light: '#0D2A75', navy: '#FFFFFF' };
+const ROWS = ['..#..', '.###.', '##.##', '#...#'];
+class Component extends DCLogic {
+  renderVals() {
+    const theme = DISC[this.props.theme] ? this.props.theme : 'dark';
+    const id = this.props.mix ?? 'pkg-blues';
+    const mix = ((theme === 'dark' && DARK_RAMPS[id]) || MIXES[id] || MIXES['pkg-blues']).map((c) => (c === 'INK' ? INK[theme] : c));
+    const size = Number(this.props.size ?? 200);
+    const disc = this.props.disc ?? true;
+    // optical centring: the cells' area centroid (2.2 rows down) sits on the disc centre, and the
+    // farthest corner touches a concentric guide circle of radius 36
+    const cols = 5, s = 12.125, gap = s * 0.16;
+    const x0 = 50 - (cols * s) / 2, y0 = 50 - 2.2 * s;
+    const cells = [];
+    ROWS.forEach((row, r) => [...row].forEach((ch, col) => {
+      if (ch !== '#') return;
+      cells.push({
+        style: 'position: absolute; left: ' + (x0 + col * s + gap / 2) + '%; top: ' + (y0 + r * s + gap / 2) + '%; width: ' + (s - gap) + '%; height: ' + (s - gap) + '%; border-radius: 20%; background: ' + mix[r],
+      });
+    }));
+    return {
+      cells,
+      rootStyle: 'position: relative; width: ' + size + 'px; height: ' + size + 'px; border-radius: 50%; background: ' + (disc ? DISC[theme] : 'transparent') + (disc && theme === 'light' ? '; box-shadow: inset 0 0 0 1px #0000001a' : ''),
+    };
+  }
+}
+</script>
+</body>
+</html>
