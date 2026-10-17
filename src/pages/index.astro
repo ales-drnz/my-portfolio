@@ -265,14 +265,19 @@ const prGroups = Object.entries(
 
   <!-- ===================== OPEN SOURCE ===================== -->
   {prGroups.length > 0 && (
-    <Section id="open-source" eyebrow="Upstream" title="Open source contributions" lead="Pull requests merged into other projects.">
+    <Section id="open-source" eyebrow="Upstream" title="Open source contributions" lead="Pull and merge requests merged into other projects, on GitHub and GitLab.">
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {prGroups.map(([repo, list]) => (
           <div class="rounded-2xl bg-surface p-5">
             <div class="flex items-center justify-between gap-3">
-              <a href={`https://github.com/${repo}`} target="_blank" rel="noopener" class="flex items-center gap-2.5 min-w-0 font-mono text-sm text-fg hover:text-accent transition-colors">
-                <img src={`${list[0].avatar}&s=64`} alt="" width="24" height="24" loading="lazy" class="size-6 shrink-0 rounded-md" />
+              <a href={list[0].repoUrl} target="_blank" rel="noopener" class="flex items-center gap-2.5 min-w-0 font-mono text-sm text-fg hover:text-accent transition-colors">
+                {list[0].avatar ? (
+                  <img src={list[0].avatar} alt="" width="24" height="24" loading="lazy" class="size-6 shrink-0 rounded-md" />
+                ) : (
+                  <Octicon name="repo" size={20} class="shrink-0 text-subtle" />
+                )}
                 <span class="truncate">{repo}</span>
+                <BrandIcon name={list[0].host === 'gitlab' ? 'siGitlab' : 'siGithub'} size={13} class="shrink-0 opacity-70" />
               </a>
               <span class="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-merged/12 text-merged"><Octicon name="git-merge" size={12} /> {list.length} merged</span>
             </div>

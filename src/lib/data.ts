@@ -75,33 +75,64 @@ export async function getRepo(name: string): Promise<Repo | undefined> {
 export interface UpstreamPR {
   title: string;
   url: string;
+  /** owner/name (GitHub) or namespace/path (GitLab) */
   repo: string;
+  repoUrl: string;
+  host: 'github' | 'gitlab';
   mergedAt: string;
-  /** the owning organisation's avatar, used as the project's logo */
+  /** the project's logo (GitLab project avatar) or its owner's avatar */
   avatar: string;
 }
 
-/** Pull requests merged into official projects (organisation-owned repositories) other than mine. */
+const GL = 'https://gitlab.com/api/v4';
+/** an upstream project counts when it is not a fork and is either owned by an organisation or well
+ *  established on its own (the official repo of a project that lives on its author's account) */
+const OFFICIAL_MIN_STARS = 100;
+
+/** Pull requests merged into GitHub projects other than mine. */
+async function githubPRs(): Promise<UpstreamPR[]> {
+  const q = encodeURIComponent(`author:${SITE.handle} type:pr is:merged -user:${SITE.handle}`);
+  const res = await getJson<{ items: any[] }>(`${GH}/search/issues?q=${q}&sort=created&order=desc&per_page=30`, {
+    headers: ghHeaders,
+  });
+  const prs = (res?.items ?? []).map((i) => ({
+    title: i.title as string,
+    url: i.html_url as string,
+    repo: i.repository_url.replace(`${GH}/repos/`, '') as string,
+    mergedAt: (i.pull_request?.merged_at ?? i.closed_at) as string,
+  }));
+  const repos = new Map(
+    await Promise.all(
+      [...new Set(prs.map((p) => p.repo))].map(async (name) => [name, await getJson<any>(`${GH}/repos/${name}`, { headers: ghHeaders })] as const),
+    ),
+  );
+  return prs.flatMap((p) => {
+    const r = repos.get(p.repo);
+    const official = r && !r.fork && (r.owner?.type === 'Organization' || r.stargazers_count >= OFFICIAL_MIN_STARS);
+    return official ? [{ ...p, repoUrl: r.html_url, host: 'github' as const, avatar: `${r.owner.avatar_url}&s=64` }] : [];
+  });
+}
+
+/** Merge requests merged into gitlab.com projects other than mine (public API, no token needed). */
+async function gitlabPRs(): Promise<UpstreamPR[]> {
+  const mrs = await getJson<any[]>(`${GL}/merge_requests?author_username=${SITE.handle}&state=merged&scope=all&per_page=100`);
+  if (!mrs) return [];
+  const ids = [...new Set(mrs.map((m) => m.project_id as number))];
+  const projects = new Map(await Promise.all(ids.map(async (id) => [id, await getJson<any>(`${GL}/projects/${id}`)] as const)));
+  return mrs.flatMap((m) => {
+    const p = projects.get(m.project_id);
+    if (!p || p.namespace?.path === SITE.handle || p.forked_from_project) return [];
+    if (p.namespace?.kind !== 'group' && p.star_count < OFFICIAL_MIN_STARS) return [];
+    const avatar = p.avatar_url ?? (p.namespace?.avatar_url ? new URL(p.namespace.avatar_url, 'https://gitlab.com').href : '');
+    return [{ title: m.title, url: m.web_url, repo: p.path_with_namespace, repoUrl: p.web_url, host: 'gitlab' as const, mergedAt: m.merged_at, avatar }];
+  });
+}
+
+/** Contributions merged into official upstream projects, GitHub and GitLab, newest first. */
 export const getUpstreamPRs = () =>
   memo('prs', async (): Promise<UpstreamPR[]> => {
-    const q = encodeURIComponent(`author:${SITE.handle} type:pr is:merged -user:${SITE.handle}`);
-    const res = await getJson<{ items: any[] }>(`${GH}/search/issues?q=${q}&sort=created&order=desc&per_page=30`, {
-      headers: ghHeaders,
-    });
-    const prs = (res?.items ?? []).map((i) => ({
-      title: i.title,
-      url: i.html_url,
-      repo: i.repository_url.replace(`${GH}/repos/`, '') as string,
-      mergedAt: i.pull_request?.merged_at ?? i.closed_at,
-    }));
-    // only official projects: repositories owned by an organisation, not personal accounts or forks
-    const repos = await Promise.all(
-      [...new Set(prs.map((p) => p.repo))].map(async (name) => [name, await getJson<any>(`${GH}/repos/${name}`, { headers: ghHeaders })] as const),
-    );
-    const official = new Map(
-      repos.filter(([, r]) => r && r.owner?.type === 'Organization' && !r.fork).map(([name, r]) => [name, r.owner.avatar_url as string]),
-    );
-    return prs.filter((p) => official.has(p.repo)).map((p) => ({ ...p, avatar: official.get(p.repo)! }));
+    const [gh, gl] = await Promise.all([githubPRs(), gitlabPRs()]);
+    return [...gh, ...gl].sort((a, b) => +new Date(b.mergedAt) - +new Date(a.mergedAt));
   });
 
 /* ---------------- contributions ---------------- */
