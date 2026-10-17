@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Section from '../components/Section.astro';
 import Icon from '../components/Icon.astro';
@@ -49,6 +50,8 @@ const groups = PROJECT_GROUPS.map((g) => {
   .map((g) => ({ ...g, count: g.featured.length + g.secondary.length + g.repos.length }))
   .filter((g) => g.count > 0);
 
+// package logos come from the case studies that name the package
+const packageLogos = new Map(projects.filter((p) => p.data.package && p.data.logo).map((p) => [p.data.package!, p.data.logo!]));
 const downloads30d = packages.reduce((s, p) => s + p.downloads30d, 0);
 const totalLikes = packages.reduce((s, p) => s + p.likes, 0);
 // sum weekly series aligned on the most recent week
@@ -69,7 +72,6 @@ const prGroups = Object.entries(
 <Base>
   <!-- ===================== HERO ===================== -->
   <section class="relative">
-    <div class="absolute inset-0 bg-grid pointer-events-none" aria-hidden="true"></div>
     <div class="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <!-- intro -->
@@ -142,7 +144,10 @@ const prGroups = Object.entries(
           <a href={latestProject ? `/projects/${latestProject.id}` : latest.html_url} class="hover-card group md:col-span-2 rounded-2xl bg-surface/80 backdrop-blur p-5 flex items-center gap-4">
             <Octicon name="repo-push" size={24} class="shrink-0 text-accent" />
             <div class="min-w-0">
-              <p class="text-xs text-subtle">Latest push · {timeAgo(latest.pushed_at)}</p>
+              <p class="flex items-center gap-2 text-xs text-subtle">
+                Latest push
+                <span class="inline-flex items-center gap-1 text-muted"><Octicon name="clock" size={11} /> {timeAgo(latest.pushed_at)}</span>
+              </p>
               <p class="font-mono text-sm text-fg truncate">{latest.name}</p>
               <p class="text-sm text-muted truncate">{latest.description}</p>
             </div>
@@ -222,36 +227,47 @@ const prGroups = Object.entries(
   <!-- ===================== PACKAGES ===================== -->
   {packages.length > 0 && (
     <Section id="packages" eyebrow="pub.dev" title="Packages" lead={`Published under the verified publisher ${SITE.publisher}. Stats are updated daily.`}>
-      <div class="rounded-2xl bg-surface overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="text-left text-xs text-subtle">
-            <tr>
-              <th class="font-medium px-5 py-3"><span class="inline-flex items-center gap-1.5"><Octicon name="package" size={12} /> Package</span></th>
-              <th class="font-medium px-3 py-3 hidden sm:table-cell"><span class="inline-flex items-center gap-1.5"><Octicon name="thumbsup" size={12} /> Likes</span></th>
-              <th class="font-medium px-3 py-3 hidden sm:table-cell"><span class="inline-flex items-center gap-1.5"><Octicon name="verified" size={12} /> Points</span></th>
-              <th class="font-medium px-3 py-3 text-right sm:text-left"><span class="inline-flex items-center gap-1.5"><Octicon name="download" size={12} /> Downloads /30d</span></th>
-              <th class="font-medium px-5 py-3 hidden md:table-cell">Last 6 months</th>
-            </tr>
-          </thead>
-          <tbody>
-            {packages.map((p) => (
-              <tr class="group hover:bg-surface-2/60 transition-colors relative">
-                <td class="px-5 py-4">
-                  <a href={`https://pub.dev/packages/${p.name}`} target="_blank" rel="noopener" class="font-mono text-fg group-hover:text-accent transition-colors after:absolute after:inset-0">
-                    {p.name}
-                  </a>
-                  {p.version && <span class="ml-2 font-mono text-xs text-subtle">v{p.version}</span>}
-                </td>
-                <td class="px-3 py-4 tabular-nums text-muted hidden sm:table-cell">{p.likes}</td>
-                <td class="px-3 py-4 tabular-nums text-muted hidden sm:table-cell">{p.points != null ? `${p.points}/${p.maxPoints}` : '—'}</td>
-                <td class="px-3 py-4 tabular-nums text-fg font-medium text-right sm:text-left">{compact(p.downloads30d)}</td>
-                <td class="px-5 py-4 hidden md:table-cell">
-                  <Sparkline values={p.weekly.slice(-26)} width={120} height={26} label={`Weekly downloads of ${p.name}`} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {packages.map((p) => {
+          const logo = packageLogos.get(p.name);
+          const pct = p.points != null && p.maxPoints ? Math.round((p.points / p.maxPoints) * 100) : null;
+          return (
+            <a href={`https://pub.dev/packages/${p.name}`} target="_blank" rel="noopener" class="hover-card group relative overflow-hidden rounded-2xl bg-surface p-5 pb-16 flex flex-col gap-5">
+              <div class="relative z-10 flex items-center gap-3 min-w-0">
+                {logo ? (
+                  <Image src={logo} alt="" width={36} height={36} densities={[1, 2, 3]} class="size-9 shrink-0 rounded-lg object-contain" />
+                ) : (
+                  <Octicon name="package" size={24} class="shrink-0 text-subtle" />
+                )}
+                <span class="font-mono text-fg truncate group-hover:text-accent transition-colors">{p.name}</span>
+                {p.version && <span class="shrink-0 font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-surface-2 text-muted">v{p.version}</span>}
+                <Icon name="arrow-up-right" size={14} class="ml-auto shrink-0 text-subtle group-hover:text-fg transition-colors" />
+              </div>
+              <div class="relative z-10 grid grid-cols-3 gap-3">
+                <div>
+                  <p class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name="download" size={12} /> /30 days</p>
+                  <p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{compact(p.downloads30d)}</p>
+                </div>
+                <div>
+                  <p class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name="thumbsup" size={12} /> Likes</p>
+                  <p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{p.likes}</p>
+                </div>
+                <div>
+                  <p class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name="verified" size={12} /> Points</p>
+                  <p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{p.points ?? '—'}<span class="text-sm font-normal text-subtle">{p.maxPoints ? `/${p.maxPoints}` : ''}</span></p>
+                  {pct != null && (
+                    <span class="mt-2 block h-1 rounded-full bg-surface-2 overflow-hidden" aria-hidden="true">
+                      <span class="block h-full rounded-full bg-merged" style={`width:${pct}%`} />
+                    </span>
+                  )}
+                </div>
+              </div>
+              {p.weekly.length > 4 && (
+                <Sparkline edge values={p.weekly.slice(-26)} width={300} height={48} label={`Weekly downloads of ${p.name}, last 6 months`} class="absolute inset-x-0 bottom-0 h-14 w-full" />
+              )}
+            </a>
+          );
+        })}
       </div>
     </Section>
   )}
@@ -300,7 +316,6 @@ const prGroups = Object.entries(
   <!-- ===================== CONTACT ===================== -->
   <section id="contact" class="mx-auto max-w-5xl px-4 sm:px-6 pt-24 scroll-mt-14">
     <div class="relative overflow-hidden rounded-3xl bg-surface px-6 py-14 sm:px-12 text-center">
-      <div class="absolute inset-0 bg-grid opacity-60 pointer-events-none" aria-hidden="true"></div>
       <div class="relative">
         <p class="font-mono text-xs text-accent uppercase tracking-[0.14em] mb-3">Contact</p>
         <h2 class="text-2xl sm:text-4xl font-semibold tracking-tight text-balance">Get in touch</h2>

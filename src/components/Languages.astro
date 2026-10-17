@@ -48,7 +48,7 @@ const { languages } = Astro.props;
                 <span class="ml-auto inline-flex items-center gap-1.5 text-xs text-muted">
                   <Octicon name="verified" size={13} class="shrink-0 text-ok" />
                   {l.certificate.name}
-                  {l.certificate.score && <span class="font-mono text-subtle">· {l.certificate.score}</span>}
+                  {l.certificate.score && <span class="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-surface-2 text-fg tabular-nums">{l.certificate.score}</span>}
                 </span>
               )}
             </div>

@@ -5,7 +5,6 @@ export const SITE = {
   title: 'Alessandro Di Ronza',
   description:
     'Building open-source tools and apps. M.Sc. Telecommunications Engineering student at Sapienza University of Rome.',
-  role: 'M.Sc. student in Telecommunications Engineering · Sapienza University of Rome',
   avatar: '/avatar.png', // the al_ mark on its disc (~/Scrivania/Brand/logo)
   ogImage: '/og.png',
   publisher: 'ales-drnz.com',

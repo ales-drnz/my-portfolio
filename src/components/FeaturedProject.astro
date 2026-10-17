@@ -72,9 +72,8 @@ const numTile = 'rounded-[13px] bg-surface px-4 py-3 min-w-0';
       <div class:list={[tile, 'flex-1 min-h-0 overflow-hidden flex flex-col gap-2']}>
         <div class="flex items-center gap-2.5">
           {p.logo && <Image src={p.logo} alt="" width={36} height={36} densities={[1, 2, 3]} class="size-9 rounded-lg object-contain" />}
-          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">
-            {p.kind}{pkg?.version && ` · v${pkg.version}`}
-          </span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">{p.kind}</span>
+          {pkg?.version && <span class="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-surface-2 text-muted">v{pkg.version}</span>}
         </div>
         <h3 class="text-xl font-semibold tracking-tight">
           <a href={href} class="after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:outline-none">{p.title}</a>

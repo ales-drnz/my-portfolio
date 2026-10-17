@@ -23,7 +23,7 @@
   --c-accent-soft: #fdeee3;
   --c-ok: #1a7f4b;
   --c-star: #bf8700;
-  --c-merged: #8250df;
+  --c-merged: #4e8f12;
   /* Orange → Lime, taken darker on light grounds: lime and amber barely show on white */
   --c-ramp-1: #e35d0a;
   --c-ramp-2: #e8890c;
@@ -51,7 +51,7 @@
   --c-accent-soft: #3a2414;
   --c-ok: #4ade80;
   --c-star: #e3b341;
-  --c-merged: #a371f7;
+  --c-merged: #c6f432;
   --c-ramp-1: #ff8a33;
   --c-ramp-2: #ffb13b;
   --c-ramp-3: #d8ec3c;
@@ -107,12 +107,60 @@
   color: color-mix(in oklab, var(--brand) 72%, white);
 }
 
-/* the dot grid of the banners */
-.bg-grid {
+/* the dot grid of the banners, behind the whole site. The dots only show inside a soft patch that
+   fades out at its edge, and the patch drifts clockwise around the viewport: its centre follows an
+   ellipse, x and y each easing back and forth (a cosine and a sine, a quarter-loop apart), so the
+   motion never stops or turns a corner. */
+@property --dots-x {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@property --dots-y {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+.site-dots {
+  --dots-x: 50%;
+  --dots-y: 50%;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image: radial-gradient(circle, var(--c-dots) 1.2px, transparent 1.7px);
   background-size: 22px 22px;
   background-position: 11px 11px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle 55vmax at var(--dots-x) var(--dots-y), #000 0%, rgb(0 0 0 / 0.55) 35%, transparent 70%);
+  mask-image: radial-gradient(circle 55vmax at var(--dots-x) var(--dots-y), #000 0%, rgb(0 0 0 / 0.55) 35%, transparent 70%);
+  /* one loop every 48 s: x swings over half of it, y the same but a quarter-loop behind, so the
+     patch goes right → bottom → left → top, clockwise on screen */
+  animation:
+    dots-x 24s ease-in-out infinite alternate,
+    dots-y 24s ease-in-out -12s infinite alternate;
+}
+@keyframes dots-x {
+  from {
+    --dots-x: 85%;
+  }
+  to {
+    --dots-x: 15%;
+  }
+}
+@keyframes dots-y {
+  from {
+    --dots-y: 15%;
+  }
+  to {
+    --dots-y: 85%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-dots {
+    animation: none;
+    --dots-x: 80%;
+    --dots-y: 15%;
+  }
 }
 
 /* "open-source": the brand green, lime on dark grounds and the deep green on light ones */
