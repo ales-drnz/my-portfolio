@@ -120,7 +120,7 @@
   color: var(--c-ramp-4);
 }
 
-/* hover for interactive cards: a small lift and a beam of light that travels around the border.
+/* hover for interactive cards: a small lift and a green beam of light that travels around the border.
    A conic gradient spins via an animated custom property, and a mask leaves
    only a 1.5px ring visible. Drawn just inside the border so cards with
    overflow:hidden don't clip it. */
@@ -153,10 +153,9 @@
     from var(--beam-angle),
     transparent 0%,
     transparent 58%,
-    color-mix(in oklab, var(--c-ramp-4) 50%, transparent) 72%,
-    var(--c-ramp-3) 84%,
-    var(--c-ramp-2) 92%,
-    var(--c-ramp-1) 97%,
+    color-mix(in oklab, var(--c-ramp-4) 35%, transparent) 76%,
+    var(--c-ramp-4) 92%,
+    color-mix(in oklab, var(--c-ramp-4) 70%, white) 97%,
     transparent 100%
   );
   /* longhands on purpose: the mask shorthand gets mangled by the CSS minifier
@@ -183,10 +182,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* no spinning: a static accent ring instead */
+  /* no spinning: a static green ring instead */
   .hover-card::before {
     animation: none;
-    background: color-mix(in oklab, var(--c-accent) 60%, transparent);
+    background: color-mix(in oklab, var(--c-ramp-4) 60%, transparent);
   }
 }
 
