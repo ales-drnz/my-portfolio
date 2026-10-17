@@ -18,22 +18,23 @@
   --c-fg: #111318;
   --c-muted: #5c5f68;
   --c-subtle: #898c94;
-  --c-accent: #3261b6;
-  --c-accent-soft: #e6eefb;
+  /* orange deep enough for text on the light grounds (about 5:1) */
+  --c-accent: #c24d0a;
+  --c-accent-soft: #fdeee3;
   --c-ok: #1a7f4b;
   --c-star: #bf8700;
   --c-merged: #8250df;
-  /* Cyan → Navy, light to dark */
-  --c-ramp-1: #a8ebf9;
-  --c-ramp-2: #5b9bef;
-  --c-ramp-3: #3261b6;
-  --c-ramp-4: #0d2a75;
-  /* the palest cyan is too faint for text on white: text gradients start one step darker */
-  --c-grad: linear-gradient(90deg, var(--c-ramp-2), var(--c-ramp-3), var(--c-ramp-4));
+  /* Orange → Lime, taken darker on light grounds: lime and amber barely show on white */
+  --c-ramp-1: #e35d0a;
+  --c-ramp-2: #e8890c;
+  --c-ramp-3: #7daa16;
+  --c-ramp-4: #4e8f12;
+  /* text gradients follow an even darker path so the word stays legible */
+  --c-grad: linear-gradient(90deg, #d9540a, #9a7a0c, #4e8f12);
   --c-disc: #ffffff;
-  /* the al_ mark: letters in the darkest tone the ground allows, cursor in the mid blue */
-  --c-mark: #0d2a75;
-  --c-mark-cursor: #5b9bef;
+  /* the al_ mark: orange letters, lime cursor, both a step darker on light grounds */
+  --c-mark: #e35d0a;
+  --c-mark-cursor: #5e9e12;
   --c-dots: #1113181f;
   --c-code-bar: #11131824;
   --c-code-num: #11131855;
@@ -41,28 +42,28 @@
 }
 
 [data-theme="dark"] {
-  --c-bg: #0b0b0d;
-  --c-surface: #141417;
-  --c-surface-2: #1c1c20;
-  --c-border: #25252a;
-  --c-border-strong: #34343a;
+  /* graphite, like the avatar disc */
+  --c-bg: #17191d;
+  --c-surface: #1e2126;
+  --c-surface-2: #262a30;
+  --c-border: #2e3239;
+  --c-border-strong: #3c414a;
   --c-fg: #ededed;
-  --c-muted: #a0a0aa;
-  --c-subtle: #6e6e78;
-  --c-accent: #7fb3f5;
-  --c-accent-soft: #14233d;
+  --c-muted: #a3a6ae;
+  --c-subtle: #71757e;
+  --c-accent: #ff8a33;
+  --c-accent-soft: #3a2414;
   --c-ok: #4ade80;
   --c-star: #e3b341;
   --c-merged: #a371f7;
-  /* navy vanishes on black (1.6:1): the dark ramp is one step lighter */
-  --c-ramp-1: #a8ebf9;
-  --c-ramp-2: #7fb3f5;
-  --c-ramp-3: #5b9bef;
-  --c-ramp-4: #3261b6;
+  --c-ramp-1: #ff8a33;
+  --c-ramp-2: #ffb13b;
+  --c-ramp-3: #d8ec3c;
+  --c-ramp-4: #c6f432;
   --c-grad: linear-gradient(90deg, var(--c-ramp-1), var(--c-ramp-2), var(--c-ramp-3), var(--c-ramp-4));
-  --c-disc: #0b0b0d;
-  --c-mark: #a8ebf9;
-  --c-mark-cursor: #5b9bef;
+  --c-disc: #22252b;
+  --c-mark: #ff8a33;
+  --c-mark-cursor: #c6f432;
   --c-dots: #ededed1c;
   --c-code-bar: #ededed26;
   --c-code-num: #ededed55;
