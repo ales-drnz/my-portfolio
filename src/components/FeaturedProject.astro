@@ -94,15 +94,15 @@ const value = 'text-2xl font-semibold tracking-tight tabular-nums';
     )
   }
 
-  <div class:list={[tile, 'col-span-2 flex items-center justify-between gap-4']}>
+  <div class:list={[tile, 'col-span-2 relative overflow-hidden flex items-center justify-between gap-4']}>
     {
       pkg ? (
         <>
-          <div class="flex flex-col gap-1">
+          <div class="relative z-10 flex flex-col gap-1">
             <span class={label}><Octicon name="download" size={12} /> Downloads /30d</span>
             <span class={value}>{compact(pkg.downloads30d)}</span>
           </div>
-          {pkg.weekly.length > 4 && <Sparkline values={pkg.weekly.slice(-26)} width={110} height={34} label="Weekly downloads, last 6 months" class="shrink-0" />}
+          {pkg.weekly.length > 4 && <Sparkline edge values={pkg.weekly.slice(-26)} width={300} height={40} label="Weekly downloads, last 6 months" class="absolute inset-x-0 bottom-0 h-1/2 w-full" />}
         </>
       ) : (
         <div class="flex flex-col gap-1 min-w-0">

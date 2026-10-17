@@ -13,7 +13,6 @@ import EducationTimeline from '../components/EducationTimeline.astro';
 import Languages from '../components/Languages.astro';
 import Octicon from '../components/Octicon.astro';
 import Mark from '../components/Mark.astro';
-import CodeListing from '../components/CodeListing.astro';
 import BrandIcon, { type BrandKey } from '../components/BrandIcon.astro';
 import { SITE, SKILLS, SOCIALS, EDUCATION, PROJECT_GROUPS, LANGUAGES } from '../lib/site';
 import { getRepos, getPackages, getContributions, getUpstreamPRs, compact, timeAgo } from '../lib/data';
@@ -75,8 +74,6 @@ const prGroups = Object.entries(
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <!-- intro -->
         <div class="relative overflow-hidden md:col-span-2 md:row-span-2 rounded-2xl bg-surface/80 backdrop-blur p-6 sm:p-8 flex flex-col">
-          <!-- the code listing of the banners, typing in behind the intro -->
-          <CodeListing class="hero-code hidden sm:block absolute top-8 right-8" />
           <div class="relative flex items-center gap-3">
             <Mark size={56} disc label={SITE.name} class="size-14 rounded-full" />
             <div>
@@ -111,7 +108,7 @@ const prGroups = Object.entries(
         </div>
 
         <!-- pub.dev tile -->
-        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group rounded-2xl bg-surface/80 backdrop-blur p-5 flex flex-col">
+        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group rounded-2xl bg-surface/80 backdrop-blur p-5 flex flex-col overflow-hidden">
           <div class="flex items-center justify-between text-sm text-muted">
             <span class="flex items-center gap-2"><Octicon name="download" size={14} /> pub.dev downloads</span>
             <Icon name="arrow-up-right" size={14} class="text-subtle group-hover:text-fg transition-colors" />
@@ -119,7 +116,7 @@ const prGroups = Object.entries(
           <p class="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
             {compact(downloads30d)}<span class="text-base font-normal text-subtle"> /30 days</span>
           </p>
-          <Sparkline values={weeklyTotal.slice(-26)} width={260} height={44} label="Weekly pub.dev downloads across all packages" class="mt-auto pt-3 w-full h-11" />
+          <Sparkline edge values={weeklyTotal.slice(-26)} width={260} height={56} label="Weekly pub.dev downloads across all packages" class="mt-auto -mx-5 -mb-5 pt-3 h-16 w-[calc(100%+2.5rem)] max-w-none" />
         </a>
 
         <!-- numbers tile -->

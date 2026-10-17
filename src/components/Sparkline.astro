@@ -5,14 +5,17 @@ interface Props {
   height?: number;
   label: string;
   class?: string;
+  /** fill the box edge to edge: the area runs to the bottom and there is no end dot to clip */
+  edge?: boolean;
 }
 
-const { values, width = 120, height = 32, label, class: className } = Astro.props;
+const { values, width = 120, height = 32, label, class: className, edge = false } = Astro.props;
 const pts = values.length > 1 ? values : [0, 0];
 const max = Math.max(...pts, 1);
 const step = width / (pts.length - 1);
 const pad = 2;
-const coords = pts.map((v, i) => [i * step, height - pad - (v / max) * (height - pad * 2)] as const);
+const bottom = edge ? 0 : pad;
+const coords = pts.map((v, i) => [i * step, height - bottom - (v / max) * (height - pad - bottom)] as const);
 const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 const area = `${line} L${width},${height} L0,${height} Z`;
 const id = `spark-${Math.random().toString(36).slice(2, 8)}`;
@@ -28,5 +31,5 @@ const [lx, ly] = coords[coords.length - 1];
   </defs>
   <path d={area} fill={`url(#${id})`} />
   <path d={line} fill="none" stroke="var(--c-accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-  <circle cx={lx} cy={ly} r="2.5" fill="var(--c-accent)" />
+  {!edge && <circle cx={lx} cy={ly} r="2.5" fill="var(--c-accent)" />}
 </svg>

@@ -88,12 +88,12 @@ const facts = [
               <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="verified" size={12} class="text-ok" /> pub points</dt>
               <dd class="mt-1 text-2xl font-semibold tabular-nums">{pkg.points != null ? `${pkg.points}/${pkg.maxPoints}` : '—'}</dd>
             </div>
-            <div class="p-4 sm:p-5 flex items-end justify-between gap-2">
-              <div>
+            <div class="relative overflow-hidden p-4 sm:p-5">
+              <div class="relative z-10">
                 <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="download" size={12} /> Downloads /30d</dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums">{compact(pkg.downloads30d)}</dd>
               </div>
-              {pkg.weekly.length > 4 && <Sparkline values={pkg.weekly.slice(-26)} width={64} height={28} label="Weekly downloads" class="hidden lg:block" />}
+              {pkg.weekly.length > 4 && <Sparkline edge values={pkg.weekly.slice(-26)} width={200} height={40} label="Weekly downloads" class="absolute inset-x-0 bottom-0 h-1/2 w-full" />}
             </div>
           </>
         )}
