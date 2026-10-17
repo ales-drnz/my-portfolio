@@ -106,7 +106,10 @@ const facts = [
         {p.coverVideo && poster ? (
           <video src={p.coverVideo} poster={poster.src} width={p.cover.width} height={p.cover.height} muted loop playsinline preload="metadata" data-autoplay class="block w-full h-auto" aria-label={p.coverAlt} />
         ) : (
-          <Image src={p.cover} alt={p.coverAlt ?? ''} widths={[800, 1200, 1800]} sizes="(min-width: 1024px) 976px, 100vw" loading="eager" class="block w-full h-auto" />
+          <>
+            <Image src={p.cover} alt={p.coverAlt ?? ''} widths={[800, 1200, 1800]} sizes="(min-width: 1024px) 976px, 100vw" loading="eager" class:list={['block w-full h-auto', p.coverDark && 'dark:hidden']} />
+            {p.coverDark && <Image src={p.coverDark} alt={p.coverAlt ?? ''} widths={[800, 1200, 1800]} sizes="(min-width: 1024px) 976px, 100vw" loading="eager" class="hidden dark:block w-full h-auto" />}
+          </>
         )}
       </div>
     )}

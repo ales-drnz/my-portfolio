@@ -55,14 +55,26 @@ const numTile = 'rounded-[13px] bg-surface px-4 py-3 min-w-0';
             class="block w-full h-auto"
           />
         ) : (
-          <Image
-            src={p.cover}
-            alt={p.coverAlt ?? ''}
-            widths={[600, 1000, 1400]}
-            sizes="(min-width: 768px) 500px, 100vw"
-            class="block w-full h-auto"
-            loading={index === 0 ? 'eager' : 'lazy'}
-          />
+          <>
+            <Image
+              src={p.cover}
+              alt={p.coverAlt ?? ''}
+              widths={[600, 1000, 1400]}
+              sizes="(min-width: 768px) 500px, 100vw"
+              class:list={['block w-full h-auto', p.coverDark && 'dark:hidden']}
+              loading={index === 0 ? 'eager' : 'lazy'}
+            />
+            {p.coverDark && (
+              <Image
+                src={p.coverDark}
+                alt={p.coverAlt ?? ''}
+                widths={[600, 1000, 1400]}
+                sizes="(min-width: 768px) 500px, 100vw"
+                class="hidden dark:block w-full h-auto"
+                loading="lazy"
+              />
+            )}
+          </>
         )}
       </a>
     )

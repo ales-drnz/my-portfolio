@@ -25,6 +25,8 @@ const projects = defineCollection({
       logo: image().optional(),
       /** shown in full on the home card and the project page; omit for a text-only card */
       cover: image().optional(),
+      /** the same cover in a dark theme, shown instead when the site is dark */
+      coverDark: image().optional(),
       coverAlt: z.string().optional(),
       /** muted looping clip under /public, shown over the cover */
       coverVideo: z.string().optional(),
