@@ -35,9 +35,11 @@ const numTile = 'rounded-[13px] bg-surface px-4 py-3 min-w-0';
     p.cover && 'md:grid-cols-2',
   ]}
 >
+  <!-- the title's stretched link only covers the right column, so the cover links on its own
+       (hidden from keyboard and screen readers: the title is the accessible link) -->
   {
     p.cover && (
-      <div class="rounded-[13px] bg-surface-2 overflow-hidden">
+      <a href={href} tabindex="-1" aria-hidden="true" class="block rounded-[13px] bg-surface-2 overflow-hidden">
         {p.coverVideo && poster ? (
           <video
             src={p.coverVideo}
@@ -62,7 +64,7 @@ const numTile = 'rounded-[13px] bg-surface px-4 py-3 min-w-0';
             loading={index === 0 ? 'eager' : 'lazy'}
           />
         )}
-      </div>
+      </a>
     )
   }
 
