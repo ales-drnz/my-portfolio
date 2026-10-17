@@ -29,8 +29,6 @@
   --c-ramp-2: #e8890c;
   --c-ramp-3: #7daa16;
   --c-ramp-4: #4e8f12;
-  /* text gradients follow an even darker path so the word stays legible */
-  --c-grad: linear-gradient(90deg, #d9540a, #9a7a0c, #4e8f12);
   --c-disc: #ffffff;
   /* the al_ mark: orange letters, lime cursor, both a step darker on light grounds */
   --c-mark: #e35d0a;
@@ -58,7 +56,6 @@
   --c-ramp-2: #ffb13b;
   --c-ramp-3: #d8ec3c;
   --c-ramp-4: #c6f432;
-  --c-grad: linear-gradient(90deg, var(--c-ramp-1), var(--c-ramp-2), var(--c-ramp-3), var(--c-ramp-4));
   --c-disc: #22252b;
   --c-mark: #ff8a33;
   --c-mark-cursor: #c6f432;
@@ -118,13 +115,9 @@
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
-/* "open-source" and other brand words: the Cyan → Navy ramp clipped to the text */
-.text-grad {
-  background: var(--c-grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+/* "open-source": the brand green, lime on dark grounds and the deep green on light ones */
+.text-open {
+  color: var(--c-ramp-4);
 }
 
 /* hover for interactive cards: a small lift and a beam of light that travels around the border.
