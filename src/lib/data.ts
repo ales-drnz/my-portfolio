@@ -77,21 +77,31 @@ export interface UpstreamPR {
   url: string;
   repo: string;
   mergedAt: string;
+  /** the owning organisation's avatar, used as the project's logo */
+  avatar: string;
 }
 
-/** Pull requests merged into other people's repositories. */
+/** Pull requests merged into official projects (organisation-owned repositories) other than mine. */
 export const getUpstreamPRs = () =>
   memo('prs', async (): Promise<UpstreamPR[]> => {
     const q = encodeURIComponent(`author:${SITE.handle} type:pr is:merged -user:${SITE.handle}`);
     const res = await getJson<{ items: any[] }>(`${GH}/search/issues?q=${q}&sort=created&order=desc&per_page=30`, {
       headers: ghHeaders,
     });
-    return (res?.items ?? []).map((i) => ({
+    const prs = (res?.items ?? []).map((i) => ({
       title: i.title,
       url: i.html_url,
-      repo: i.repository_url.replace(`${GH}/repos/`, ''),
+      repo: i.repository_url.replace(`${GH}/repos/`, '') as string,
       mergedAt: i.pull_request?.merged_at ?? i.closed_at,
     }));
+    // only official projects: repositories owned by an organisation, not personal accounts or forks
+    const repos = await Promise.all(
+      [...new Set(prs.map((p) => p.repo))].map(async (name) => [name, await getJson<any>(`${GH}/repos/${name}`, { headers: ghHeaders })] as const),
+    );
+    const official = new Map(
+      repos.filter(([, r]) => r && r.owner?.type === 'Organization' && !r.fork).map(([name, r]) => [name, r.owner.avatar_url as string]),
+    );
+    return prs.filter((p) => official.has(p.repo)).map((p) => ({ ...p, avatar: official.get(p.repo)! }));
   });
 
 /* ---------------- contributions ---------------- */
