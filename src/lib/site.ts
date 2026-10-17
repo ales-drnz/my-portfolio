@@ -88,7 +88,7 @@ export const LANGUAGES: Language[] = [
 
 /* Project groups on the home page. Case studies pick a group in their frontmatter;
    plain GitHub repos are placed by name, and anything unlisted lands in "other". */
-export type ProjectGroupId = 'dart' | 'flutter' | 'linux' | 'build' | 'other';
+export type ProjectGroupId = 'dart' | 'flutter' | 'linux' | 'network' | 'build' | 'other';
 
 export const PROJECT_GROUPS: {
   id: ProjectGroupId;
@@ -117,6 +117,13 @@ export const PROJECT_GROUPS: {
     title: 'Linux & systems',
     description: 'Low-level tools for the Linux desktop.',
     brand: 'siLinux',
+    repos: [],
+  },
+  {
+    id: 'network',
+    title: 'Networking & self-hosting',
+    description: 'Tools for the networks and servers I run.',
+    octicon: 'globe',
     repos: [],
   },
   {
