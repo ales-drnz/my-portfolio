@@ -101,7 +101,7 @@ export const PROJECT_GROUPS: {
   {
     id: 'dart',
     title: 'Dart & Flutter libraries',
-    description: 'Packages published on pub.dev.',
+    description: 'Packages published on pub.dev under the verified publisher ales-drnz.com.',
     brand: 'siDart',
     repos: [],
   },

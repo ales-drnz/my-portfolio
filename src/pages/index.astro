@@ -1,6 +1,5 @@
 ---
 import { getCollection } from 'astro:content';
-import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Section from '../components/Section.astro';
 import Icon from '../components/Icon.astro';
@@ -50,8 +49,6 @@ const groups = PROJECT_GROUPS.map((g) => {
   .map((g) => ({ ...g, count: g.featured.length + g.secondary.length + g.repos.length }))
   .filter((g) => g.count > 0);
 
-// package logos come from the case studies that name the package
-const packageLogos = new Map(projects.filter((p) => p.data.package && p.data.logo).map((p) => [p.data.package!, p.data.logo!]));
 const downloads30d = packages.reduce((s, p) => s + p.downloads30d, 0);
 const totalLikes = packages.reduce((s, p) => s + p.likes, 0);
 // sum weekly series aligned on the most recent week
@@ -206,7 +203,7 @@ const prGroups = Object.entries(
           )}
 
           {(g.secondary.length > 0 || g.repos.length > 0) && (
-            <div class:list={['grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3', g.featured.length > 0 && 'mt-5']}>
+            <div class:list={['grid grid-cols-1 gap-3 sm:grid-cols-2', ![2, 4].includes(g.secondary.length + g.repos.length) && 'lg:grid-cols-3', g.featured.length > 0 && 'mt-5']}>
               {g.secondary.map((p) => <ProjectCard project={p} />)}
               {g.repos.map((r) => <RepoCard repo={r} />)}
             </div>
@@ -223,54 +220,6 @@ const prGroups = Object.entries(
       <Languages languages={LANGUAGES} />
     </div>
   </Section>
-
-  <!-- ===================== PACKAGES ===================== -->
-  {packages.length > 0 && (
-    <Section id="packages" eyebrow="pub.dev" title="Packages" lead={`Published under the verified publisher ${SITE.publisher}. Stats are updated daily.`}>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {packages.map((p) => {
-          const logo = packageLogos.get(p.name);
-          const pct = p.points != null && p.maxPoints ? Math.round((p.points / p.maxPoints) * 100) : null;
-          return (
-            <a href={`https://pub.dev/packages/${p.name}`} target="_blank" rel="noopener" class="hover-card group relative overflow-hidden rounded-2xl bg-surface p-5 pb-16 flex flex-col gap-5">
-              <div class="relative z-10 flex items-center gap-3 min-w-0">
-                {logo ? (
-                  <Image src={logo} alt="" width={36} height={36} densities={[1, 2, 3]} class="size-9 shrink-0 rounded-lg object-contain" />
-                ) : (
-                  <Octicon name="package" size={24} class="shrink-0 text-subtle" />
-                )}
-                <span class="font-mono text-fg truncate group-hover:text-accent transition-colors">{p.name}</span>
-                {p.version && <span class="shrink-0 font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-surface-2 text-muted">v{p.version}</span>}
-                <Icon name="arrow-up-right" size={14} class="ml-auto shrink-0 text-subtle group-hover:text-fg transition-colors" />
-              </div>
-              <div class="relative z-10 grid grid-cols-3 gap-3">
-                <div>
-                  <p class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name="download" size={12} /> /30 days</p>
-                  <p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{compact(p.downloads30d)}</p>
-                </div>
-                <div>
-                  <p class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name="thumbsup" size={12} /> Likes</p>
-                  <p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{p.likes}</p>
-                </div>
-                <div>
-                  <p class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name="verified" size={12} /> Points</p>
-                  <p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{p.points ?? '—'}<span class="text-sm font-normal text-subtle">{p.maxPoints ? `/${p.maxPoints}` : ''}</span></p>
-                  {pct != null && (
-                    <span class="mt-2 block h-1 rounded-full bg-surface-2 overflow-hidden" aria-hidden="true">
-                      <span class="block h-full rounded-full bg-merged" style={`width:${pct}%`} />
-                    </span>
-                  )}
-                </div>
-              </div>
-              {p.weekly.length > 4 && (
-                <Sparkline edge values={p.weekly.slice(-26)} width={300} height={48} label={`Weekly downloads of ${p.name}, last 6 months`} class="absolute inset-x-0 bottom-0 h-14 w-full" />
-              )}
-            </a>
-          );
-        })}
-      </div>
-    </Section>
-  )}
 
   <!-- ===================== ACTIVITY ===================== -->
   <Section id="activity" eyebrow="Activity" title="Last 12 months">
