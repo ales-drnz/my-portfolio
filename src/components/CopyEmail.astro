@@ -1,25 +1,29 @@
 ---
 import Icon from './Icon.astro';
 import { SITE } from '../lib/site';
+import { t, type Lang } from '../lib/i18n';
 
 interface Props {
   primary?: boolean;
+  lang: Lang;
 }
 
-const { primary = false } = Astro.props;
+const { primary = false, lang } = Astro.props;
+const T = t(lang);
 ---
 
 <!-- the address is assembled in the browser so it never appears in the HTML -->
 <button
   type="button"
   data-copy-email={SITE.emailParts.join('|')}
+  data-copied={T.copied}
   class:list={[
     'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium transition-colors',
     primary ? 'bg-fg text-bg hover:opacity-90' : 'bg-surface-2 hover:bg-border',
   ]}
 >
   <Icon name="mail" size={15} />
-  <span data-label>Copy email</span>
+  <span data-label>{T.copyEmail}</span>
 </button>
 
 <script>
@@ -32,8 +36,9 @@ const { primary = false } = Astro.props;
     navigator.clipboard
       .writeText(addr)
       .then(() => {
-        label.textContent = 'Copied!';
-        setTimeout(() => (label.textContent = 'Copy email'), 1600);
+        const idle = label.textContent;
+        label.textContent = btn.dataset.copied!;
+        setTimeout(() => (label.textContent = idle), 1600);
       })
       .catch(() => (location.href = `mailto:${addr}`));
   });

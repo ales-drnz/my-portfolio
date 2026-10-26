@@ -7,12 +7,15 @@ import Icon from './Icon.astro';
 import Octicon from './Octicon.astro';
 import Sparkline from './Sparkline.astro';
 import { getRepo, getPackage, compact, timeAgo } from '../lib/data';
+import { t, localePath, type Lang } from '../lib/i18n';
 
 interface Props {
   project: CollectionEntry<'projects'>;
+  lang: Lang;
 }
 
-const { project } = Astro.props;
+const { project, lang } = Astro.props;
+const T = t(lang).card;
 const p = project.data;
 const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.package ? getPackage(p.package) : null]);
 
@@ -22,7 +25,7 @@ const label = 'flex items-center gap-1.5 text-xs text-subtle';
 const value = 'text-xl font-semibold tracking-tight tabular-nums';
 ---
 
-<a href={`/projects/${project.id}`} class="hover-card group flex flex-col gap-2 p-2 rounded-[20px] bg-surface-2">
+<a href={localePath(lang, `/projects/${project.id}`)} class="hover-card group flex flex-col gap-2 p-2 rounded-[20px] bg-surface-2">
   <!-- intro -->
   <div class:list={[tile, 'flex-1 p-4 flex flex-col gap-3']}>
     <div class="flex items-center gap-2.5">
@@ -46,31 +49,31 @@ const value = 'text-xl font-semibold tracking-tight tabular-nums';
       pkg ? (
         <>
           <div class={numTile}>
-            <span class={label}><Octicon name="star-fill" size={12} class="text-star" /> Stars</span>
+            <span class={label}><Octicon name="star-fill" size={12} class="text-star" /> {T.stars}</span>
             <span class={value}>{repo?.stargazers_count ?? '—'}</span>
           </div>
           <div class={numTile}>
-            <span class={label}><Octicon name="thumbsup" size={12} class="text-accent" /> Likes</span>
+            <span class={label}><Octicon name="thumbsup" size={12} class="text-accent" /> {T.likes}</span>
             <span class={value}>{pkg.likes}</span>
           </div>
           <div class:list={[numTile, 'relative overflow-hidden']}>
             <span class:list={[label, 'relative z-10']}><Octicon name="download" size={12} /> /30d</span>
             <span class:list={[value, 'relative z-10']}>{compact(pkg.downloads30d)}</span>
-            {pkg.weekly.length > 4 && <Sparkline edge values={pkg.weekly.slice(-26)} width={120} height={40} label={`Weekly downloads of ${pkg.name}, last 6 months`} class="absolute inset-x-0 bottom-0 h-1/2 w-full" />}
+            {pkg.weekly.length > 4 && <Sparkline edge values={pkg.weekly.slice(-26)} width={120} height={40} label={T.weekly(pkg.name)} class="absolute inset-x-0 bottom-0 h-1/2 w-full" />}
           </div>
         </>
       ) : (
         <>
           <div class={numTile}>
-            <span class={label}><Octicon name="star-fill" size={12} class="text-star" /> Stars</span>
+            <span class={label}><Octicon name="star-fill" size={12} class="text-star" /> {T.stars}</span>
             <span class={value}>{repo?.stargazers_count ?? '—'}</span>
           </div>
           <div class={numTile}>
-            <span class={label}><Octicon name="repo-push" size={12} /> Push</span>
-            <span class="text-sm text-fg">{repo ? timeAgo(repo.pushed_at) : '—'}</span>
+            <span class={label}><Octicon name="repo-push" size={12} /> {T.push}</span>
+            <span class="text-sm text-fg">{repo ? timeAgo(repo.pushed_at, lang) : '—'}</span>
           </div>
           <div class={numTile}>
-            <span class={label}>Platforms</span>
+            <span class={label}>{T.platforms}</span>
             <span class="text-sm text-fg line-clamp-2">{p.platforms.join(', ') || '—'}</span>
           </div>
         </>

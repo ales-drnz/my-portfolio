@@ -34,4 +34,16 @@ const projects = defineCollection({
     }),
 });
 
-export const collections = { projects };
+/** Italian text for a case study, same file name as the English one; everything else is inherited */
+const projectsIt = defineCollection({
+  loader: glob({ pattern: '**/*.mdx', base: './src/content/projects-it' }),
+  schema: z.object({
+    tagline: z.string(),
+    summary: z.string(),
+    highlights: z.array(z.string()).optional(),
+    platforms: z.array(z.string()).optional(),
+    coverAlt: z.string().optional(),
+  }),
+});
+
+export const collections = { projects, projectsIt };

@@ -1,12 +1,15 @@
 ---
 import Icon from './Icon.astro';
 import type { EducationEntry } from '../lib/site';
+import { t, type Lang } from '../lib/i18n';
 
 interface Props {
   entries: EducationEntry[];
+  lang: Lang;
 }
 
-const { entries } = Astro.props;
+const { entries, lang } = Astro.props;
+const T = t(lang).timeline;
 ---
 
 <ol class="relative">
@@ -18,7 +21,7 @@ const { entries } = Astro.props;
         <li class="relative grid grid-cols-[24px_minmax(0,1fr)] sm:grid-cols-[132px_24px_minmax(0,1fr)] gap-x-4">
           {/* dates (left column on wide screens) */}
           <p class="hidden sm:block pt-5 text-right font-mono text-xs text-subtle tabular-nums">
-            {e.start} – {current ? <span class="text-accent">present</span> : e.end}
+            {e.start} – {current ? <span class="text-accent">{T.present}</span> : e.end}
           </p>
 
           {/* rail + dot */}
@@ -26,7 +29,6 @@ const { entries } = Astro.props;
             {!last && <span class="absolute top-7 bottom-0 w-px bg-border" aria-hidden="true" />}
             {i > 0 && <span class="absolute top-0 h-6 w-px bg-border" aria-hidden="true" />}
             <span class="relative mt-6 flex size-3" aria-hidden="true">
-              {current && <span class="absolute inline-flex size-full rounded-full bg-accent opacity-50 animate-ping" />}
               <span class:list={['relative inline-flex size-3 rounded-full', current ? 'bg-accent' : 'bg-border-strong']} />
             </span>
           </div>
@@ -35,7 +37,7 @@ const { entries } = Astro.props;
           <div class:list={['pb-4', last && 'pb-0']}>
             <article class="rounded-2xl bg-surface p-5 sm:p-6">
               <p class="sm:hidden font-mono text-xs text-subtle tabular-nums mb-2">
-                {e.start} – {current ? <span class="text-accent">present</span> : e.end}
+                {e.start} – {current ? <span class="text-accent">{T.present}</span> : e.end}
               </p>
               <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                 <div class="min-w-0">
@@ -49,15 +51,15 @@ const { entries } = Astro.props;
                   <span class="shrink-0 font-mono text-xs px-2 py-1 rounded-md bg-accent-soft text-accent">{e.grade}</span>
                 )}
                 {current && (
-                  <span class="shrink-0 text-xs px-2 py-1 rounded-md bg-surface-2 text-muted">In progress</span>
+                  <span class="shrink-0 text-xs px-2 py-1 rounded-md bg-surface-2 text-muted">{T.inProgress}</span>
                 )}
               </div>
 
               {e.thesis && (
                 <div class="mt-4 pt-4">
                   <p class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-subtle">
-                    <span class="inline-flex items-center gap-1.5"><Icon name="file-text" size={13} /> Thesis</span>
-                    <span class="inline-flex items-center gap-1.5">Supervisor <span class="text-muted">{e.thesis.supervisor}</span></span>
+                    <span class="inline-flex items-center gap-1.5"><Icon name="file-text" size={13} /> {T.thesis}</span>
+                    <span class="inline-flex items-center gap-1.5">{T.supervisor} <span class="text-muted">{e.thesis.supervisor}</span></span>
                   </p>
                   <p class="mt-1.5 text-sm text-fg font-medium leading-snug">{e.thesis.title}</p>
                   <p class="mt-1.5 text-sm text-muted leading-relaxed">{e.thesis.summary}</p>

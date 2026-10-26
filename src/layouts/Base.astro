@@ -4,27 +4,33 @@ import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { SITE, SOCIALS } from '../lib/site';
+import { LANGS, t, langFromUrl, switchPath, type Lang } from '../lib/i18n';
 
 interface Props {
   title?: string;
   description?: string;
   image?: string;
+  lang?: Lang;
 }
 
-const { title, description = SITE.description, image = SITE.ogImage } = Astro.props;
+const { lang = langFromUrl(Astro.url), title, image = SITE.ogImage } = Astro.props;
+const T = t(lang);
+const description = Astro.props.description ?? T.description;
 const fullTitle = title ? `${title} · ${SITE.name}` : SITE.title;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(image, Astro.site).href;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {LANGS.map((l) => <link rel="alternate" hreflang={l} href={new URL(switchPath(Astro.url, l), Astro.site)} />)}
+    <link rel="alternate" hreflang="x-default" href={new URL(switchPath(Astro.url, 'en'), Astro.site)} />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -34,6 +40,7 @@ const ogImage = new URL(image, Astro.site).href;
     <meta name="theme-color" content="#f2f2ef" media="(prefers-color-scheme: light)" />
 
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content={T.locale.replace('-', '_')} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -71,13 +78,13 @@ const ogImage = new URL(image, Astro.site).href;
   <body class="min-h-dvh flex flex-col">
     <div class="site-dots" aria-hidden="true"></div>
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 bg-surface px-3 py-2 rounded-md">
-      Skip to content
+      {T.skip}
     </a>
-    <Header />
+    <Header lang={lang} />
     <main id="main" class="flex-1">
       <slot />
     </main>
-    <Footer />
+    <Footer lang={lang} />
 
     <script>
       // clips play only while on screen, and never with reduced motion

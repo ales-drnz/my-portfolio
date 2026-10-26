@@ -1,0 +1,245 @@
+---
+// share of code per language across all my repos, as a plain pie; pointing at a slice shows its numbers.
+// The long tail folds into "Other"
+import * as simpleIcons from 'simple-icons';
+import BrandIcon, { type BrandKey } from './BrandIcon.astro';
+import { t, type Lang } from '../lib/i18n';
+import type { LanguageShare } from '../lib/data';
+
+interface Props {
+  languages: LanguageShare[];
+  lang: Lang;
+  /** languages shown before the rest is folded into "Other" */
+  top?: number;
+}
+
+const { languages, lang, top = 6 } = Astro.props;
+const T = t(lang).code;
+
+// GitHub linguist names → simple-icons logos
+const LOGOS: Record<string, BrandKey> = {
+  Dart: 'siDart',
+  'C++': 'siCplusplus',
+  C: 'siC',
+  Python: 'siPython',
+  Shell: 'siGnubash',
+  CMake: 'siCmake',
+  Go: 'siGo',
+  QML: 'siQt',
+  TypeScript: 'siTypescript',
+  JavaScript: 'siJavascript',
+  Swift: 'siSwift',
+  Kotlin: 'siKotlin',
+  Svelte: 'siSvelte',
+  Astro: 'siAstro',
+  CSS: 'siCss',
+  HTML: 'siHtml5',
+  MDX: 'siMdx',
+  Ruby: 'siRuby',
+  GLSL: 'siOpengl',
+  Dockerfile: 'siDocker',
+};
+
+// colour follows the language, not its rank, so a reshuffle never repaints a slice;
+// the slots are the validated categorical palette (--slice-N in the style block below)
+const SLOT: Record<string, number> = { Dart: 1, 'C++': 2, Python: 3, Shell: 4, CMake: 5, C: 6, Go: 7, TypeScript: 8 };
+
+const shown = languages.slice(0, top);
+const free = [1, 2, 3, 4, 5, 6, 7, 8].filter((n) => !shown.some((l) => SLOT[l.name] === n));
+const tail = languages.slice(top);
+const rest = tail.reduce((s, l) => s + l.share, 0);
+const rows = [
+  ...shown.map((l) => ({ ...l, other: false, color: `var(--slice-${SLOT[l.name] ?? free.shift() ?? 8})` })),
+  ...(rest > 0 ? [{ name: T.other, share: rest, bytes: tail.reduce((s, l) => s + l.bytes, 0), other: true, color: 'var(--c-border-strong)' }] : []),
+];
+
+const pct = (share: number) =>
+  `${(share * 100).toLocaleString(t(lang).locale, { maximumFractionDigits: 1, minimumFractionDigits: share < 0.1 ? 1 : 0 })}%`;
+
+const size = (bytes: number) =>
+  new Intl.NumberFormat(t(lang).locale, { style: 'unit', unit: bytes >= 1e6 ? 'megabyte' : 'kilobyte', maximumFractionDigits: 1 }).format(
+    bytes >= 1e6 ? bytes / 1e6 : bytes / 1e3,
+  );
+
+// pie wedges, clockwise from 12 o'clock; a surface-coloured stroke separates them
+const point = (turn: number) => {
+  const a = turn * 2 * Math.PI - Math.PI / 2;
+  return `${(50 + 50 * Math.cos(a)).toFixed(3)} ${(50 + 50 * Math.sin(a)).toFixed(3)}`;
+};
+let at = 0;
+const wedges = rows.map((r) => {
+  const from = at;
+  at += r.share;
+  const d =
+    r.share >= 0.9999
+      ? 'M 50 0 A 50 50 0 1 1 49.999 0 Z'
+      : `M 50 50 L ${point(from)} A 50 50 0 ${r.share > 0.5 ? 1 : 0} 1 ${point(at)} Z`;
+  // a slice wide enough gets its language logo, centred along the middle of the wedge
+  const ICON = 14;
+  const mid = (from + at) / 2;
+  const a = mid * 2 * Math.PI - Math.PI / 2;
+  const key = !r.other ? LOGOS[r.name] : undefined;
+  const icon =
+    key && r.share >= 0.08
+      ? {
+          path: (simpleIcons[key] as { path: string }).path,
+          x: 50 + 30 * Math.cos(a) - ICON / 2,
+          y: 50 + 30 * Math.sin(a) - ICON / 2,
+          scale: ICON / 24,
+        }
+      : null;
+  return { ...r, d, icon };
+});
+---
+
+{
+  rows.length > 0 && (
+    <figure class="code-languages relative h-full flex flex-col" data-code-languages>
+      <figcaption>
+        <p class="text-sm font-medium tracking-tight">{T.title}</p>
+        <p class="text-xs text-subtle mt-0.5">{T.hint}</p>
+      </figcaption>
+      <div class="mt-4 flex-1 grid place-items-center">
+        <svg viewBox="-1 -1 102 102" class="size-40" role="img" aria-label={T.title}>
+          {wedges.map((w, i) => (
+            <path
+              d={w.d}
+              fill={w.color}
+              stroke="var(--c-surface)"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+              class="slice"
+              data-slice={i}
+              tabindex="0"
+              aria-label={T.row(w.name, pct(w.share))}
+            />
+          ))}
+          {wedges.map(
+            (w, i) =>
+              w.icon && (
+                <path
+                  d={w.icon.path}
+                  transform={`translate(${w.icon.x.toFixed(2)} ${w.icon.y.toFixed(2)}) scale(${w.icon.scale})`}
+                  class="slice-icon"
+                  data-icon={i}
+                  aria-hidden="true"
+                />
+              ),
+          )}
+        </svg>
+      </div>
+
+      <!-- one tooltip per slice, moved next to the pointer -->
+      {rows.map((r, i) => (
+        <div
+          data-tip={i}
+          role="tooltip"
+          class="tip pointer-events-none absolute left-0 top-0 z-10 min-w-36 rounded-xl bg-surface-2 px-3 py-2.5 shadow-lg ring-1 ring-border"
+        >
+          <p class="flex items-center gap-2 text-xs text-muted">
+            <span class="size-2 shrink-0 rounded-[2px]" style={`background:${r.color}`} />
+            {!r.other && LOGOS[r.name] && <BrandIcon name={LOGOS[r.name]} size={12} class="shrink-0" />}
+            {r.name}
+          </p>
+          <p class="mt-1 text-lg font-semibold tracking-tight tabular-nums">{pct(r.share)}</p>
+          <p class="text-xs text-subtle tabular-nums">{T.size(size(r.bytes))}</p>
+        </div>
+      ))}
+    </figure>
+  )
+}
+
+<style>
+  /* validated categorical slots (light on #fff, dark on the dark surface) */
+  .code-languages {
+    --slice-1: #2a78d6;
+    --slice-2: #eb6834;
+    --slice-3: #1baf7a;
+    --slice-4: #eda100;
+    --slice-5: #e87ba4;
+    --slice-6: #008300;
+    --slice-7: #6250d6;
+    --slice-8: #e34948;
+  }
+  :global([data-theme="dark"]) .code-languages {
+    --slice-1: #3987e5;
+    --slice-2: #d95926;
+    --slice-3: #199e70;
+    --slice-4: #c98500;
+    --slice-5: #d55181;
+    --slice-6: #008300;
+    --slice-7: #9085e9;
+    --slice-8: #e66767;
+  }
+  .slice-icon {
+    fill: #fff;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .code-languages[data-active] .slice-icon:not(.is-active) {
+    opacity: 0.35;
+  }
+  .slice {
+    cursor: pointer;
+    outline: none;
+    transition: opacity 0.2s;
+  }
+  /* the slice being looked at stays, the rest step back */
+  .code-languages[data-active] .slice:not(.is-active) {
+    opacity: 0.35;
+  }
+  .tip {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.12s;
+  }
+  .tip.is-active {
+    opacity: 1;
+    visibility: visible;
+  }
+</style>
+
+<script>
+  // page-wide listeners are dropped on every client-side navigation
+  let page = new AbortController();
+
+  function setup() {
+    page.abort();
+    page = new AbortController();
+    document.querySelectorAll<HTMLElement>('[data-code-languages]').forEach((fig) => {
+      const slices = [...fig.querySelectorAll<SVGPathElement>('.slice')];
+      const tips = [...fig.querySelectorAll<HTMLElement>('[data-tip]')];
+
+      const show = (i: number | null, x = 0, y = 0) => {
+        slices.forEach((s, n) => s.classList.toggle('is-active', n === i));
+        fig.querySelectorAll('[data-icon]').forEach((el) => el.classList.toggle('is-active', el.getAttribute('data-icon') === String(i)));
+        tips.forEach((t, n) => t.classList.toggle('is-active', n === i));
+        if (i === null) return void delete fig.dataset.active;
+        fig.dataset.active = String(i);
+        // keep the tooltip inside the card, beside the pointer
+        const tip = tips[i];
+        const box = fig.getBoundingClientRect();
+        const left = Math.min(Math.max(x - box.left + 14, 0), box.width - tip.offsetWidth);
+        const top = Math.min(Math.max(y - box.top + 14, 0), box.height - tip.offsetHeight);
+        tip.style.transform = `translate(${left}px, ${top}px)`;
+      };
+
+      document.addEventListener('pointerdown', (e) => {
+        if (!(e.target instanceof Element && e.target.closest('.slice'))) show(null);
+      }, { signal: page.signal });
+
+      slices.forEach((s, i) => {
+        s.addEventListener('pointermove', (e) => show(i, e.clientX, e.clientY));
+        s.addEventListener('pointerdown', (e) => show(i, e.clientX, e.clientY));
+        // a tap has no hover, so on touch the tooltip stays until the next tap elsewhere
+        s.addEventListener('pointerleave', (e) => e.pointerType !== 'touch' && show(null));
+        s.addEventListener('focus', () => {
+          const r = s.getBoundingClientRect();
+          show(i, r.left + r.width / 2, r.top + r.height / 2);
+        });
+        s.addEventListener('blur', () => show(null));
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', setup);
+</script>

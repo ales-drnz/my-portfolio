@@ -1,0 +1,30 @@
+---
+platforms: [Tutte le piattaforme Dart]
+tagline: Client Dart tipizzato per Plex Media Server.
+summary: >-
+  Un client per Plex Media Server in Dart puro che copre librerie, hub, playlist, streaming audio, reporting della
+  riproduzione, ricerca e code di riproduzione tramite oggetti tipizzati, e gestisce l'accesso a plex.tv e la
+  scoperta dei server.
+highlights:
+  - Accesso a plex.tv con credenziali o con il PIN a 4 caratteri
+  - Scoperta dei server che preferisce la rete locale, poi HTTPS, poi il relay
+  - URL di stream HLS / DASH / diretti
+---
+
+## Panoramica
+
+Un oggetto client, `PlexClient`, contiene identità, server e token, e da lì si accede alle sotto-API tipizzate.
+[dart_jellyfin](/it/projects/dart-jellyfin) ha la stessa struttura, così un'app può supportare entrambi i server
+allo stesso modo.
+
+## Funzionalità
+
+- **Accesso a plex.tv**: credenziali legacy oppure il flusso ufficiale con PIN a 4 caratteri su plex.tv/link.
+- **Scoperta dei server**: server propri e condivisi con le relative connessioni candidate; `bestConnection()`
+  sceglie prima la rete locale, poi HTTPS, poi il relay.
+- **URL di streaming**: `universalAudioUrl()` costruisce manifest HLS o DASH, `directFileUrl()` l'originale
+  senza alcuna transcodifica.
+- **Errori semantici**: ogni errore è una `PlexException` che puoi gestire caso per caso, invece di errori di
+  rete grezzi.
+
+È Dart puro (nessun plugin nativo, nessuna dipendenza da Flutter) e gira ovunque giri Dart.

@@ -8,7 +8,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://ales-drnz.com',
-  integrations: [mdx(), sitemap()],
+  integrations: [mdx(), sitemap({ i18n: { defaultLocale: 'en', locales: { en: 'en', it: 'it' } } })],
   markdown: {
     shikiConfig: {
       themes: { light: 'github-light', dark: 'github-dark-dimmed' },

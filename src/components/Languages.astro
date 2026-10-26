@@ -2,17 +2,20 @@
 import Flag from './Flag.astro';
 import Octicon from './Octicon.astro';
 import { CEFR, type Language } from '../lib/site';
+import { t, type Lang } from '../lib/i18n';
 
 interface Props {
   languages: Language[];
+  lang: Lang;
 }
 
-const { languages } = Astro.props;
+const { languages, lang } = Astro.props;
+const T = t(lang).languages;
 ---
 
 <div>
   <h3 class="flex items-center gap-2 text-sm font-medium text-muted mb-4">
-    <Octicon name="comment-discussion" size={16} class="text-subtle" /> Languages
+    <Octicon name="comment-discussion" size={16} class="text-subtle" /> {T.title}
   </h3>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -25,11 +28,11 @@ const { languages } = Astro.props;
             <div class="flex items-center gap-3">
               <Flag code={l.flag} class="h-6 shrink-0 rounded-[4px]" />
               <h4 class="font-semibold tracking-tight">{l.name}</h4>
-              <span class="ml-auto font-mono text-sm text-accent">{l.level === 'native' ? 'Native' : l.level}</span>
+              <span class="ml-auto font-mono text-sm text-accent">{l.level === 'native' ? T.native : l.level}</span>
             </div>
 
             {/* CEFR scale */}
-            <div class="mt-5" role="img" aria-label={`${l.name}: ${l.level === 'native' ? 'native speaker' : `CEFR level ${l.level}`}`}>
+            <div class="mt-5" role="img" aria-label={`${l.name}: ${l.level === 'native' ? T.nativeSpeaker : `${T.cefr} ${l.level}`}`}>
               <div class="grid grid-cols-6 gap-1">
                 {CEFR.map((_, i) => (
                   <span class:list={['h-1.5 rounded-full', i < filled ? 'bg-accent' : 'bg-surface-2']} />

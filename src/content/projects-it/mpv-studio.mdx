@@ -1,0 +1,35 @@
+---
+tagline: Player audio multipiattaforma basato su mpv_audio_kit.
+summary: >-
+  Il client di riferimento per il motore mpv_audio_kit: un player audio con un rack per la catena del segnale,
+  visualizzatori in tempo reale, streaming da Jellyfin, Plex e Samba, un inspector del motore e una console
+  di comandi mpv integrata. Si adatta a ogni finestra, da un telefono in verticale a un desktop ultrawide.
+highlights:
+  - Seekbar a forma d'onda, capitoli, loop A-B, spettro e VU meter
+  - Sorgenti Jellyfin, Plex e Samba accanto ai semplici URL
+  - Rack della catena del segnale e una console di comandi mpv grezza
+coverAlt: MPV Studio che riproduce una traccia con forma d'onda, capitoli, loop A-B e spettro in tempo reale
+---
+
+## Panoramica
+
+MPV Studio è il posto in cui [mpv_audio_kit](/it/projects/mpv-audio-kit) viene usato come lo userebbe un'app
+vera, e dove le nuove funzioni del motore vengono provate per prime. Ci si collegano anche i client per i
+media server: [dart_smb2](/it/projects/dart-smb2), [dart_jellyfin](/it/projects/dart-jellyfin) e
+[dart_plex](/it/projects/dart-plex).
+
+## Funzionalità
+
+- **Riproduzione**: copertina, metadati, una forma d'onda su cui scorrere, capitoli, un loop A-B con numero
+  di ripetizioni, velocità e volume, tutto pilotato dagli stream reattivi del motore.
+- **Visualizzatori**: uno spettro a scala logaritmica, un VU meter e una seekbar a forma d'onda che si
+  riempie mentre le tracce di rete vengono decodificate.
+- **Coda**: riordinabile, gapless, e ogni riga indica da dove viene la traccia e se è stata riprodotta,
+  saltata o è fallita.
+- **Stream**: stream di riferimento in tutti i codec più comuni, qualsiasi URL con le proprie opzioni HTTP, un
+  source resolver per i link che scadono e le librerie di Jellyfin, Plex e Samba.
+- **Effetti**: il rack della catena del segnale, con editor interattivi per ogni stadio.
+- **Motore e console**: un inspector dello stato del motore e una console di comandi mpv grezza.
+
+Il layout si adatta da un telefono in verticale a un desktop ultrawide, con un tema scuro e uno chiaro, menu
+contestuale con il tasto destro e controllo da tastiera su desktop, pressione prolungata e swipe sui telefoni.

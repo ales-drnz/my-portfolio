@@ -1,0 +1,67 @@
+---
+tagline: Una mappa e una dashboard in tempo reale per una rete ZeroTier.
+summary: >-
+  Una pagina in sola lettura per i membri di una rete ZeroTier privata gestita con ZTNET. Mostra chi è connesso,
+  come e con che qualità: una mappa di tutti i dispositivi attorno all'hub, collegamenti diretti o via relay con
+  la loro latenza, disponibilità nelle ultime 24 ore, cosa è cambiato e quando, e i servizi raggiungibili
+  all'interno della rete.
+highlights:
+  - Aggiornamenti in tempo reale inviati a ogni pagina aperta tramite Server-Sent Events
+  - Mediana, p95 e jitter per dispositivo, confrontati con la settimana precedente
+  - Il token ZTNET e gli IP pubblici dei membri non arrivano mai al browser
+coverAlt: >-
+  Panoramica di Netmap con dispositivi online, latenza, disponibilità, traffico, la mappa della rete e l'elenco
+  dei servizi
+---
+import { Image } from 'astro:assets';
+import map from '../../assets/projects/netmap/map.png';
+import devices from '../../assets/projects/netmap/devices.png';
+import stats from '../../assets/projects/netmap/stats.png';
+
+## Perché l'ho creato
+
+Una rete ZeroTier gestita con ZTNET è facile da amministrare, ma difficile da leggere per tutti gli altri che ne
+fanno parte. Netmap è la pagina che volevo poter mandare alle persone della mia rete: la apri da qualsiasi
+dispositivo all'interno della rete e vedi chi è online, se la tua connessione è diretta o passa da un relay e se
+i servizi che usi rispondono, senza bisogno di un account e senza poter modificare nulla.
+
+## La mappa
+
+L'hub sta al centro e tutti i dispositivi attorno, raggruppati in un'isola per ogni persona. Ogni collegamento è
+disegnato come diretto, via relay oppure offline, con la sua latenza.
+
+<Image src={map} alt="La mappa della rete: l'hub al centro, un'isola per persona, collegamenti disegnati come diretti, via relay oppure offline" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Dispositivi e storico
+
+- **Una latenza che dice qualcosa**: mediana, 95° percentile e jitter, e ogni dispositivo confrontato con sé
+  stesso la settimana prima.
+- **Disponibilità nelle 24 ore** in intervalli da 24 minuti, e un istogramma della latenza a 30 giorni per ogni
+  dispositivo. Finché lo storico non si riempie, gli slot vuoti restano vuoti: la pagina non mostra mai dati che
+  non ha.
+- **Cosa è cambiato**: disconnessioni, cambi di percorso e picchi di latenza. Tre dispositivi che cadono nello
+  stesso polling sono un unico incidente, di solito la connessione dell'hub, non tre.
+- **Avvisi solo quando c'è da prendere una decisione**: richieste di accesso, fallback su TCP, impostazioni che
+  costringono ogni nodo a passare dal relay.
+
+<Image src={devices} alt="Elenco dei dispositivi con proprietario, percorso, latenza e disponibilità, e i dettagli di un dispositivo" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+<Image src={stats} alt="Grafici di latenza, traffico e disponibilità nel tempo" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Come funziona
+
+Un piccolo server Node.js interroga periodicamente la REST API di ZTNET per l'elenco dei membri e la
+configurazione della rete, e il servizio ZeroTier locale per latenza, tipi di percorso e versioni dei client.
+Ogni polling viene confrontato con il precedente per generare gli eventi, e un nuovo snapshot viene inviato a
+ogni pagina aperta tramite Server-Sent Events. Il front end SvelteKit viene compilato come bundle statico, con
+font e librerie inclusi, così funziona anche senza accesso a internet.
+
+Gira come container che condivide la rete del container ZeroTier: è raggiungibile solo dall'interno della rete
+ZeroTier e non espone alcuna porta sull'host. Lo storico sopravvive ai riavvii in un file scritto in modo
+atomico.
+
+## Privacy
+
+Chiunque nella rete può aprire la pagina, quindi il **token ZTNET** resta sul server, gli **indirizzi IP
+pubblici** dei dispositivi vengono usati solo lato server per distinguere la LAN da internet e non vengono mai
+inviati al browser, e la pagina è **in sola lettura**: l'autorizzazione dei membri resta in ZTNET.

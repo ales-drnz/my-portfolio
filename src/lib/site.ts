@@ -1,3 +1,5 @@
+import type { Lang } from './i18n';
+
 export const SITE = {
   name: 'Alessandro Di Ronza',
   handle: 'ales-drnz',
@@ -64,6 +66,40 @@ export const EDUCATION: EducationEntry[] = [
   },
 ];
 
+const EDUCATION_IT: EducationEntry[] = [
+  {
+    start: 'set 2025',
+    end: null,
+    degree: 'Laurea Magistrale in Ingegneria delle Telecomunicazioni',
+    school: 'Sapienza Università di Roma',
+    place: 'Roma',
+  },
+  {
+    start: '2022',
+    end: 'dic 2025',
+    degree: 'Laurea Triennale in Ingegneria Elettronica',
+    school: 'Sapienza Università di Roma',
+    place: 'Roma',
+    grade: '106/110',
+    thesis: {
+      title: 'Wi-Fi 7 (IEEE 802.11be): innovazioni, prestazioni e confronto con Wi-Fi 6',
+      supervisor: 'Prof. Luca De Nardis',
+      summary:
+        'Analisi di 4096-QAM, canali a 320 MHz e Multi-Link Operation, e confronto con Wi-Fi 6 tramite modelli analitici e dati di letteratura.',
+    },
+  },
+  {
+    start: '2017',
+    end: '2022',
+    degree: 'Diploma di Liceo Scientifico',
+    school: 'Liceo Innocenzo XII',
+    place: 'Anzio',
+    grade: '100/100 e lode',
+  },
+];
+
+export const education = (lang: Lang) => (lang === 'it' ? EDUCATION_IT : EDUCATION);
+
 export const CEFR = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 
 export interface Language {
@@ -85,6 +121,13 @@ export const LANGUAGES: Language[] = [
     certificate: { name: 'Cambridge B2 First', score: '179' },
   },
 ];
+
+const LANGUAGES_IT: Language[] = [
+  { name: 'Italiano', flag: 'it', level: 'native', levelLabel: 'Lingua madre' },
+  { ...LANGUAGES[1], name: 'Inglese', levelLabel: 'Intermedio superiore' },
+];
+
+export const languages = (lang: Lang) => (lang === 'it' ? LANGUAGES_IT : LANGUAGES);
 
 /* Project groups on the home page. Case studies pick a group in their frontmatter;
    plain GitHub repos are placed by name, and anything unlisted lands in "other". */
@@ -142,6 +185,24 @@ export const PROJECT_GROUPS: {
   },
 ];
 
+const GROUPS_IT: Record<ProjectGroupId, { title: string; description: string }> = {
+  dart: {
+    title: 'Librerie Dart e Flutter',
+    description: 'Pacchetti pubblicati su pub.dev con il publisher verificato ales-drnz.com.',
+  },
+  flutter: { title: 'App Flutter', description: 'App costruite su quei pacchetti.' },
+  linux: { title: 'Linux e sistemi', description: 'Strumenti a basso livello per il desktop Linux.' },
+  network: { title: 'Reti e self-hosting', description: 'Strumenti per le reti e i server che gestisco.' },
+  build: {
+    title: 'Build native',
+    description: 'Build riproducibili e multipiattaforma delle librerie C dietro i pacchetti Dart.',
+  },
+  other: { title: 'Altro', description: 'Tutto il resto su GitHub.' },
+};
+
+export const projectGroups = (lang: Lang) =>
+  lang === 'it' ? PROJECT_GROUPS.map((g) => ({ ...g, ...GROUPS_IT[g.id] })) : PROJECT_GROUPS;
+
 /** logos for plain GitHub repos (case studies set theirs in frontmatter) */
 export const REPO_LOGOS: Record<string, string> = {};
 
@@ -174,4 +235,10 @@ export const LANG_COLORS: Record<string, string> = {
   Swift: '#F05138',
   HTML: '#e34c26',
   CSS: '#563d7c',
+  CMake: '#DA3434',
+  QML: '#44a51c',
+  Svelte: '#ff3e00',
+  Astro: '#ff5a03',
+  GLSL: '#5686a5',
+  Ruby: '#701516',
 };

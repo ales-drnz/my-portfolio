@@ -1,0 +1,88 @@
+---
+tagline: Client SMB2/3 per Dart e Flutter, basato su libsmb2.
+summary: >-
+  Elenca, legge, trasmette in streaming, scarica e scrive file su condivisioni Samba, Windows e NAS da worker
+  isolate che si riconnettono da soli. È un pacchetto Dart puro: un build hook include una versione modificata
+  di libsmb2 per cinque sistemi operativi, così lo possono usare app Flutter, tool a riga di comando e server.
+highlights:
+  - Una connessione per ogni worker isolate, e ogni chiamata va a quello meno occupato
+  - Si riconnette per tutti i chiamanti e ripete la chiamata quando è sicuro farlo
+  - Cancel token, errori NT status tipizzati e letture senza copie aggiuntive
+---
+import { Image } from 'astro:assets';
+import architecture from '../../assets/projects/dart-smb2/diagram_architecture.png';
+import poolLifecycle from '../../assets/projects/dart-smb2/diagram_pool_lifecycle.png';
+import streaming from '../../assets/projects/dart-smb2/diagram_streaming.png';
+import reconnect from '../../assets/projects/dart-smb2/diagram_reconnect.png';
+
+## Cos'è
+
+Un client Dart per le condivisioni di file SMB2 e SMB3 (il protocollo usato dalle condivisioni Windows e dalla
+maggior parte dei NAS domestici). È un pacchetto Dart puro, senza plugin Flutter: un build hook include
+libsmb2 per Android, iOS, Linux, macOS e Windows, verificata rispetto a SHA-256 fissati, così la stessa API
+funziona in un'app Flutter, in un tool a riga di comando o in un server.
+
+## Architettura
+
+`Smb2Pool` è il punto di ingresso. Avvia alcuni worker isolate, ognuno con la propria connessione alla
+condivisione e il proprio `Smb2Client`, il client sincrono sopra libsmb2. Il tuo codice chiama il pool da
+qualsiasi isolate; ogni chiamata va al worker meno occupato, quindi l'isolate della UI non resta mai in attesa
+della rete.
+
+<Image src={architecture} alt="Architettura: il tuo codice chiama Smb2Pool, che invia ogni richiesta a uno dei suoi worker isolate; ogni worker esegue uno Smb2Client sul proprio contesto libsmb2" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+```dart
+final pool = await Smb2Pool.connect(
+  host: 'nas.local',
+  share: 'Music',
+  user: 'alice',
+  password: 'secret',
+  workers: 4,
+);
+
+for (final entry in await pool.listDirectory('')) {
+  print('${entry.name}  ${entry.isDirectory ? 'dir' : '${entry.size} B'}');
+}
+
+final written = await pool.downloadToFile(
+  'Album/01 - Intro.flac',
+  '/storage/music/01 - Intro.flac',
+  onProgress: (received, total) => print('${received * 100 ~/ total}%'),
+);
+```
+
+<Image src={poolLifecycle} alt="Ciclo di vita del pool: Smb2Pool.connect, chiamate, withFile e streamFile, disconnect" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Streaming e download
+
+`streamFile()` tiene aperto un solo file handle e legge il blocco successivo mentre il tuo codice gestisce
+quello corrente, quindi in memoria ci sono al massimo due blocchi. `downloadToFile()` scrive al ritmo che il
+disco riesce a sostenere, in un file temporaneo che viene rinominato con il nome di destinazione solo a
+download completato. Le letture finiscono in buffer nativi che arrivano al tuo isolate senza copie.
+
+<Image src={streaming} alt="Streaming: il worker legge il blocco successivo mentre il tuo isolate scrive quello corrente" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Riconnessione
+
+Quando una connessione cade, il pool si riconnette una sola volta per tutti i chiamanti che erano in attesa,
+ripete la chiamata quando è sicuro farlo e riapre i file aperti. Le chiamate che modificano la condivisione
+(`mkdir`, `rmdir`, `deleteFile`, `rename`) si riconnettono ma non vengono ritentate.
+
+<Image src={reconnect} alt="Riconnessione: un worker perde la connessione, il pool avvia un nuovo worker e ripete la chiamata" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Cos'altro include
+
+- **Annullamento**: ogni chiamata su un pool connesso accetta un `Smb2CancelToken`, come in dart_plex e
+  dart_jellyfin.
+- **Errori tipizzati**: ogni errore è una `Smb2Exception` classificata in base all'NT status del server:
+  autenticazione, non trovato, rete, transitorio o annullato.
+- **Sicurezza SMB3**: accesso NTLM, cifratura e firma, e il dialetto che scegli, fino a SMB 3.1.1.
+- **File e directory**: elenchi con metadati, intervalli di byte, handle, scritture, rinomina, timestamp,
+  spazio della condivisione ed enumerazione delle condivisioni.
+
+## Build native
+
+I binari vengono da [libsmb2-scripts](https://github.com/ales-drnz/libsmb2-scripts): un commit upstream di
+libsmb2 fissato con un piccolo insieme di patch, cross-compilato per Android, iOS, macOS, Windows e Linux su
+più architetture. Lo stesso repository è il sorgente corrispondente dei binari LGPL-2.1 distribuiti con il
+pacchetto.

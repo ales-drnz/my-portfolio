@@ -6,6 +6,7 @@
    never breaks the build.
    ------------------------------------------------------------ */
 import { SITE } from './site';
+import { UI, type Lang } from './i18n';
 
 const GH = 'https://api.github.com';
 const token = import.meta.env.GITHUB_TOKEN ?? process.env.GITHUB_TOKEN;
@@ -135,6 +136,38 @@ export const getUpstreamPRs = () =>
     return [...gh, ...gl].sort((a, b) => +new Date(b.mergedAt) - +new Date(a.mergedAt));
   });
 
+/** Issues opened by others on my repos and closed as completed. */
+export const getResolvedIssues = () =>
+  memo('issues', async (): Promise<number> => {
+    const q = encodeURIComponent(`user:${SITE.handle} type:issue is:closed reason:completed -author:${SITE.handle}`);
+    const res = await getJson<{ total_count: number }>(`${GH}/search/issues?q=${q}&per_page=1`, { headers: ghHeaders });
+    return res?.total_count ?? 0;
+  });
+
+export interface LanguageShare {
+  name: string;
+  bytes: number;
+  /** 0–1 of all code */
+  share: number;
+}
+
+/** Bytes of code per language summed over my own (non-fork) repos, biggest first. */
+export const getCodeLanguages = () =>
+  memo('languages', async (): Promise<LanguageShare[]> => {
+    const own = (await getRepos()).filter((r) => !r.fork);
+    const perRepo = await Promise.all(
+      own.map((r) => getJson<Record<string, number>>(`${GH}/repos/${SITE.handle}/${r.name}/languages`, { headers: ghHeaders })),
+    );
+    // a missing repo would skew every share, so show nothing rather than wrong numbers
+    if (perRepo.some((l) => l === null)) return [];
+    const totals = new Map<string, number>();
+    for (const langs of perRepo) for (const [name, bytes] of Object.entries(langs ?? {})) totals.set(name, (totals.get(name) ?? 0) + bytes);
+    const sum = [...totals.values()].reduce((a, b) => a + b, 0);
+    return [...totals]
+      .map(([name, bytes]) => ({ name, bytes, share: sum ? bytes / sum : 0 }))
+      .sort((a, b) => b.bytes - a.bytes);
+  });
+
 /* ---------------- contributions ---------------- */
 
 export interface ContributionDay {
@@ -235,12 +268,13 @@ export async function getPackages(): Promise<PubPackage[]> {
 
 /* ---------------- helpers ---------------- */
 
-export function timeAgo(date: string | Date): string {
+export function timeAgo(date: string | Date, lang: Lang = 'en'): string {
+  const ago = UI[lang].ago;
   const days = Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000);
-  if (days < 1) return 'today';
-  if (days < 30) return `${days}d ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
+  if (days < 1) return ago.today;
+  if (days < 30) return ago.d(days);
+  if (days < 365) return ago.mo(Math.floor(days / 30));
+  return ago.y(Math.floor(days / 365));
 }
 
 export const compact = (n: number) =>

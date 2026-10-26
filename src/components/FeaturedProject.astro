@@ -4,17 +4,20 @@ import { Image, getImage } from 'astro:assets';
 import Sparkline from './Sparkline.astro';
 import Octicon from './Octicon.astro';
 import { getRepo, getPackage, compact, timeAgo } from '../lib/data';
+import { t, localePath, type Lang } from '../lib/i18n';
 
 interface Props {
   project: CollectionEntry<'projects'>;
   index: number;
+  lang: Lang;
 }
 
-const { project, index } = Astro.props;
+const { project, index, lang } = Astro.props;
+const T = t(lang).card;
 const p = project.data;
 const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.package ? getPackage(p.package) : null]);
 const poster = p.cover && p.coverVideo ? await getImage({ src: p.cover, width: 1200, format: 'webp' }) : null;
-const href = `/projects/${project.id}`;
+const href = localePath(lang, `/projects/${project.id}`);
 
 // media on the left, intro + a row of numbers on the right
 const tile = 'rounded-[13px] bg-surface p-4 min-w-0';
@@ -86,7 +89,7 @@ const numTile = 'rounded-[13px] bg-surface px-4 py-3 min-w-0';
       <div class:list={[tile, 'flex-1 min-h-0 overflow-hidden flex flex-col gap-2']}>
         <div class="flex items-center gap-2.5">
           {p.logo && <Image src={p.logo} alt="" width={36} height={36} densities={[1, 2, 3]} class="size-9 rounded-lg object-contain" />}
-          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">{p.kind}</span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">{t(lang).kind[p.kind]}</span>
           {pkg?.version && <span class="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-surface-2 text-muted">v{pkg.version}</span>}
         </div>
         <h3 class="text-xl font-semibold tracking-tight">
@@ -101,19 +104,19 @@ const numTile = 'rounded-[13px] bg-surface px-4 py-3 min-w-0';
       <!-- numbers -->
       <div class="grid grid-cols-3 gap-2 shrink-0">
         <div class:list={[numTile, 'flex flex-col justify-between gap-3']}>
-          <span class={label}><Octicon name="star-fill" size={12} class="text-star" /> Stars</span>
+          <span class={label}><Octicon name="star-fill" size={12} class="text-star" /> {T.stars}</span>
           <span class={value}>{repo?.stargazers_count ?? '—'}</span>
         </div>
         {
           pkg ? (
             <div class:list={[numTile, 'flex flex-col justify-between gap-3']}>
-              <span class={label}><Octicon name="thumbsup" size={12} class="text-accent" /> Likes</span>
+              <span class={label}><Octicon name="thumbsup" size={12} class="text-accent" /> {T.likes}</span>
               <span class={value}>{pkg.likes}</span>
             </div>
           ) : (
             <div class:list={[numTile, 'flex flex-col justify-between gap-3']}>
-              <span class={label}><Octicon name="repo-push" size={12} /> Last push</span>
-              <span class={value}>{repo ? timeAgo(repo.pushed_at) : '—'}</span>
+              <span class={label}><Octicon name="repo-push" size={12} /> {T.lastPush}</span>
+              <span class={value}>{repo ? timeAgo(repo.pushed_at, lang) : '—'}</span>
             </div>
           )
         }
@@ -122,11 +125,11 @@ const numTile = 'rounded-[13px] bg-surface px-4 py-3 min-w-0';
             <div class:list={[numTile, 'relative overflow-hidden flex flex-col justify-between gap-3']}>
               <span class:list={[label, 'relative z-10']}><Octicon name="download" size={12} /> /30d</span>
               <span class:list={[value, 'relative z-10']}>{compact(pkg.downloads30d)}</span>
-              {pkg.weekly.length > 4 && <Sparkline edge values={pkg.weekly.slice(-26)} width={160} height={40} label="Weekly downloads, last 6 months" class="absolute inset-x-0 bottom-0 h-1/2 w-full" />}
+              {pkg.weekly.length > 4 && <Sparkline edge values={pkg.weekly.slice(-26)} width={160} height={40} label={T.weekly(p.title)} class="absolute inset-x-0 bottom-0 h-1/2 w-full" />}
             </div>
           ) : (
             <div class:list={[numTile, 'flex flex-col justify-between gap-3']}>
-              <span class={label}>Platforms</span>
+              <span class={label}>{T.platforms}</span>
               <span class="text-sm text-fg line-clamp-2">{p.platforms.join(', ')}</span>
             </div>
           )

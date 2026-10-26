@@ -187,7 +187,6 @@
 .hover-card {
   position: relative;
   isolation: isolate;
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .hover-card::before {
   content: "";
@@ -218,10 +217,6 @@
   transition: opacity 0.4s;
   animation: beam-spin 3.2s linear infinite;
   animation-play-state: paused;
-}
-.hover-card:hover,
-.hover-card:focus-within {
-  transform: translateY(-2px);
 }
 .hover-card:hover::before,
 .hover-card:focus-within::before {

@@ -1,0 +1,71 @@
+---
+tagline: Overlay vocale di Discord disegnato dentro il gioco, per Linux.
+summary: >-
+  Mostra chi è nel tuo canale vocale di Discord, chi sta parlando e i messaggi che ricevi, disegnati direttamente
+  nel frame del gioco da un layer implicito Vulkan e da un interposer OpenGL, così lo schermo intero non può
+  nasconderlo e il compositor non è coinvolto.
+highlights:
+  - Layer implicito Vulkan + shim OpenGL da 18 KB caricato in preload, a 32 e 64 bit
+  - Raggiunge i giochi Flatpak in sandbox tramite un'estensione Vulkan layer
+  - Disegno compatibile con HDR, impostazioni applicate in tempo reale ai giochi in esecuzione
+coverAlt: Pannello del canale vocale e un messaggio diretto disegnati dentro la scena di un gioco 3D
+---
+import { Image } from 'astro:assets';
+import panel from '../../assets/projects/vocem-overlay/settings-panel.png';
+import appearance from '../../assets/projects/vocem-overlay/settings-appearance.png';
+import apps from '../../assets/projects/vocem-overlay/settings-applications.png';
+import tray from '../../assets/projects/vocem-overlay/settings-tray.png';
+
+## Contesto
+
+Su Windows Discord disegna il suo overlay dentro i giochi; su Linux no. Gli overlay basati su finestre vengono
+coperti dallo schermo intero esclusivo e dipendono dal compositor. Vocem disegna direttamente nel frame che il
+gioco renderizza.
+
+## Come entra in un gioco
+
+- **Vulkan**: un layer implicito. Il loader trova il suo manifest e lo carica in ogni applicazione Vulkan; il
+  layer disegna il pannello sull'immagine della swapchain subito prima del present.
+- **OpenGL / GLES**: OpenGL non ha un meccanismo di layer, quindi un piccolo shim da 18 KB viene caricato in
+  preload tramite `environment.d` (oppure per singolo gioco con `vocem-run %command%` su Steam) e intercetta la
+  chiamata di swap.
+- **Giochi Flatpak**: i giochi in sandbox non vedono né il preload dell'host né i suoi manifest dei layer, quindi
+  il progetto pubblica una propria **estensione Vulkan layer** Flatpak per ogni branch del runtime freedesktop. Il
+  daemon resta sull'host e viene raggiunto tramite una directory che Flatpak condivide con la sandbox.
+
+Sono supportati sia i giochi a 32 bit sia quelli a 64 bit, ed entrambi i percorsi possono essere attivi
+contemporaneamente.
+
+## Architettura
+
+Il progetto è diviso in moduli separati, ognuno con responsabilità ben circoscritte:
+
+- **vocemd**: un daemon utente che comunica con il socket RPC locale di Discord e gestisce lo stato della voce e
+  dei messaggi.
+- **layer / gl**: i renderer caricati nel processo del gioco; leggono lo stato dal daemon e disegnano.
+- **gui**: un'app di impostazioni in Qt 6 / QML; le modifiche arrivano a un gioco in esecuzione nel giro di un
+  paio di secondi.
+- **cli**: `vocem-run` e `vocem-why`, per avviare i giochi e diagnosticare i problemi.
+
+Disegna solo nei giochi: li riconosce dagli identificativi dei launcher (Lutris, Heroic, Prism), dagli app id di
+Steam, dagli indizi di umu/gamescope e dalle desktop entry. Ogni app può essere attivata o disattivata dalla
+pagina **Applicazioni**.
+
+## Dettagli
+
+- **Dimensionato sullo schermo**, non sul gioco: una frazione fissa dell'altezza dello schermo, così non si
+  sposta quando un gioco cambia risoluzione.
+- **Compatibile con HDR**: sulle swapchain HDR10 o scRGB i colori vengono codificati per la swapchain invece di
+  risultare saturati.
+- **Emoji e CJK completi** nei nomi, grazie a font inclusi nel binario.
+- **Pacchettizzazione**: un `PKGBUILD` per Arch, un'installazione CMake senza root con una unit utente di
+  systemd, e il repository Flatpak del layer.
+
+## App delle impostazioni
+
+<div class="grid sm:grid-cols-2 gap-4 not-prose">
+  <Image src={panel} alt="Impostazioni del pannello" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={appearance} alt="Impostazioni dell'aspetto" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={apps} alt="Impostazioni per applicazione" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={tray} alt="Impostazioni del tray" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+</div>

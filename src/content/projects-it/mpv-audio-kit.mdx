@@ -1,0 +1,132 @@
+---
+tagline: Motore audio per Flutter e Dart, basato su mpv 0.41.
+summary: >-
+  Il motore audio per le app Flutter che riproducono dal proprio server. Si collega a Jellyfin, Plex e Samba,
+  riproduce PCM in tempo reale man mano che arriva e porta tutto ciò che mpv e ffmpeg sanno fare dietro
+  un'API Dart tipizzata: libmpv pilotata da un isolate in background, una catena di effetti tipizzati, spettro
+  e forma d'onda in tempo reale e media session native su Android, iOS, macOS, Windows e Linux.
+highlights:
+  - Oltre 100 stream reattivi da un isolate di eventi non bloccante
+  - EQ a 18 bande, compressore, pitch/tempo e qualsiasi filtro lavfi come stadio tipizzato
+  - Input PCM in tempo reale per l'audio che arriva a blocchi, come il parlato generato
+---
+import { Image } from 'astro:assets';
+import Video from '../../components/mdx/Video.astro';
+import architecture from '../../assets/projects/mpv-audio-kit/architecture.png';
+import effectsChain from '../../assets/projects/mpv-audio-kit/effects_chain.png';
+import spectrum from '../../assets/projects/mpv-audio-kit/spectrum_pipeline.png';
+import effectsPoster from '../../assets/projects/mpv-audio-kit/effects-poster.jpg';
+import consolePoster from '../../assets/projects/mpv-audio-kit/console-poster.jpg';
+import streamPoster from '../../assets/projects/mpv-audio-kit/stream-poster.jpg';
+
+## Perché l'ho creato
+
+Molte librerie audio per Flutter si basano su una vecchia versione di mpv, oppure sono troppo restrittive e
+nascondono le funzioni di elaborazione audio. mpv_audio_kit espone l'intero motore tramite un'API Dart
+tipizzata, senza bloccare il thread della UI, ed è pensato per le app che riproducono dalla propria libreria
+multimediale:
+
+- **Jellyfin**: stream diretti o transcodificati, e l'HLS transcodificato resta navigabile mentre il server
+  converte.
+- **Plex**: ogni traccia chiede lo stream al server solo quando viene caricata, tramite un source resolver,
+  così una coda lunga parte subito e il server non viene sommerso di richieste.
+- **Samba**: riproduzione diretta da un NAS o da qualsiasi condivisione di rete via SMB2 e SMB3.
+
+Il progetto è diviso in tre repository:
+
+- **mpv_audio_kit**: la libreria Dart/Flutter, pubblicata su pub.dev.
+- **[libmpv-scripts](https://github.com/ales-drnz/libmpv-scripts)**: una build solo audio di libmpv e FFmpeg
+  con patch personalizzate, cross-compilata per cinque sistemi operativi e gestita da una TUI in Go.
+- **[MPV Studio](/it/projects/mpv-studio)**: l'app di riferimento costruita sulla libreria.
+
+## Architettura
+
+Il `Player` vive sull'isolate principale ed espone uno snapshot sincrono dello stato e più di 100 stream. I
+comandi arrivano a libmpv tramite la sua API asincrona; un isolate dedicato resta in attesa su
+`mpv_wait_event` e rimanda indietro lo stato, così gli stream di rete lenti e i filter graph pesanti non
+bloccano la UI.
+
+<Image src={architecture} alt="Architettura: UI e Player sull'isolate principale, isolate degli eventi e libmpv in background, plugin di piattaforma che fa da ponte verso i controlli multimediali del sistema operativo" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+Le media session (la notifica multimediale su Android, Now Playing su Apple, MPRIS su Linux, SMTC su Windows)
+sono gestite da Dart, quindi i controlli sulla schermata di blocco e le notifiche funzionano allo stesso modo
+su ogni piattaforma.
+
+## Una catena di effetti tipizzata
+
+Gli effetti audio sono una lista ordinata di stadi tipizzati (equalizzatore grafico a 18 bande, compressore,
+normalizzazione del volume, pitch e tempo, bassi/acuti, ampiezza stereo, crossfeed per le cuffie, rimozione
+dei silenzi) compilati in un unico filter graph di ffmpeg. Tutto ciò che non è coperto da uno stadio
+tipizzato si può comunque inserire come filtro lavfi grezzo. Quando si trascina uno slider che cambia solo i
+parametri di uno stadio, la modifica viene applicata al graph in esecuzione, senza una ricostruzione udibile.
+
+<Image src={effectsChain} alt="Catena di effetti: stadi di effetti tipizzati compilati in un graph lavfi di ffmpeg" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+<Video src="/media/mpv-audio-kit/effects.mp4" poster={effectsPoster} caption="Regolazione dell'EQ e degli effetti in tempo reale in MPV Studio" />
+
+## Vedere il suono
+
+Spettro, PCM, panoramiche della forma d'onda e analisi della loudness escono da filtri FFmpeg modificati e
+arrivano a Dart come stream.
+
+<Image src={spectrum} alt="Pipeline dello spettro, dal filtro ffmpeg allo stream Dart" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Input PCM in tempo reale
+
+Novità della 0.5.0: un `PcmSource` riproduce blocchi PCM grezzi man mano che arrivano, come il parlato
+generato un pezzo alla volta o i campioni inviati su un socket. Niente file, niente server locale e niente
+header: i blocchi vanno dritti a mpv e la riproduzione parte circa 0.2 s dopo il primo (circa 0.13 s con
+`lowLatency: true`).
+
+```dart
+final socket = await WebSocket.connect('wss://example.com/speech');
+final source = await player.openPcmStream(
+  const PcmFormat(sampleRate: 24000, channels: 1), // s16le by default
+);
+await source.addStream(
+  socket.where((m) => m is List<int>).map(
+    (m) => m is Uint8List ? m : Uint8List.fromList(m as List<int>),
+  ),
+);
+await source.close();
+```
+
+`close` riproduce quello che c'è nel buffer e chiude la voce dopo l'ultimo campione; `abort` la interrompe
+subito. Le sorgenti si possono anche accodare nella playlist, e ognuna parte quando finisce la precedente. Per
+questo è servito un nuovo protocollo `mak-pcm`, aggiunto a mpv tramite patch in libmpv-scripts.
+
+## Portare libmpv nell'app
+
+Un build hook di Dart scarica la build di libmpv per ogni target dalle release del progetto, la verifica
+rispetto a uno SHA-256 fissato e la include nell'app. Le build vengono da libmpv-scripts: Docker per Linux,
+Windows e Android, Xcode per Apple, con una fase di verifica che controlla ogni artefatto prima della release.
+
+```yaml
+dependencies:
+  mpv_audio_kit: ^0.5.0
+```
+
+```dart
+final player = Player();
+await player.open(Media('https://example.com/audio.mp3'));
+
+await player.setAudioEffects([
+  // +3 dB around 100 Hz, then compress and limit
+  EqualizerEffect(frequency: 100, width: 50, widthType: EqualizerWidthType.h, gain: 3),
+  AcompressorEffect(threshold: 0.1, ratio: 4),
+  AlimiterEffect(limit: 0.9),
+]);
+
+player.stream.audioEffects.listen((fx) => print('${fx.length} stages'));
+```
+
+## Stream e protocolli
+
+HTTP(S), HLS, DASH e SMB2/3 si riproducono come file locali, con il controllo sulla dimensione della cache,
+su dove viene salvata e sulla pausa quando la cache è vuota. Gli hook eseguono il tuo codice durante il
+caricamento di un file, prefetch compreso, per risolvere URL, fare redirect o aggiungere header.
+
+<div class="grid sm:grid-cols-2 gap-4 not-prose">
+  <Video src="/media/mpv-audio-kit/stream.mp4" poster={streamPoster} caption="Stream di rete" />
+  <Video src="/media/mpv-audio-kit/console.mp4" poster={consolePoster} caption="Console mpv grezza" />
+</div>

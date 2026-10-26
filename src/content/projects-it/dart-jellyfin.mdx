@@ -1,0 +1,29 @@
+---
+platforms: [Tutte le piattaforme Dart]
+tagline: Client Dart tipizzato per Jellyfin.
+summary: >-
+  Un client Jellyfin in Dart puro che copre librerie, playlist, streaming audio, testi, reporting della riproduzione
+  e ricerca tramite oggetti tipizzati, e gestisce al posto tuo il ciclo di vita della sessione. Basato sulla
+  specifica OpenAPI di Jellyfin e testato su un server reale.
+highlights:
+  - Accesso con credenziali e con Quick Connect
+  - DTO tipizzati che conservano la mappa raw per i campi dei server più recenti
+  - Testi sincronizzati con output LRC
+---
+
+## Panoramica
+
+Un oggetto client, `JellyfinClient`, contiene identità, server e token, e da lì si accede alle sotto-API
+tipizzate. [dart_plex](/it/projects/dart-plex) ha la stessa struttura, così un'app può supportare entrambi i
+server allo stesso modo.
+
+## Funzionalità
+
+- **Basato sulla specifica OpenAPI ufficiale**: nomi degli endpoint, nomi dei campi e maiuscole/minuscole
+  corrispondono a api.jellyfin.org.
+- **DTO tipizzati**: ogni risposta è un oggetto tipizzato che conserva anche la sua mappa `.raw`, così i campi
+  aggiunti dai server più recenti non vanno persi.
+- **Entrambi i flussi di autenticazione**: `authenticateByName()` e il collegamento tramite Quick Connect.
+- **Testi sincronizzati**: righe già parsate, helper per convertire i tick in millisecondi e output `.toLrc()`.
+
+È Dart puro (nessun plugin nativo, nessuna dipendenza da Flutter) e gira ovunque giri Dart.
