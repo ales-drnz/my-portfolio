@@ -60,8 +60,23 @@ const groups = PROJECT_GROUPS.map((g) => {
   .map((g) => ({ ...g, count: g.featured.length + g.secondary.length + g.repos.length }))
   .filter((g) => g.count > 0);
 
+// box-in-box tiles, the same as the project cards
+const tile = 'rounded-[6px] bg-surface min-w-0';
 const downloads30d = packages.reduce((s, p) => s + p.downloads30d, 0);
 const totalLikes = packages.reduce((s, p) => s + p.likes, 0);
+const stats = [
+  { href: 'https://github.com/ales-drnz?tab=repositories&sort=stargazers', external: true, icon: 'star-fill', color: 'text-star', label: T.stars, value: totalStars },
+  { href: SOCIALS[1].url, external: true, icon: 'thumbsup', color: 'text-accent', label: T.likes, value: totalLikes },
+  { href: '#open-source', external: false, icon: 'git-merge', color: 'text-merged', label: T.upstreamPRs, value: prs.length },
+  {
+    href: 'https://github.com/issues?q=user%3Aales-drnz+type%3Aissue+is%3Aclosed+reason%3Acompleted+-author%3Aales-drnz',
+    external: true,
+    icon: 'issue-closed',
+    color: 'text-ok',
+    label: T.issuesResolved,
+    value: resolvedIssues,
+  },
+] as const;
 // sum weekly series aligned on the most recent week
 const weeks = Math.max(0, ...packages.map((p) => p.weekly.length));
 const weeklyTotal = Array.from({ length: weeks }, (_, i) =>
@@ -101,39 +116,27 @@ const prGroups = Object.entries(
         </div>
 
         <!-- pub.dev tile -->
-        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group rounded-2xl bg-surface/80 backdrop-blur p-5 flex flex-col overflow-hidden">
-          <div class="flex items-center justify-between text-sm text-muted">
+        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group flex flex-col gap-2 p-2 rounded-2xl bg-surface-2">
+          <div class:list={[tile, 'px-4 py-3 flex items-center justify-between text-sm text-muted']}>
             <span class="flex items-center gap-2"><Octicon name="download" size={14} /> {T.pubDownloads}</span>
             <Icon name="arrow-up-right" size={14} class="text-subtle group-hover:text-fg transition-colors" />
           </div>
-          <p class="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
-            {compact(downloads30d)}<span class="text-base font-normal text-subtle"> {T.perMonth}</span>
-          </p>
-          <Sparkline edge values={weeklyTotal.slice(-26)} width={260} height={56} label={T.weeklyAll} class="mt-auto -mx-5 -mb-5 pt-3 h-16 w-[calc(100%+2.5rem)] max-w-none" />
+          <div class:list={[tile, 'relative flex-1 overflow-hidden px-4 pt-3 pb-14']}>
+            <p class="relative z-10 text-3xl font-semibold tracking-tight tabular-nums">
+              {compact(downloads30d)}<span class="text-base font-normal text-subtle"> {T.perMonth}</span>
+            </p>
+            <Sparkline edge values={weeklyTotal.slice(-26)} width={260} height={56} label={T.weeklyAll} class="absolute inset-x-0 bottom-0 h-14 w-full" />
+          </div>
         </a>
 
         <!-- numbers tile -->
-        <div class="rounded-2xl bg-surface/80 backdrop-blur p-5 grid grid-cols-2 gap-2 text-center content-center">
-          <a href="https://github.com/ales-drnz?tab=repositories&sort=stargazers" target="_blank" rel="noopener" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
-            <Octicon name="star-fill" size={22} class="text-star" />
-            <p class="mt-2 text-2xl font-semibold tabular-nums">{totalStars}</p>
-            <p class="text-xs text-subtle mt-0.5">{T.stars}</p>
-          </a>
-          <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
-            <Octicon name="thumbsup" size={22} class="text-accent" />
-            <p class="mt-2 text-2xl font-semibold tabular-nums">{totalLikes}</p>
-            <p class="text-xs text-subtle mt-0.5">{T.likes}</p>
-          </a>
-          <a href="#open-source" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
-            <Octicon name="git-merge" size={22} class="text-merged" />
-            <p class="mt-2 text-2xl font-semibold tabular-nums">{prs.length}</p>
-            <p class="text-xs text-subtle mt-0.5">{T.upstreamPRs}</p>
-          </a>
-          <a href="https://github.com/issues?q=user%3Aales-drnz+type%3Aissue+is%3Aclosed+reason%3Acompleted+-author%3Aales-drnz" target="_blank" rel="noopener" class="group flex flex-col items-center rounded-xl py-2 hover:bg-surface-2 transition-colors">
-            <Octicon name="issue-closed" size={22} class="text-ok" />
-            <p class="mt-2 text-2xl font-semibold tabular-nums">{resolvedIssues}</p>
-            <p class="text-xs text-subtle mt-0.5">{T.issuesResolved}</p>
-          </a>
+        <div class="grid grid-cols-2 gap-2 p-2 rounded-2xl bg-surface-2">
+          {stats.map((s) => (
+            <a href={s.href} target={s.external ? '_blank' : undefined} rel={s.external ? 'noopener' : undefined} class:list={['hover-card', tile, 'px-3 py-3 flex flex-col justify-between gap-3']}>
+              <span class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name={s.icon} size={12} class={s.color} /> {s.label}</span>
+              <span class="text-xl font-semibold tracking-tight tabular-nums">{s.value}</span>
+            </a>
+          ))}
         </div>
       </div>
     </div>
@@ -143,7 +146,7 @@ const prGroups = Object.entries(
   <Section id="work" eyebrow={T.work.eyebrow} title={T.work.title} lead={T.work.lead}>
     <nav slot="aside" class="flex flex-wrap gap-2" aria-label={T.work.groups}>
       {groups.map((g) => (
-        <a href={`#group-${g.id}`} class="inline-flex items-center gap-2 h-8 px-3 rounded-full bg-surface text-sm text-muted hover:text-fg hover:bg-surface-2 transition-colors">
+        <a href={`#group-${g.id}`} class="inline-flex items-center gap-2 h-8 px-3 rounded-lg bg-surface text-sm text-muted hover:text-fg hover:bg-surface-2 transition-colors">
           {g.brand ? <BrandIcon name={g.brand as BrandKey} size={13} /> : <Octicon name={g.octicon as any} size={13} />}
           {g.title}
           <span class="font-mono text-xs text-subtle tabular-nums">{g.count}</span>
@@ -242,7 +245,7 @@ const prGroups = Object.entries(
 
   <!-- ===================== CONTACT ===================== -->
   <section id="contact" class="mx-auto max-w-5xl px-4 sm:px-6 pt-24 scroll-mt-14">
-    <div class="relative overflow-hidden rounded-3xl bg-surface px-6 py-14 sm:px-12 text-center">
+    <div class="relative overflow-hidden rounded-2xl bg-surface px-6 py-14 sm:px-12 text-center">
       <div class="relative">
         <p class="font-mono text-xs text-accent uppercase tracking-[0.14em] mb-3">{T.contact.eyebrow}</p>
         <h2 class="text-2xl sm:text-4xl font-semibold tracking-tight text-balance">{T.contact.title}</h2>

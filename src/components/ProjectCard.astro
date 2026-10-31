@@ -19,19 +19,19 @@ const T = t(lang).card;
 const p = project.data;
 const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.package ? getPackage(p.package) : null]);
 
-const tile = 'rounded-[13px] bg-surface min-w-0';
+const tile = 'rounded-[6px] bg-surface min-w-0';
 const numTile = `${tile} px-3 py-3 flex flex-col justify-between gap-3`;
 const label = 'flex items-center gap-1.5 text-xs text-subtle';
 const value = 'text-xl font-semibold tracking-tight tabular-nums';
 ---
 
-<a href={localePath(lang, `/projects/${project.id}`)} class="hover-card group flex flex-col gap-2 p-2 rounded-[20px] bg-surface-2">
+<a href={localePath(lang, `/projects/${project.id}`)} class="hover-card group flex flex-col gap-2 p-2 rounded-2xl bg-surface-2">
   <!-- intro -->
   <div class:list={[tile, 'flex-1 p-4 flex flex-col gap-3']}>
     <div class="flex items-center gap-2.5">
       {
         p.logo ? (
-          <Image src={p.logo} alt="" width={32} height={32} densities={[1, 2, 3]} class="size-8 shrink-0 rounded-lg object-contain" />
+          <Image src={p.logo} alt="" width={32} height={32} densities={[1, 2, 3]} class="size-8 shrink-0 rounded-md object-contain" />
         ) : (
           <Octicon name="book" size={20} class="shrink-0 text-subtle" />
         )

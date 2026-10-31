@@ -63,6 +63,11 @@
   color-scheme: dark;
 }
 
+/* every box on the site shares one corner: 2xl matches xl (12px) instead of Tailwind's 16px */
+@theme {
+  --radius-2xl: 0.75rem;
+}
+
 @theme inline {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
@@ -168,68 +173,26 @@
   color: var(--c-ramp-4);
 }
 
-/* hover for interactive cards: a small lift and a green beam of light that travels around the border.
-   A conic gradient spins via an animated custom property, and a mask leaves
-   only a 1.5px ring visible. Drawn just inside the border so cards with
-   overflow:hidden don't clip it. */
-@property --beam-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes beam-spin {
-  to {
-    --beam-angle: 360deg;
-  }
-}
-
+/* hover for interactive cards: a fixed accent border, no movement. It sits in a pseudo-element above
+   the content so inner tiles can't cover it. */
 .hover-card {
   position: relative;
-  isolation: isolate;
 }
 .hover-card::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 3;
-  padding: 1.5px;
   border-radius: inherit;
   pointer-events: none;
-  background: conic-gradient(
-    from var(--beam-angle),
-    transparent 0%,
-    transparent 58%,
-    color-mix(in oklab, var(--c-ramp-4) 35%, transparent) 76%,
-    var(--c-ramp-4) 92%,
-    color-mix(in oklab, var(--c-ramp-4) 70%, white) 97%,
-    transparent 100%
-  );
-  /* longhands on purpose: the mask shorthand gets mangled by the CSS minifier
-     (it drops the composite), which shows the whole spinning gradient */
-  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-  -webkit-mask-clip: content-box, border-box;
-  -webkit-mask-composite: xor;
-  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-  mask-clip: content-box, border-box;
-  mask-composite: exclude;
+  box-shadow: inset 0 0 0 1px var(--c-accent);
   opacity: 0;
-  transition: opacity 0.4s;
-  animation: beam-spin 3.2s linear infinite;
-  animation-play-state: paused;
+  transition: opacity 0.2s;
 }
 .hover-card:hover::before,
-.hover-card:focus-within::before {
+.hover-card:focus-visible::before,
+.hover-card:has(:focus-visible)::before {
   opacity: 1;
-  animation-play-state: running;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* no spinning: a static green ring instead */
-  .hover-card::before {
-    animation: none;
-    background: color-mix(in oklab, var(--c-ramp-4) 60%, transparent);
-  }
 }
 
 /* long-form project pages */
