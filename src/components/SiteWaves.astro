@@ -1,0 +1,122 @@
+---
+// The glyph waves of the banners, behind the whole site. Drawn on a canvas from a pre-rendered atlas of
+// the ramp, so a frame is a few thousand drawImage calls instead of as many text layouts. The canvas
+// persists across page transitions, so the waves keep running through navigation.
+---
+
+<canvas class="site-waves" aria-hidden="true" transition:persist="site-waves"></canvas>
+
+<script>
+  const CELL_W = 10;
+  const CELL_H = 20;
+  const FONT_SIZE = 14;
+  const RAMP = ' .:-=+*#'; // lightest to densest
+  const WAVELENGTH = 300; // px between crests
+  const PERIOD = 26; // seconds for a crest to travel one wavelength
+  const FPS = 15;
+  const STILL = 0.15; // the frame shown with reduced motion
+
+  const canvas = document.querySelector<HTMLCanvasElement>('.site-waves');
+  const ctx = canvas?.getContext('2d');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  if (canvas && ctx) {
+    let dpr = 1;
+    let cols = 0;
+    let rows = 0;
+    let reach = 0;
+    let atlas: HTMLCanvasElement | null = null;
+    let timer = 0;
+
+    // one row of glyphs for the water, one for the crests
+    function buildAtlas() {
+      const style = getComputedStyle(document.documentElement);
+      const sheet = document.createElement('canvas');
+      sheet.width = RAMP.length * CELL_W * dpr;
+      sheet.height = 2 * CELL_H * dpr;
+      const g = sheet.getContext('2d');
+      if (!g) return;
+      g.scale(dpr, dpr);
+      g.font = `500 ${FONT_SIZE}px "Geist Mono Variable", monospace`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      ['--c-wave', '--c-wave-hot'].forEach((token, row) => {
+        g.fillStyle = style.getPropertyValue(token).trim();
+        [...RAMP].forEach((glyph, i) => g.fillText(glyph, (i + 0.5) * CELL_W, (row + 0.5) * CELL_H));
+      });
+      atlas = sheet;
+    }
+
+    function resize() {
+      dpr = Math.min(2, devicePixelRatio || 1);
+      canvas!.width = innerWidth * dpr;
+      canvas!.height = innerHeight * dpr;
+      cols = Math.ceil(innerWidth / CELL_W);
+      rows = Math.ceil(innerHeight / CELL_H);
+      reach = Math.hypot(innerWidth, innerHeight); // the whole diagonal, corner to corner
+      buildAtlas();
+    }
+
+    // two sets of ripples, from opposite corners, the far one bending the near one into a liquid pattern
+    const TAU = 2 * Math.PI;
+    function shapeAt(x: number, y: number, phase: number) {
+      const near = Math.hypot(x - innerWidth, y) / WAVELENGTH - phase;
+      const far = Math.hypot(x, y - innerHeight) / (WAVELENGTH * 1.4) - phase;
+      return Math.sin(TAU * near + 1.6 * Math.sin(TAU * far));
+    }
+
+    function draw(seconds: number) {
+      if (!atlas || !ctx) return;
+      ctx.clearRect(0, 0, canvas!.width, canvas!.height);
+      const phase = seconds / PERIOD;
+      // the waves are strongest in the top-right corner, away from the text
+      const sx = innerWidth;
+      const sy = 0;
+      const w = CELL_W * dpr;
+      const h = CELL_H * dpr;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = (c + 0.5) * CELL_W;
+          const y = (r + 0.5) * CELL_H;
+          const d = Math.hypot(x - sx, y - sy);
+          const wave = shapeAt(x, y, phase);
+          // eases off along the diagonal, and only gives out near the far corner
+          const fade = (1 - 0.6 * (d / reach)) * Math.min(1, (reach - d) / (reach * 0.15));
+          const level = Math.pow(0.5 + 0.5 * wave, 1.15) * fade;
+          const glyph = Math.round(level * (RAMP.length - 1));
+          if (glyph === 0) continue;
+          const hot = wave > 0.55 ? 1 : 0; // the crests are green
+          ctx.drawImage(atlas, glyph * w, hot * h, w, h, c * w, r * h, w, h);
+        }
+      }
+    }
+
+    function start() {
+      clearInterval(timer);
+      if (reduced.matches || document.hidden) {
+        draw(STILL * PERIOD);
+        return;
+      }
+      draw(performance.now() / 1000);
+      timer = window.setInterval(() => draw(performance.now() / 1000), 1000 / FPS);
+    }
+
+    function redraw() {
+      resize();
+      start();
+    }
+
+    addEventListener('resize', redraw);
+    document.addEventListener('visibilitychange', start);
+    reduced.addEventListener('change', start);
+    // the theme switch swaps the glyph colours
+    new MutationObserver(() => {
+      buildAtlas();
+      start();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    redraw();
+    // the atlas needs the real font: redraw it once it has loaded
+    document.fonts.load(`500 ${FONT_SIZE}px "Geist Mono Variable"`).then(redraw, () => {});
+  }
+</script>

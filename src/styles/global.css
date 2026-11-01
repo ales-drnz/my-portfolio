@@ -29,7 +29,8 @@
   --c-disc: #ffffff;
   /* the mark, from the brand kit */
   --c-mark: #3e7a0e;
-  --c-dots: #1113181f;
+  --c-wave: #11131838;
+  --c-wave-hot: #3e7a0e4a;
   color-scheme: light;
 }
 
@@ -51,7 +52,8 @@
   --c-ramp-4: #c6f432;
   --c-disc: #22252b;
   --c-mark: #c6f432;
-  --c-dots: #ededed1c;
+  --c-wave: #ededed2c;
+  --c-wave-hot: #c6f4323a;
   color-scheme: dark;
 }
 
@@ -104,60 +106,19 @@
   color: color-mix(in oklab, var(--brand) 72%, white);
 }
 
-/* the dot grid of the banners, behind the whole site. The dots only show inside a soft patch that
-   fades out at its edge, and the patch drifts clockwise around the viewport: its centre follows an
-   ellipse, x and y each easing back and forth (a cosine and a sine, a quarter-loop apart), so the
-   motion never stops or turns a corner. */
-@property --dots-x {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 50%;
-}
-@property --dots-y {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 50%;
-}
-.site-dots {
-  --dots-x: 50%;
-  --dots-y: 50%;
+/* the glyph waves of the banners, behind the whole site: see SiteWaves.astro */
+.site-waves {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: -1;
   pointer-events: none;
-  background-image: radial-gradient(circle, var(--c-dots) 1.2px, transparent 1.7px);
-  background-size: 22px 22px;
-  background-position: 11px 11px;
-  -webkit-mask-image: radial-gradient(circle 55vmax at var(--dots-x) var(--dots-y), #000 0%, rgb(0 0 0 / 0.55) 35%, transparent 70%);
-  mask-image: radial-gradient(circle 55vmax at var(--dots-x) var(--dots-y), #000 0%, rgb(0 0 0 / 0.55) 35%, transparent 70%);
-  /* one loop every 48 s: x swings over half of it, y the same but a quarter-loop behind, so the
-     patch goes right → bottom → left → top, clockwise on screen */
-  animation:
-    dots-x 24s ease-in-out infinite alternate,
-    dots-y 24s ease-in-out -12s infinite alternate;
-}
-@keyframes dots-x {
-  from {
-    --dots-x: 85%;
-  }
-  to {
-    --dots-x: 15%;
-  }
-}
-@keyframes dots-y {
-  from {
-    --dots-y: 15%;
-  }
-  to {
-    --dots-y: 85%;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .site-dots {
-    animation: none;
-    --dots-x: 80%;
-    --dots-y: 15%;
-  }
+  /* the blur turns the glyphs into a soft texture, and the mask veils them behind the content column */
+  filter: blur(1.2px);
+  --veil: linear-gradient(90deg, #000 0, rgb(0 0 0 / 0.3) calc(50% - 480px), rgb(0 0 0 / 0.3) calc(50% + 480px), #000 100%);
+  -webkit-mask-image: var(--veil);
+  mask-image: var(--veil);
 }
 
 /* "open source": the brand green, lime on dark grounds and the deep green on light ones */
