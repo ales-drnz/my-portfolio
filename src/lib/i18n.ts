@@ -14,13 +14,13 @@ export const switchPath = (url: URL, to: Lang) => {
   return localePath(to, base);
 };
 
-const OPEN = '<span class="text-open whitespace-nowrap">open-source</span>';
+const OPEN = '<span class="text-open whitespace-nowrap">open source</span>';
 
 export const UI = {
   en: {
     locale: 'en-GB',
     description:
-      'Building open-source tools and apps. M.Sc. Telecommunications Engineering student at Sapienza University of Rome.',
+      'Building open source tools and apps. M.Sc. Telecommunications Engineering student at Sapienza University of Rome.',
     skip: 'Skip to content',
     nav: { work: 'Work', education: 'Education', openSource: 'Open source', contact: 'Contact' },
     themeToggle: 'Toggle color theme',
@@ -109,7 +109,7 @@ export const UI = {
   it: {
     locale: 'it-IT',
     description:
-      'Creo strumenti e app open-source. Studente magistrale in Ingegneria delle Telecomunicazioni alla Sapienza Università di Roma.',
+      'Creo strumenti e app open source. Studente magistrale in Ingegneria delle Telecomunicazioni alla Sapienza Università di Roma.',
     skip: 'Vai al contenuto',
     nav: { work: 'Progetti', education: 'Formazione', openSource: 'Open source', contact: 'Contatti' },
     themeToggle: 'Cambia tema',
