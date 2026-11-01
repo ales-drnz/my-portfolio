@@ -220,7 +220,7 @@ export const SKILLS: { label: string; icon?: string }[] = [
   { label: 'GitHub Actions', icon: 'siGithubactions' },
 ];
 
-// GitHub linguist colors
+// GitHub linguist colors, with the orange and red ones swapped for greens to keep to the one-green theme
 export const LANG_COLORS: Record<string, string> = {
   Dart: '#00B4AB',
   Python: '#3572A5',
@@ -230,15 +230,15 @@ export const LANG_COLORS: Record<string, string> = {
   'C++': '#f34b7d',
   Shell: '#89e051',
   Go: '#00ADD8',
-  Rust: '#dea584',
+  Rust: '#7daa16',
   Kotlin: '#A97BFF',
-  Swift: '#F05138',
-  HTML: '#e34c26',
+  Swift: '#4e8f12',
+  HTML: '#3e7a0e',
   CSS: '#563d7c',
-  CMake: '#DA3434',
+  CMake: '#6f9e1a',
   QML: '#44a51c',
-  Svelte: '#ff3e00',
-  Astro: '#ff5a03',
+  Svelte: '#3e7a0e',
+  Astro: '#4e8f12',
   GLSL: '#5686a5',
   Ruby: '#701516',
 };

@@ -1,5 +1,5 @@
 ---
-// The al_ mark, drawn inline so its colours follow the theme (--c-mark, --c-mark-cursor, --c-disc)
+// The mark, drawn inline so its colours follow the theme (--c-mark, --c-disc)
 import { MARK } from '../lib/brand';
 
 interface Props {
@@ -21,8 +21,5 @@ const { size = 32, disc = false, class: className, label } = Astro.props;
   aria-hidden={label ? undefined : 'true'}
 >
   {disc && <circle cx="50" cy="50" r="50" fill="var(--c-disc)" />}
-  <g transform={MARK.fit} fill="none" stroke-width={MARK.weight} stroke-linecap="round" stroke-linejoin="round">
-    <path d={MARK.stroke} stroke="var(--c-mark)" />
-    <path d={MARK.cursor} stroke="var(--c-mark-cursor)" />
-  </g>
+  <path transform={MARK.fit} d={MARK.path} fill="var(--c-mark)" fill-rule="evenodd" />
 </svg>

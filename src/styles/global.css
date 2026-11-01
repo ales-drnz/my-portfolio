@@ -18,21 +18,17 @@
   --c-fg: #111318;
   --c-muted: #5c5f68;
   --c-subtle: #898c94;
-  /* orange deep enough for text on the light grounds (about 5:1) */
-  --c-accent: #c24d0a;
-  --c-accent-soft: #fdeee3;
+  /* green deep enough for text on the light grounds (about 5:1) */
+  --c-accent: #3e7a0e;
+  --c-accent-soft: #edf4e2;
   --c-ok: #1a7f4b;
-  --c-star: #bf8700;
-  --c-merged: #4e8f12;
-  /* Orange → Lime, taken darker on light grounds: lime and amber barely show on white */
-  --c-ramp-1: #e35d0a;
-  --c-ramp-2: #e8890c;
-  --c-ramp-3: #7daa16;
-  --c-ramp-4: #4e8f12;
+  --c-star: #3e7a0e;
+  --c-merged: #3e7a0e;
+  /* lime on dark grounds, taken darker on light ones: lime barely shows on white */
+  --c-ramp-4: #3e7a0e;
   --c-disc: #ffffff;
-  /* the al_ mark: orange letters, lime cursor, both a step darker on light grounds */
-  --c-mark: #e35d0a;
-  --c-mark-cursor: #5e9e12;
+  /* the mark, from the brand kit */
+  --c-mark: #3e7a0e;
   --c-dots: #1113181f;
   color-scheme: light;
 }
@@ -47,18 +43,14 @@
   --c-fg: #ededed;
   --c-muted: #a3a6ae;
   --c-subtle: #71757e;
-  --c-accent: #ff8a33;
-  --c-accent-soft: #3a2414;
+  --c-accent: #c6f432;
+  --c-accent-soft: #2a3312;
   --c-ok: #4ade80;
-  --c-star: #e3b341;
+  --c-star: #c6f432;
   --c-merged: #c6f432;
-  --c-ramp-1: #ff8a33;
-  --c-ramp-2: #ffb13b;
-  --c-ramp-3: #d8ec3c;
   --c-ramp-4: #c6f432;
   --c-disc: #22252b;
-  --c-mark: #ff8a33;
-  --c-mark-cursor: #c6f432;
+  --c-mark: #c6f432;
   --c-dots: #ededed1c;
   color-scheme: dark;
 }
