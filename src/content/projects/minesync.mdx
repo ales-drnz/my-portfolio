@@ -1,0 +1,91 @@
+---
+title: MineSync
+tagline: Versioned Minecraft server sync for groups that host on their own PCs.
+summary: >-
+  Synchronizes a Minecraft server folder, vanilla or modded (Forge, NeoForge, Fabric, Quilt), across the PCs of a
+  group on a private ZeroTier network. A self-hosted hub stores every world with its full history; the client takes
+  an exclusive lock, downloads only the files that changed, runs the server and uploads a new version every five
+  minutes.
+kind: tool
+order: 8
+group: network
+featured: true
+repo: minesync
+platforms: [Docker, Windows, macOS, Linux]
+stack: [Go, Bubble Tea, Docker, ZeroTier, ZTNET]
+highlights:
+  - One host at a time, with a lock that expires if the host crashes
+  - Versioned worlds, restorable whole or one file at a time
+  - Game traffic goes directly between players and the host
+logo: ../../assets/projects/minesync/minesync.png
+cover: ../../assets/projects/minesync/tui-play.png
+coverAlt: The MineSync client hosting a session, with the server console, the players online and the address to join
+links:
+  - { label: GitHub, url: 'https://github.com/ales-drnz/minesync' }
+---
+import { Image } from 'astro:assets';
+import overview from '../../assets/projects/minesync/overview.png';
+import server from '../../assets/projects/minesync/server.png';
+import history from '../../assets/projects/minesync/history.png';
+import players from '../../assets/projects/minesync/players.png';
+import mods from '../../assets/projects/minesync/mods.png';
+import tuiHome from '../../assets/projects/minesync/tui-home.png';
+import tuiServer from '../../assets/projects/minesync/tui-server.png';
+import tuiHistory from '../../assets/projects/minesync/tui-history.png';
+
+## Background
+
+A shared Minecraft world needs a host. A dedicated server adds cost and maintenance, and when the host is one
+member's PC, the world is only available while that PC is on. MineSync lets any member of the group host: the
+world lives on a hub, and each session starts from its latest version.
+
+## Hosting a session
+
+The client lists the servers on the hub. Starting one takes the lock, so only one member hosts at a time, then
+downloads the files that changed since the last session, selects a compatible Java runtime and starts the server
+with an embedded console. Every five minutes it saves the world and uploads a new version; stopping the server
+uploads the final state and releases the lock.
+
+- **Exclusive lock**: kept alive by a heartbeat and released after 90 seconds if the host crashes.
+- **Local changes are preserved**: changes that never reached the hub are uploaded first when that is safe, or
+  kept in a backup if someone else has hosted since.
+- **Unattended operation**: the server stops after 30 minutes with nobody online and restarts automatically after
+  a crash, up to twice.
+- **Fixed address**: the hub can serve DNS for `zerotier.<server>.internal`, which resolves to the current host,
+  so players keep one address in Minecraft.
+
+<div class="grid sm:grid-cols-3 gap-4 not-prose">
+  <Image src={tuiHome} alt="Client: servers and recent activity" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
+  <Image src={tuiServer} alt="Client: a server's status, local copy and history" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
+  <Image src={tuiHistory} alt="Client: every version of a server" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
+</div>
+
+## The hub
+
+A single static Go binary, deployed as a Docker container on an always-on machine such as a NAS. Storage is
+content-addressed (SHA-256, with region files split into chunks), so each version stores only what changed. Any
+version can be restored, as a whole world or a single file, or exported as a ZIP. Automatic retention never
+removes the last 24 hours and keeps one version per day for a week.
+
+The web interface shows the current host and the address to join, world details, players, mods and the full
+history. The hub can also check that the host's game port is reachable and post to Telegram when a server opens
+or closes.
+
+<Image src={overview} alt="Web interface: servers, current hosts and live activity" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+<div class="grid sm:grid-cols-2 gap-4 not-prose">
+  <Image src={server} alt="Web interface: a hosted server, with its address and world details" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={history} alt="Web interface: history with restore and download" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={players} alt="Web interface: players and their statistics" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={mods} alt="Web interface: mods with details" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+</div>
+
+## Access and security
+
+MineSync has no passwords or tokens of its own. The hub runs inside the ZeroTier container's network and
+identifies each request through ZTNET, so access follows network membership: adding a player means authorizing
+them in ZTNET. The hub only coordinates sessions; game traffic goes directly between players and the host.
+
+Clients update from the hub. Each download is verified against SHA-256 checksums and, optionally, an ed25519
+signature, and downgrades are refused. The client, the web interface and the Telegram bot are available in
+English and Italian.

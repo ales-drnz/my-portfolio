@@ -2,9 +2,9 @@
 title: Netmap
 tagline: A live map and dashboard for a ZeroTier network.
 summary: >-
-  A read-only page for the members of a private ZeroTier network managed with ZTNET. It shows who is
-  connected, how and how well: a map of every device around the hub, direct or relayed links with their
-  latency, 24-hour availability, what changed and when, and the services you can reach inside the network.
+  A read-only page for the members of a private ZeroTier network managed with ZTNET. It shows each member whether they are connected and how: a map of every device around the hub, direct or relayed links
+  with their latency, 24-hour availability, what changed and when, and the services you can reach inside the
+  network.
 kind: tool
 order: 7
 group: network
@@ -13,13 +13,13 @@ repo: netmap
 platforms: [Docker (amd64, arm64), Node.js 22+]
 stack: [SvelteKit, Svelte 5, TypeScript, Node.js, Docker, ZeroTier]
 highlights:
-  - Live updates pushed to every open page over Server-Sent Events
-  - Median, p95 and jitter per device, compared with the week before
+  - Connection status in plain language, with technical details on demand
+  - DNS, routes and addresses followed from the controller to the hub
   - The ZTNET token and members' public IPs never reach the browser
 logo: ../../assets/projects/netmap/netmap.png
 cover: ../../assets/projects/netmap/overview.png
 coverDark: ../../assets/projects/netmap/overview-dark.png
-coverAlt: Netmap overview with online devices, latency, availability, traffic, the network map and the services list
+coverAlt: Netmap's map with "You're connected", your devices, the hub in the middle and one island per person
 links:
   - { label: GitHub, url: 'https://github.com/ales-drnz/netmap' }
 ---
@@ -27,50 +27,59 @@ import { Image } from 'astro:assets';
 import map from '../../assets/projects/netmap/map.png';
 import devices from '../../assets/projects/netmap/devices.png';
 import stats from '../../assets/projects/netmap/stats.png';
+import phone from '../../assets/projects/netmap/phone.png';
 
 ## Why I built it
 
-A ZeroTier network managed with ZTNET is easy to run and hard to read for everyone else in it. Netmap is
-the page I wanted to send to the people on my network: open it from any device inside the network and see
-who is online, whether your connection is direct or going through a relay, and whether the services you
-use are answering, without an account and without being able to change anything.
+ZTNET makes a ZeroTier network easy to administer, but gives its other members no view of it. Netmap is a page
+every member can open from any device inside the network: it states in plain language whether the device is
+connected and how, directly or through a relay, with latency, IP addresses and client versions available on
+demand. It needs no account and cannot change the network.
+
+Version 0.1.0 is a rewrite from scratch: a new map, a new layout and a new server.
 
 ## The map
 
-The hub sits in the middle and every device around it, grouped into one island per person. Each link is
-drawn as direct, relayed or offline, with its latency.
+The hub sits in the middle, the viewer's own devices are highlighted, and every person with two or more devices
+has an island. Each link is drawn as direct, relayed or one-way; selecting a device shows its location, link
+quality and availability over the last 24 hours.
 
-<Image src={map} alt="The network map: the hub in the middle, one island per person, links drawn as direct, relayed or offline" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={map} alt="A device opened on the map: at home, the fastest link, online 96% of the last 24 hours" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Devices and history
 
-- **Latency that means something**: median, 95th percentile and jitter, and each device compared with
-  itself the week before.
-- **24-hour availability** in 24-minute buckets, and a 30-day latency histogram per device. Until the
-  history fills up, empty slots stay empty: the page never shows data it doesn't have.
-- **What changed**: disconnections, path changes and latency spikes. Three devices dropping in the same
-  poll are one incident, usually the hub's connection, not three.
-- **Alerts only when there is a decision**: access requests, TCP fallback, settings that keep every node
-  relayed.
+- **Latency statistics**: median, 95th percentile and jitter, and each device compared with itself
+  the week before.
+- **Configured, received, applied**: DNS, routes and addresses followed from the controller to the hub, so you
+  see where the chain breaks.
+- **What changed**: disconnections, path changes and latency spikes. Three devices dropping in the same poll are
+  one incident, usually the hub's connection, not three.
+- **24-hour availability** in 24-minute buckets, and a 30-day latency histogram per device. Until the history
+  fills up, empty slots stay empty: the page never shows data it doesn't have.
+- **Services directory**: what you can reach inside the network, how to connect, and whether it answers right
+  now.
 
-<Image src={devices} alt="Device list with owner, path, latency and availability, and the details of one device" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={devices} alt="Every device with its path and latency, and the technical details of one device" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-<Image src={stats} alt="Latency, traffic and availability charts over time" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={stats} alt="Performance of the network: latency by device, the slowest compared with last week, and availability over 24 hours" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## How it works
 
-A small Node.js server polls ZTNET's REST API for the member list and the network configuration, and the
-local ZeroTier service for latency, path types and client versions. Each poll is compared with the
-previous one to produce events, and a new snapshot is pushed to every open page over Server-Sent Events.
-The SvelteKit front end is built as a static bundle, with fonts and libraries included, so it works with
-no internet access.
+A small Node.js server polls ZTNET's REST API for the members and the network configuration, and the local
+ZeroTier service for latency, path types, client versions and what reached the hub. Each poll is compared with
+the previous one to produce events, and a new snapshot is pushed to every open page over Server-Sent Events.
+The server is a single bundle with no `node_modules`, and the SvelteKit front end is static, with fonts and
+libraries included, so it works with no internet access. It speaks English and Italian, on a desktop or a phone.
 
-It runs as a container sharing the ZeroTier container's network: it is reachable only from inside the
-ZeroTier network and publishes no port on the host. History survives restarts in a file written
-atomically.
+It runs as a container sharing the ZeroTier container's network: it is reachable only from inside the ZeroTier
+network and publishes no port on the host. History survives restarts in a file written atomically.
+
+<div class="flex justify-center not-prose">
+  <Image src={phone} alt="Netmap on a phone" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
+</div>
 
 ## Privacy
 
-Everyone in the network can open the page, so the **ZTNET token** stays on the server, devices' **public
-IP addresses** are used only server-side to tell LAN from internet and are never sent to the browser, and
-the page is **read-only**: authorizing members stays in ZTNET.
+Everyone in the network can open the page, so the **ZTNET token** stays on the server, devices' **public IP
+addresses** are used only server-side to tell LAN from internet and are never sent to the browser, and the page
+is **read-only**: authorizing members stays in ZTNET.

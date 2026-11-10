@@ -1,0 +1,82 @@
+---
+tagline: Sincronizzazione versionata di server Minecraft per gruppi che li ospitano sui propri PC.
+summary: >-
+  Sincronizza la cartella di un server Minecraft, vanilla o con mod (Forge, NeoForge, Fabric, Quilt), tra i PC di un
+  gruppo su una rete ZeroTier privata. Un hub self-hosted conserva ogni mondo con tutta la sua storia; il client
+  prende un lock esclusivo, scarica solo i file cambiati, avvia il server e carica una nuova versione ogni cinque
+  minuti.
+highlights:
+  - Un solo host alla volta, con un lock che scade se l'host si blocca
+  - Mondi versionati, ripristinabili per intero o un file alla volta
+  - Il traffico di gioco passa direttamente tra i giocatori e l'host
+coverAlt: Il client di MineSync mentre ospita una sessione, con la console del server, i giocatori online e l'indirizzo per entrare
+---
+import { Image } from 'astro:assets';
+import overview from '../../assets/projects/minesync/overview.png';
+import server from '../../assets/projects/minesync/server.png';
+import history from '../../assets/projects/minesync/history.png';
+import players from '../../assets/projects/minesync/players.png';
+import mods from '../../assets/projects/minesync/mods.png';
+import tuiHome from '../../assets/projects/minesync/tui-home.png';
+import tuiServer from '../../assets/projects/minesync/tui-server.png';
+import tuiHistory from '../../assets/projects/minesync/tui-history.png';
+
+## Contesto
+
+Un mondo Minecraft condiviso ha bisogno di un host. Un server dedicato aggiunge costi e manutenzione, e quando
+l'host è il PC di uno dei membri, il mondo è disponibile solo finché quel PC è acceso. MineSync permette a
+qualsiasi membro del gruppo di ospitarlo: il mondo risiede su un hub, e ogni sessione parte dalla sua ultima
+versione.
+
+## Ospitare una sessione
+
+Il client elenca i server presenti sull'hub. Avviarne uno prende il lock, così ospita un solo membro alla volta,
+poi scarica i file cambiati dall'ultima sessione, sceglie un runtime Java compatibile e avvia il server con una
+console integrata. Ogni cinque minuti salva il mondo e carica una nuova versione; all'arresto del server carica lo
+stato finale e rilascia il lock.
+
+- **Lock esclusivo**: mantenuto attivo da un heartbeat e rilasciato dopo 90 secondi se l'host si blocca.
+- **Le modifiche locali sono preservate**: quelle mai arrivate all'hub vengono caricate prima, quando è sicuro,
+  oppure conservate in un backup se nel frattempo ha ospitato qualcun altro.
+- **Funzionamento senza supervisione**: il server si arresta dopo 30 minuti senza giocatori online e si riavvia
+  automaticamente dopo un crash, fino a due volte.
+- **Indirizzo fisso**: l'hub può servire il DNS per `zerotier.<server>.internal`, che punta all'host corrente,
+  così i giocatori tengono un solo indirizzo in Minecraft.
+
+<div class="grid sm:grid-cols-3 gap-4 not-prose">
+  <Image src={tuiHome} alt="Client: i server e l'attività recente" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
+  <Image src={tuiServer} alt="Client: stato di un server, copia locale e storico" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
+  <Image src={tuiHistory} alt="Client: tutte le versioni di un server" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
+</div>
+
+## L'hub
+
+Un unico binario Go statico, distribuito come container Docker su una macchina sempre accesa, per esempio un
+NAS. L'archiviazione è indirizzata per contenuto (SHA-256, con i file di regione divisi in blocchi), quindi ogni
+versione salva solo ciò che è cambiato. Ogni versione si può ripristinare, come mondo intero o come singolo file,
+oppure esportare in ZIP. La pulizia automatica non rimuove mai le ultime 24 ore e conserva una versione al giorno
+per una settimana.
+
+L'interfaccia web mostra l'host corrente e l'indirizzo per entrare, i dettagli del mondo, i giocatori, le mod e
+tutto lo storico. L'hub può anche verificare che la porta di gioco dell'host sia raggiungibile e pubblicare su
+Telegram quando un server si apre o si chiude.
+
+<Image src={overview} alt="Interfaccia web: i server, gli host correnti e l'attività in tempo reale" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+<div class="grid sm:grid-cols-2 gap-4 not-prose">
+  <Image src={server} alt="Interfaccia web: un server ospitato, con il suo indirizzo e i dettagli del mondo" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={history} alt="Interfaccia web: storico con ripristino e download" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={players} alt="Interfaccia web: i giocatori e le loro statistiche" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={mods} alt="Interfaccia web: le mod con i loro dettagli" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+</div>
+
+## Accesso e sicurezza
+
+MineSync non ha password né token propri. L'hub gira dentro la rete del container ZeroTier e identifica ogni
+richiesta tramite ZTNET, quindi l'accesso segue l'appartenenza alla rete: aggiungere un giocatore significa
+autorizzarlo in ZTNET. L'hub coordina soltanto le sessioni; il traffico di gioco passa direttamente tra i giocatori
+e l'host.
+
+I client si aggiornano dall'hub. Ogni download viene verificato con checksum SHA-256 e, se configurata, con una
+firma ed25519, e i downgrade vengono rifiutati. Il client, l'interfaccia web e il bot Telegram sono disponibili in
+inglese e italiano.

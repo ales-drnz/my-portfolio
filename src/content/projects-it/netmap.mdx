@@ -1,67 +1,76 @@
 ---
 tagline: Una mappa e una dashboard in tempo reale per una rete ZeroTier.
 summary: >-
-  Una pagina in sola lettura per i membri di una rete ZeroTier privata gestita con ZTNET. Mostra chi è connesso,
-  come e con che qualità: una mappa di tutti i dispositivi attorno all'hub, collegamenti diretti o via relay con
-  la loro latenza, disponibilità nelle ultime 24 ore, cosa è cambiato e quando, e i servizi raggiungibili
+  Una pagina in sola lettura per i membri di una rete ZeroTier privata gestita con ZTNET. Mostra a ogni membro se è connesso e come: una mappa di tutti i dispositivi attorno all'hub, collegamenti diretti o via relay
+  con la loro latenza, disponibilità nelle ultime 24 ore, cosa è cambiato e quando, e i servizi raggiungibili
   all'interno della rete.
 highlights:
-  - Aggiornamenti in tempo reale inviati a ogni pagina aperta tramite Server-Sent Events
-  - Mediana, p95 e jitter per dispositivo, confrontati con la settimana precedente
+  - Stato della connessione in linguaggio semplice, con i dettagli tecnici su richiesta
+  - DNS, rotte e indirizzi seguiti dal controller fino all'hub
   - Il token ZTNET e gli IP pubblici dei membri non arrivano mai al browser
 coverAlt: >-
-  Panoramica di Netmap con dispositivi online, latenza, disponibilità, traffico, la mappa della rete e l'elenco
-  dei servizi
+  La mappa di Netmap con "Sei connesso", i tuoi dispositivi, l'hub al centro e un'isola per ogni persona
 ---
 import { Image } from 'astro:assets';
 import map from '../../assets/projects/netmap/map.png';
 import devices from '../../assets/projects/netmap/devices.png';
 import stats from '../../assets/projects/netmap/stats.png';
+import phone from '../../assets/projects/netmap/phone.png';
 
 ## Perché l'ho creato
 
-Una rete ZeroTier gestita con ZTNET è facile da amministrare, ma difficile da leggere per tutti gli altri che ne
-fanno parte. Netmap è la pagina che volevo poter mandare alle persone della mia rete: la apri da qualsiasi
-dispositivo all'interno della rete e vedi chi è online, se la tua connessione è diretta o passa da un relay e se
-i servizi che usi rispondono, senza bisogno di un account e senza poter modificare nulla.
+ZTNET rende facile amministrare una rete ZeroTier, ma non offre agli altri membri alcuna visione della rete.
+Netmap è una pagina che ogni membro può aprire da qualsiasi dispositivo all'interno della rete: indica in
+linguaggio semplice se il dispositivo è connesso e come, direttamente o tramite relay, con latenza, indirizzi IP e
+versioni del client disponibili su richiesta. Non richiede alcun account e non può modificare la rete.
+
+La versione 0.1.0 è riscritta da zero: una nuova mappa, una nuova impaginazione e un nuovo server.
 
 ## La mappa
 
-L'hub sta al centro e tutti i dispositivi attorno, raggruppati in un'isola per ogni persona. Ogni collegamento è
-disegnato come diretto, via relay oppure offline, con la sua latenza.
+L'hub sta al centro, i dispositivi di chi guarda sono evidenziati e ogni persona con due o più dispositivi ha la
+sua isola. Ogni collegamento è disegnato come diretto, via relay oppure a senso unico; selezionando un dispositivo
+se ne vedono la posizione, la qualità del collegamento e la disponibilità nelle ultime 24 ore.
 
-<Image src={map} alt="La mappa della rete: l'hub al centro, un'isola per persona, collegamenti disegnati come diretti, via relay oppure offline" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={map} alt="Un dispositivo aperto sulla mappa: a casa, il collegamento più veloce, online il 96% delle ultime 24 ore" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Dispositivi e storico
 
-- **Una latenza che dice qualcosa**: mediana, 95° percentile e jitter, e ogni dispositivo confrontato con sé
+- **Statistiche di latenza**: mediana, 95° percentile e jitter, e ogni dispositivo confrontato con sé
   stesso la settimana prima.
+- **Configurato, ricevuto, applicato**: DNS, rotte e indirizzi seguiti dal controller fino all'hub, così vedi dove
+  si interrompe la catena.
+- **Cosa è cambiato**: disconnessioni, cambi di percorso e picchi di latenza. Tre dispositivi che cadono nello
+  stesso controllo sono un solo incidente, di solito la connessione dell'hub, non tre.
 - **Disponibilità nelle 24 ore** in intervalli da 24 minuti, e un istogramma della latenza a 30 giorni per ogni
   dispositivo. Finché lo storico non si riempie, gli slot vuoti restano vuoti: la pagina non mostra mai dati che
   non ha.
-- **Cosa è cambiato**: disconnessioni, cambi di percorso e picchi di latenza. Tre dispositivi che cadono nello
-  stesso polling sono un unico incidente, di solito la connessione dell'hub, non tre.
-- **Avvisi solo quando c'è da prendere una decisione**: richieste di accesso, fallback su TCP, impostazioni che
-  costringono ogni nodo a passare dal relay.
+- **Elenco dei servizi**: cosa puoi raggiungere all'interno della rete, come collegarti e se risponde in questo
+  momento.
 
-<Image src={devices} alt="Elenco dei dispositivi con proprietario, percorso, latenza e disponibilità, e i dettagli di un dispositivo" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={devices} alt="Tutti i dispositivi con percorso e latenza, e i dettagli tecnici di un dispositivo" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-<Image src={stats} alt="Grafici di latenza, traffico e disponibilità nel tempo" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={stats} alt="Prestazioni della rete: latenza per dispositivo, i più lenti rispetto alla settimana scorsa e la disponibilità nelle 24 ore" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Come funziona
 
-Un piccolo server Node.js interroga periodicamente la REST API di ZTNET per l'elenco dei membri e la
-configurazione della rete, e il servizio ZeroTier locale per latenza, tipi di percorso e versioni dei client.
-Ogni polling viene confrontato con il precedente per generare gli eventi, e un nuovo snapshot viene inviato a
-ogni pagina aperta tramite Server-Sent Events. Il front end SvelteKit viene compilato come bundle statico, con
-font e librerie inclusi, così funziona anche senza accesso a internet.
+Un piccolo server Node.js interroga l'API REST di ZTNET per i membri e la configurazione della rete, e il servizio
+ZeroTier locale per latenza, tipi di percorso, versioni del client e cosa è arrivato all'hub. Ogni controllo viene
+confrontato con il precedente per generare gli eventi, e una nuova istantanea viene inviata a ogni pagina aperta
+tramite Server-Sent Events. Il server è un unico bundle senza `node_modules`, e il front end SvelteKit è statico,
+con font e librerie inclusi, così funziona anche senza accesso a internet. Parla inglese e italiano, da computer
+o da telefono.
 
 Gira come container che condivide la rete del container ZeroTier: è raggiungibile solo dall'interno della rete
-ZeroTier e non espone alcuna porta sull'host. Lo storico sopravvive ai riavvii in un file scritto in modo
+ZeroTier e non pubblica nessuna porta sull'host. Lo storico sopravvive ai riavvii in un file scritto in modo
 atomico.
+
+<div class="flex justify-center not-prose">
+  <Image src={phone} alt="Netmap su un telefono" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
+</div>
 
 ## Privacy
 
-Chiunque nella rete può aprire la pagina, quindi il **token ZTNET** resta sul server, gli **indirizzi IP
-pubblici** dei dispositivi vengono usati solo lato server per distinguere la LAN da internet e non vengono mai
-inviati al browser, e la pagina è **in sola lettura**: l'autorizzazione dei membri resta in ZTNET.
+Chiunque nella rete può aprire la pagina, quindi il **token di ZTNET** resta sul server, gli **indirizzi IP
+pubblici** dei dispositivi sono usati solo lato server per distinguere la rete locale da internet e non vengono
+mai inviati al browser, e la pagina è in **sola lettura**: l'autorizzazione dei membri resta in ZTNET.

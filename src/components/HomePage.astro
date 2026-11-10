@@ -4,6 +4,7 @@ import Section from './Section.astro';
 import Icon from './Icon.astro';
 import Sparkline from './Sparkline.astro';
 import FeaturedProject from './FeaturedProject.astro';
+import FeaturedPackage from './FeaturedPackage.astro';
 import RepoCard from './RepoCard.astro';
 import ProjectCard from './ProjectCard.astro';
 import ContributionGraph from './ContributionGraph.astro';
@@ -172,7 +173,13 @@ const prGroups = Object.entries(
 
           {g.featured.length > 0 && (
             <div class="space-y-5">
-              {g.featured.map((project, i) => <FeaturedProject project={project} index={i} lang={lang} />)}
+              {g.featured.map((project, i) =>
+                project.data.package && !project.data.cover ? (
+                  <FeaturedPackage project={project} lang={lang} />
+                ) : (
+                  <FeaturedProject project={project} index={i} lang={lang} />
+                ),
+              )}
             </div>
           )}
 
