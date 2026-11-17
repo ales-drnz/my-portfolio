@@ -7,20 +7,38 @@
    ------------------------------------------------------------ */
 import type { ImageMetadata } from 'astro';
 import type { Lang } from './i18n';
-import myuneMusic from '../assets/used-by/myune-music.png';
-import sunoh from '../assets/used-by/sunoh.png';
-import aetherfin from '../assets/used-by/aetherfin.jpg';
-import intrval from '../assets/used-by/intrval.png';
+import myuneSpectrum from '../assets/used-by/myune-spectrum.png';
+import myuneLyrics from '../assets/used-by/myune-lyrics.png';
+import myuneLibrary from '../assets/used-by/myune-library.png';
+import sunohHome from '../assets/used-by/sunoh-home.png';
+import sunohPlayer from '../assets/used-by/sunoh-player.png';
+import sunohSearch from '../assets/used-by/sunoh-search.png';
+import sunohLibrary from '../assets/used-by/sunoh-library.png';
+import aetherfinNowPlaying from '../assets/used-by/aetherfin-now-playing.jpg';
+import aetherfinAlbums from '../assets/used-by/aetherfin-albums.jpg';
+import aetherfinAccount from '../assets/used-by/aetherfin-account.jpg';
+import aetherfinSettings from '../assets/used-by/aetherfin-settings.jpg';
+import intrvalPlayer from '../assets/used-by/intrval-player.png';
+import intrvalLibrary from '../assets/used-by/intrval-library.png';
+import intrvalSets from '../assets/used-by/intrval-sets.png';
+import intrvalEdit from '../assets/used-by/intrval-edit.png';
 
 export interface UsedBy {
   /** owner/name on GitHub */
   repo: string;
-  shot: ImageMetadata;
+  /** the first one is shown at rest, the others take turns while the card is hovered */
+  shots: Shot[];
   /** used when the GitHub API is unreachable at build time */
   stars: number;
-  alt: Record<Lang, string>;
   note: Record<Lang, string>;
 }
+
+export interface Shot {
+  src: ImageMetadata;
+  alt: Record<Lang, string>;
+}
+
+const shot = (src: ImageMetadata, en: string, it: string): Shot => ({ src, alt: { en, it } });
 
 export interface Island {
   /** case-study id of the reference app built on the package */
@@ -39,12 +57,12 @@ export const ISLANDS: Record<string, Island> = {
     usedBy: [
       {
         repo: 'xiaobaimc/myune_music',
-        shot: myuneMusic,
+        shots: [
+          shot(myuneSpectrum, 'MyuneMusic on desktop: loudness, levels, stereo phase and spectrum', 'MyuneMusic su desktop: loudness, livelli, fase stereo e spettro'),
+          shot(myuneLyrics, 'MyuneMusic full-screen lyrics', 'Testo a schermo intero in MyuneMusic'),
+          shot(myuneLibrary, 'MyuneMusic playlist view', 'Vista playlist di MyuneMusic'),
+        ],
         stars: 501,
-        alt: {
-          en: 'MyuneMusic on desktop: loudness, levels, stereo phase and spectrum views',
-          it: 'MyuneMusic su desktop: loudness, livelli, fase stereo e spettro',
-        },
         note: {
           en: 'Cross-platform local music player, with live loudness, levels and spectrum.',
           it: 'Player musicale locale multipiattaforma, con loudness, livelli e spettro in tempo reale.',
@@ -52,9 +70,13 @@ export const ISLANDS: Record<string, Island> = {
       },
       {
         repo: 'afkcodes/sunoh',
-        shot: sunoh,
+        shots: [
+          shot(sunohHome, 'Sunoh home screen with trending albums and charts', 'Schermata home di Sunoh con album di tendenza e classifiche'),
+          shot(sunohPlayer, 'Sunoh player', 'Player di Sunoh'),
+          shot(sunohSearch, 'Sunoh search', 'Ricerca in Sunoh'),
+          shot(sunohLibrary, 'Sunoh library', 'Libreria di Sunoh'),
+        ],
         stars: 55,
-        alt: { en: 'Sunoh home screen with trending albums and charts', it: 'Schermata home di Sunoh con album di tendenza e classifiche' },
         note: {
           en: 'Android app that plays YouTube Music, Gaana and Saavn behind one interface.',
           it: "App Android che riproduce YouTube Music, Gaana e Saavn da un'unica interfaccia.",
@@ -62,9 +84,13 @@ export const ISLANDS: Record<string, Island> = {
       },
       {
         repo: 'Aetherfin/mobile-app',
-        shot: aetherfin,
+        shots: [
+          shot(aetherfinNowPlaying, 'Aetherfin now playing screen', 'Schermata di riproduzione di Aetherfin'),
+          shot(aetherfinAlbums, 'Aetherfin album library', 'Libreria album di Aetherfin'),
+          shot(aetherfinAccount, 'Aetherfin account page with Jellyfin library stats', 'Pagina account di Aetherfin con le statistiche della libreria Jellyfin'),
+          shot(aetherfinSettings, 'Aetherfin playback settings', 'Impostazioni di riproduzione di Aetherfin'),
+        ],
         stars: 10,
-        alt: { en: 'Aetherfin now playing screen', it: 'Schermata di riproduzione di Aetherfin' },
         note: {
           en: 'Android player for self-hosted Jellyfin and Navidrome servers.',
           it: 'Player Android per server Jellyfin e Navidrome self-hosted.',
@@ -72,9 +98,13 @@ export const ISLANDS: Record<string, Island> = {
       },
       {
         repo: 'redevined/intrval-music-player',
-        shot: intrval,
+        shots: [
+          shot(intrvalPlayer, 'intrval player with tempo slider', 'Player di intrval con lo slider del tempo'),
+          shot(intrvalLibrary, 'intrval library with BPM per track', 'Libreria di intrval con i BPM di ogni brano'),
+          shot(intrvalSets, 'intrval practice sets', 'Set di allenamento in intrval'),
+          shot(intrvalEdit, 'intrval set entry with tempo and duration overrides', 'Voce di un set in intrval con tempo e durata personalizzati'),
+        ],
         stars: 0,
-        alt: { en: 'intrval player with tempo slider', it: 'Player di intrval con lo slider del tempo' },
         note: {
           en: 'Music player for ballroom dancing practice, with tempo control.',
           it: 'Player musicale per allenarsi nel ballo da sala, con controllo del tempo.',
