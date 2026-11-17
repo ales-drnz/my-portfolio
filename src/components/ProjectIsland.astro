@@ -1,0 +1,55 @@
+---
+/* A featured package with everything that belongs to it, in one frame: the package card, the
+   reference app built on it, the repo that builds its native library and the projects that use it. */
+import type { CollectionEntry } from 'astro:content';
+import FeaturedPackage from './FeaturedPackage.astro';
+import FeaturedProject from './FeaturedProject.astro';
+import RepoCard from './RepoCard.astro';
+import UsedByCards from './UsedByCards.astro';
+import Octicon from './Octicon.astro';
+import type { Island } from '../lib/islands';
+import type { Repo } from '../lib/data';
+import { t, type Lang } from '../lib/i18n';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  island: Island;
+  app?: CollectionEntry<'projects'>;
+  builtOn: Repo[];
+  lang: Lang;
+}
+
+const { project, island, app, builtOn, lang } = Astro.props;
+const T = t(lang).work.island;
+const label = 'flex items-center gap-2 px-2 pb-2 font-mono text-[11px] uppercase tracking-[0.12em] text-subtle';
+---
+
+<section class="flex flex-col gap-4 rounded-[22px] border border-border p-2 sm:p-3" aria-label={project.data.title}>
+  <FeaturedPackage project={project} lang={lang} />
+
+  {app && (
+    <div>
+      <p class={label}><Octicon name="device-desktop" size={12} /> {T.app}</p>
+      <FeaturedProject project={app} index={0} lang={lang} />
+    </div>
+  )}
+
+  {builtOn.length > 0 && (
+    <div>
+      <p class={label}><Octicon name="tools" size={12} /> {T.build}</p>
+      <div class="grid grid-cols-1 gap-2">
+        {builtOn.map((r) => <RepoCard repo={r} lang={lang} />)}
+      </div>
+    </div>
+  )}
+
+  {island.usedBy.length > 0 && (
+    <div>
+      <p class={label}>
+        <Octicon name="people" size={12} /> {T.usedBy}
+        <span class="normal-case tracking-normal font-sans text-xs">· {T.usedByHint}</span>
+      </p>
+      <UsedByCards projects={island.usedBy} lang={lang} />
+    </div>
+  )}
+</section>

@@ -7,6 +7,7 @@ import FeaturedProject from './FeaturedProject.astro';
 import FeaturedPackage from './FeaturedPackage.astro';
 import RepoCard from './RepoCard.astro';
 import ProjectCard from './ProjectCard.astro';
+import ProjectIsland from './ProjectIsland.astro';
 import ContributionGraph from './ContributionGraph.astro';
 import CodeLanguages from './CodeLanguages.astro';
 import CopyEmail from './CopyEmail.astro';
@@ -16,6 +17,7 @@ import Octicon from './Octicon.astro';
 import BrandIcon, { type BrandKey } from './BrandIcon.astro';
 import { SITE, SOCIALS, education, projectGroups, languages } from '../lib/site';
 import { getProjects } from '../lib/projects';
+import { ISLANDS, islandMembers } from '../lib/islands';
 import { t, type Lang } from '../lib/i18n';
 import { getRepos, getPackages, getContributions, getUpstreamPRs, getResolvedIssues, getCodeLanguages, compact } from '../lib/data';
 
@@ -42,7 +44,8 @@ const [repos, packages, contrib, prs, resolvedIssues, codeLanguages] = await Pro
 
 const own = repos.filter((r) => !r.fork && !r.archived && !HIDDEN_REPOS.has(r.name));
 const totalStars = own.reduce((s, r) => s + r.stargazers_count, 0);
-const covered = new Set(projects.flatMap((p) => [p.data.repo, ...p.data.alsoCovers]).filter(Boolean));
+const inIslands = islandMembers();
+const covered = new Set([...projects.flatMap((p) => [p.data.repo, ...p.data.alsoCovers]), ...inIslands.repos].filter(Boolean));
 const moreRepos = own
   .filter((r) => !covered.has(r.name))
   .sort((a, b) => b.stargazers_count - a.stargazers_count || +new Date(b.pushed_at) - +new Date(a.pushed_at));
@@ -50,7 +53,7 @@ const moreRepos = own
 // bucket case studies and leftover repos into groups; empty groups are dropped
 const placed = new Set(PROJECT_GROUPS.flatMap((g) => g.repos));
 const groups = PROJECT_GROUPS.map((g) => {
-  const inGroup = projects.filter((p) => p.data.group === g.id);
+  const inGroup = projects.filter((p) => p.data.group === g.id && !inIslands.projects.has(p.id));
   return {
     ...g,
     featured: inGroup.filter((p) => p.data.featured),
@@ -58,7 +61,13 @@ const groups = PROJECT_GROUPS.map((g) => {
     repos: moreRepos.filter((r) => (g.id === 'other' ? !placed.has(r.name) : g.repos.includes(r.name))),
   };
 })
-  .map((g) => ({ ...g, count: g.featured.length + g.secondary.length + g.repos.length }))
+  // an island counts as its package plus its reference app and native build repos
+  .map((g) => ({
+    ...g,
+    count:
+      g.featured.length + g.secondary.length + g.repos.length +
+      g.featured.reduce((n, p) => n + (ISLANDS[p.id] ? (ISLANDS[p.id].app ? 1 : 0) + ISLANDS[p.id].builtOn.length : 0), 0),
+  }))
   .filter((g) => g.count > 0);
 
 // box-in-box tiles, the same as the project cards
@@ -174,7 +183,15 @@ const prGroups = Object.entries(
           {g.featured.length > 0 && (
             <div class="space-y-5">
               {g.featured.map((project, i) =>
-                project.data.package && !project.data.cover ? (
+                ISLANDS[project.id] ? (
+                  <ProjectIsland
+                    project={project}
+                    island={ISLANDS[project.id]}
+                    app={projects.find((p) => p.id === ISLANDS[project.id].app)}
+                    builtOn={ISLANDS[project.id].builtOn.map((n) => repos.find((r) => r.name === n)).filter((r) => r !== undefined)}
+                    lang={lang}
+                  />
+                ) : project.data.package && !project.data.cover ? (
                   <FeaturedPackage project={project} lang={lang} />
                 ) : (
                   <FeaturedProject project={project} index={i} lang={lang} />

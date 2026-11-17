@@ -73,6 +73,10 @@ export async function getRepo(name: string): Promise<Repo | undefined> {
   return (await getRepos()).find((r) => r.name === name);
 }
 
+/** someone else's repo, by owner/name (stars for the "used by" cards) */
+export const getExternalRepo = (fullName: string) =>
+  memo(`ext:${fullName}`, () => getJson<Repo>(`${GH}/repos/${fullName}`, { headers: ghHeaders }));
+
 export interface UpstreamPR {
   title: string;
   url: string;

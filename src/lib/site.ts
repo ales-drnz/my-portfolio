@@ -174,7 +174,8 @@ export const PROJECT_GROUPS: {
     title: 'Native build tooling',
     description: 'Reproducible cross-platform builds of the C libraries behind the Dart packages.',
     octicon: 'tools',
-    repos: ['libmpv-scripts', 'libsmb2-scripts'],
+    // libmpv-scripts and libsmb2-scripts sit in their package's island (lib/islands.ts)
+    repos: [],
   },
   {
     id: 'other',

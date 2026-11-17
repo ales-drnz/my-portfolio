@@ -1,0 +1,57 @@
+---
+/* Other people's projects that depend on a package: a static row of cards. With a handful of
+   projects a carousel would cycle the same cards over and over, so they all sit on the page. */
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import Octicon from './Octicon.astro';
+import { getExternalRepo } from '../lib/data';
+import type { UsedBy } from '../lib/islands';
+import type { Lang } from '../lib/i18n';
+
+interface Props {
+  projects: UsedBy[];
+  lang: Lang;
+}
+
+const { projects, lang } = Astro.props;
+const live = await Promise.all(projects.map((p) => getExternalRepo(p.repo)));
+const cards = projects
+  .map((p, i) => ({ ...p, stars: live[i]?.stargazers_count ?? p.stars }))
+  .sort((a, b) => b.stars - a.stars);
+---
+
+<ul class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+  {cards.map((c) => {
+    const [owner, name] = c.repo.split('/');
+    const portrait = c.shot.height > c.shot.width;
+    return (
+      <li class="min-w-0">
+        <a href={`https://github.com/${c.repo}`} target="_blank" rel="noopener" class="hover-card group flex h-full flex-col overflow-hidden rounded-[6px] bg-surface">
+          <div class:list={['aspect-[4/3] bg-surface-2 overflow-hidden', portrait && 'flex justify-center pt-4']}>
+            <Image
+              src={c.shot}
+              alt={c.alt[lang]}
+              widths={portrait ? [240, 480] : [480, 960]}
+              sizes={portrait ? '(min-width: 1024px) 110px, (min-width: 640px) 130px, 40vw' : '(min-width: 1024px) 230px, (min-width: 640px) 340px, 100vw'}
+              class:list={[
+                portrait ? 'h-[calc(100%+3rem)] w-auto max-w-none rounded-t-lg shadow-lg' : 'h-full w-full object-cover object-left-top',
+              ]}
+            />
+          </div>
+          <div class="flex flex-1 flex-col p-4">
+            <div class="flex items-start gap-2">
+              <h4 class="min-w-0 [overflow-wrap:anywhere] font-mono text-sm">
+                <span class="text-subtle">{owner}/</span><span class="font-medium text-fg group-hover:text-accent transition-colors">{name}</span>
+              </h4>
+              <Icon name="arrow-up-right" size={14} class="ml-auto mt-0.5 shrink-0 text-subtle group-hover:text-fg transition-colors" />
+            </div>
+            <p class="mt-1.5 text-sm text-muted leading-relaxed">{c.note[lang]}</p>
+            <p class="mt-auto pt-3 flex items-center gap-1 text-xs text-subtle tabular-nums">
+              <Octicon name="star-fill" size={12} class="text-star" /> {c.stars}
+            </p>
+          </div>
+        </a>
+      </li>
+    );
+  })}
+</ul>

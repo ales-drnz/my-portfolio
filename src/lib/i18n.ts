@@ -46,6 +46,13 @@ export const UI = {
       lead: 'Grouped by area. Case studies have their own page with details, demos and code.',
       groups: 'Project groups',
       count: (n: number) => `${n} ${n === 1 ? 'project' : 'projects'}`,
+
+      island: {
+        app: 'Reference app',
+        build: 'Native build',
+        usedBy: 'Used by',
+        usedByHint: 'Open source apps by other developers that depend on it',
+      },
     },
     education: { eyebrow: 'Education', title: 'Studies & languages' },
     activity: { eyebrow: 'Activity', title: 'Last 12 months' },
@@ -134,6 +141,13 @@ export const UI = {
       lead: 'Raggruppati per area. I casi studio hanno una pagina dedicata con dettagli, demo e codice.',
       groups: 'Gruppi di progetti',
       count: (n: number) => `${n} ${n === 1 ? 'progetto' : 'progetti'}`,
+
+      island: {
+        app: 'App di riferimento',
+        build: 'Build nativa',
+        usedBy: 'Usato da',
+        usedByHint: 'App open source di altri sviluppatori che lo usano',
+      },
     },
     education: { eyebrow: 'Formazione', title: 'Studi e lingue' },
     activity: { eyebrow: 'Attività', title: 'Ultimi 12 mesi' },
