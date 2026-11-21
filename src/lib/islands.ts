@@ -4,117 +4,268 @@
    that builds its native library, and other people's projects
    that depend on it. Everything listed here is taken out of
    the ordinary group grids so it shows up only once.
+
+   The "used by" lists come from a search of GitHub on
+   2026-11-21 (pubspec dependencies, vendored copies and git
+   dependencies, each checked by hand) and match the public
+   list linked below. Stars are refreshed at build time; the
+   numbers here are only the fallback.
    ------------------------------------------------------------ */
 import type { ImageMetadata } from 'astro';
 import type { Lang } from './i18n';
-import myuneSpectrum from '../assets/used-by/myune-spectrum.png';
-import myuneLyrics from '../assets/used-by/myune-lyrics.png';
-import myuneLibrary from '../assets/used-by/myune-library.png';
-import sunohHome from '../assets/used-by/sunoh-home.png';
-import sunohPlayer from '../assets/used-by/sunoh-player.png';
-import sunohSearch from '../assets/used-by/sunoh-search.png';
-import sunohLibrary from '../assets/used-by/sunoh-library.png';
-import aetherfinNowPlaying from '../assets/used-by/aetherfin-now-playing.jpg';
-import aetherfinAlbums from '../assets/used-by/aetherfin-albums.jpg';
-import aetherfinAccount from '../assets/used-by/aetherfin-account.jpg';
-import aetherfinSettings from '../assets/used-by/aetherfin-settings.jpg';
-import intrvalPlayer from '../assets/used-by/intrval-player.png';
-import intrvalLibrary from '../assets/used-by/intrval-library.png';
-import intrvalSets from '../assets/used-by/intrval-sets.png';
-import intrvalEdit from '../assets/used-by/intrval-edit.png';
 
-export interface UsedBy {
-  /** owner/name on GitHub */
-  repo: string;
-  /** the first one is shown at rest, the others take turns while the card is hovered */
-  shots: Shot[];
-  /** used when the GitHub API is unreachable at build time */
-  stars: number;
-  note: Record<Lang, string>;
-}
+/** public GitHub list with every project that uses one of the libraries */
+export const USED_BY_LIST = 'https://github.com/stars/ales-drnz/lists/projects-using-my-libraries';
+
+// screenshots live in src/assets/used-by, named <project>-<view>
+const files = import.meta.glob<ImageMetadata>('../assets/used-by/*', { eager: true, import: 'default' });
+const img = (name: string) => {
+  const hit = Object.entries(files).find(([path]) => path.split('/').pop()!.replace(/\.\w+$/, '') === name);
+  if (!hit) throw new Error(`used-by screenshot not found: ${name}`);
+  return hit[1];
+};
 
 export interface Shot {
   src: ImageMetadata;
   alt: Record<Lang, string>;
 }
 
-const shot = (src: ImageMetadata, en: string, it: string): Shot => ({ src, alt: { en, it } });
+export interface UsedBy {
+  /** owner/name on GitHub */
+  repo: string;
+  /** used when the GitHub API is unreachable at build time */
+  stars: number;
+  /** with screenshots the project gets a card in the showcase, otherwise a chip under it.
+      The first is shown at rest, the others take turns while the card is hovered. */
+  shots?: Shot[];
+  /** the screenshots already include a phone frame, so no bezel is drawn around them */
+  framed?: boolean;
+  /** display name on its tile, for projects with screenshots */
+  name?: string;
+  note?: Record<Lang, string>;
+}
+
+/** grid spans of a tile: [desktop columns, desktop rows, tablet columns, tablet rows] on a 12 / 6 column grid */
+export type Span = [number, number, number, number];
+export type Tile =
+  | { t: 'pkg' | 'chart' | 'app' | 'build' | 'intro'; s: Span }
+  /** hero: the star count is set big on the tile; 'headline' is the biggest version of it */
+  | { t: 'dep'; repo: string; s: Span; hero?: 'top' | 'headline' };
+
+/** only dependents with at least this many stars are shown, the rest are one link to the full list */
+export const MIN_STARS = 10;
 
 export interface Island {
   /** case-study id of the reference app built on the package */
   app?: string;
   /** own repos that build the package's native library */
   builtOn: string[];
+  /** short line under the native build repo's name */
+  buildNote: Record<Lang, string>;
   usedBy: UsedBy[];
+  /** the bento: every tile in order with its spans, tuned by hand so each band fills the 12 columns */
+  layout: Tile[];
 }
+
+/** shots('looper', 'Looper', ['home', 'Home'], ['player', 'Player']): one Shot per view, the view also names the file */
+const shots = (project: string, title: string, ...views: [file: string, en: string, it?: string][]): Shot[] =>
+  views.map(([file, en, it]) => ({ src: img(`${project}-${file}`), alt: { en: `${title}: ${en}`, it: `${title}: ${it ?? en}` } }));
+const note = (en: string, it: string) => ({ en, it });
+const chip = (repo: string, stars: number): UsedBy => ({ repo, stars });
 
 /** keyed by the package's case-study id */
 export const ISLANDS: Record<string, Island> = {
   'mpv-audio-kit': {
     app: 'mpv-studio',
     builtOn: ['libmpv-scripts'],
-    // stars as of 2026-11-17, all on mpv_audio_kit from pub.dev
+    buildNote: note('Audio-only build of libmpv and FFmpeg for macOS, iOS, Android, Windows and Linux, driven by one ./build TUI.', "Build solo audio di libmpv e FFmpeg per macOS, iOS, Android, Windows e Linux, guidata da un'unica TUI ./build."),
+    layout: [
+      { t: 'pkg', s: [4, 4, 6, 4] },
+      { t: 'chart', s: [8, 4, 6, 4] },
+      { t: 'app', s: [7, 6, 6, 5] },
+      { t: 'build', s: [5, 2, 6, 2] },
+      { t: 'intro', s: [5, 4, 6, 4] },
+      { t: 'dep', repo: 'xiaobaimc/myune_music', s: [6, 5, 6, 4], hero: 'top' },
+      { t: 'dep', repo: 'NaivG/bilimusic', s: [3, 5, 3, 5] },
+      { t: 'dep', repo: 'sthrnilshaaa/looper', s: [3, 5, 3, 5] },
+      { t: 'dep', repo: 'baishu136/myune_music_android', s: [8, 4, 6, 3] },
+      { t: 'dep', repo: 'afkcodes/sunoh', s: [2, 4, 3, 5] },
+      { t: 'dep', repo: 'Aetherfin/mobile-app', s: [2, 4, 3, 5] },
+    ],
     usedBy: [
       {
         repo: 'xiaobaimc/myune_music',
-        shots: [
-          shot(myuneSpectrum, 'MyuneMusic on desktop: loudness, levels, stereo phase and spectrum', 'MyuneMusic su desktop: loudness, livelli, fase stereo e spettro'),
-          shot(myuneLyrics, 'MyuneMusic full-screen lyrics', 'Testo a schermo intero in MyuneMusic'),
-          shot(myuneLibrary, 'MyuneMusic playlist view', 'Vista playlist di MyuneMusic'),
-        ],
-        stars: 501,
-        note: {
-          en: 'Cross-platform local music player, with live loudness, levels and spectrum.',
-          it: 'Player musicale locale multipiattaforma, con loudness, livelli e spettro in tempo reale.',
-        },
+        stars: 504,
+        name: 'MyuneMusic',
+        shots: shots('myune', 'MyuneMusic', ['spectrum', 'loudness, levels, stereo phase and spectrum', 'loudness, livelli, fase stereo e spettro'], ['lyrics', 'full-screen lyrics', 'testo a schermo intero'], ['library', 'playlist', 'playlist']),
+        note: note('Cross-platform local music player, with live loudness, levels and spectrum.', 'Player musicale locale multipiattaforma, con loudness, livelli e spettro in tempo reale.'),
+      },
+      {
+        repo: 'NaivG/bilimusic',
+        stars: 237,
+        name: 'BiliMusic',
+        shots: shots('bilimusic', 'BiliMusic', ['detail', 'player'], ['home', 'home'], ['playlist', 'daily picks', 'consigliati del giorno']),
+        note: note('Music player for Bilibili, with a version for HarmonyOS.', 'Player per la musica di Bilibili, con una versione per HarmonyOS.'),
+      },
+      {
+        repo: 'sthrnilshaaa/looper',
+        stars: 200,
+        name: 'Looper',
+        shots: shots('looper', 'Looper', ['home', 'home'], ['player', 'player'], ['lyrics', 'synced lyrics', 'testo sincronizzato'], ['album', 'album']),
+        note: note('Offline player for Android, Linux and Windows, with word-synced lyrics and an 18-band EQ.', 'Player offline per Android, Linux e Windows, con testi sincronizzati parola per parola ed EQ a 18 bande.'),
       },
       {
         repo: 'afkcodes/sunoh',
-        shots: [
-          shot(sunohHome, 'Sunoh home screen with trending albums and charts', 'Schermata home di Sunoh con album di tendenza e classifiche'),
-          shot(sunohPlayer, 'Sunoh player', 'Player di Sunoh'),
-          shot(sunohSearch, 'Sunoh search', 'Ricerca in Sunoh'),
-          shot(sunohLibrary, 'Sunoh library', 'Libreria di Sunoh'),
-        ],
-        stars: 55,
-        note: {
-          en: 'Android app that plays YouTube Music, Gaana and Saavn behind one interface.',
-          it: "App Android che riproduce YouTube Music, Gaana e Saavn da un'unica interfaccia.",
-        },
+        stars: 57,
+        name: 'Sunoh',
+        shots: shots('sunoh', 'Sunoh', ['home', 'home with trending albums and charts', 'home con album di tendenza e classifiche'], ['player', 'player'], ['search', 'search', 'ricerca'], ['library', 'library', 'libreria']),
+        note: note('Android app that plays YouTube Music, Gaana and Saavn behind one interface.', "App Android che riproduce YouTube Music, Gaana e Saavn da un'unica interfaccia."),
+      },
+      {
+        repo: 'baishu136/myune_music_android',
+        stars: 15,
+        name: 'MyuneMusic for Android',
+        shots: shots('myunea', 'MyuneMusic for Android', ['overview', 'phone and tablet layouts', 'layout per telefono e tablet']),
+        note: note('Phone and tablet edition of MyuneMusic.', 'Versione di MyuneMusic per telefono e tablet.'),
       },
       {
         repo: 'Aetherfin/mobile-app',
-        shots: [
-          shot(aetherfinNowPlaying, 'Aetherfin now playing screen', 'Schermata di riproduzione di Aetherfin'),
-          shot(aetherfinAlbums, 'Aetherfin album library', 'Libreria album di Aetherfin'),
-          shot(aetherfinAccount, 'Aetherfin account page with Jellyfin library stats', 'Pagina account di Aetherfin con le statistiche della libreria Jellyfin'),
-          shot(aetherfinSettings, 'Aetherfin playback settings', 'Impostazioni di riproduzione di Aetherfin'),
-        ],
-        stars: 10,
-        note: {
-          en: 'Android player for self-hosted Jellyfin and Navidrome servers.',
-          it: 'Player Android per server Jellyfin e Navidrome self-hosted.',
-        },
+        stars: 11,
+        name: 'Aetherfin',
+        shots: shots('aetherfin', 'Aetherfin', ['now-playing', 'now playing', 'in riproduzione'], ['albums', 'album library', 'libreria album'], ['account', 'account with Jellyfin library stats', 'account con le statistiche della libreria Jellyfin'], ['settings', 'playback settings', 'impostazioni di riproduzione']),
+        note: note('Android player for self-hosted Jellyfin and Navidrome servers.', 'Player Android per server Jellyfin e Navidrome self-hosted.'),
+      },
+      {
+        repo: 'MoathCodes/tawaq-app',
+        stars: 2,
+        name: 'Tawaq',
+        shots: shots('tawaq', 'Tawaq', ['recitation', 'recitation player', 'player delle recitazioni'], ['analytics', 'prayer analytics', 'statistiche delle preghiere'], ['settings', 'settings', 'impostazioni']),
+        note: note('Prayer times, Quran study and a recitation player.', 'Orari di preghiera, studio del Corano e un player per le recitazioni.'),
       },
       {
         repo: 'redevined/intrval-music-player',
-        shots: [
-          shot(intrvalPlayer, 'intrval player with tempo slider', 'Player di intrval con lo slider del tempo'),
-          shot(intrvalLibrary, 'intrval library with BPM per track', 'Libreria di intrval con i BPM di ogni brano'),
-          shot(intrvalSets, 'intrval practice sets', 'Set di allenamento in intrval'),
-          shot(intrvalEdit, 'intrval set entry with tempo and duration overrides', 'Voce di un set in intrval con tempo e durata personalizzati'),
-        ],
-        stars: 0,
-        note: {
-          en: 'Music player for ballroom dancing practice, with tempo control.',
-          it: 'Player musicale per allenarsi nel ballo da sala, con controllo del tempo.',
-        },
+        stars: 1,
+        name: 'intrval',
+        shots: shots('intrval', 'intrval', ['player', 'player with tempo slider', 'player con lo slider del tempo'], ['library', 'library with BPM per track', 'libreria con i BPM di ogni brano'], ['sets', 'practice sets', 'set di allenamento'], ['edit', 'set entry with tempo and duration overrides', 'voce di un set con tempo e durata personalizzati']),
+        note: note('Music player for ballroom dancing practice, with tempo control.', 'Player musicale per allenarsi nel ballo da sala, con controllo del tempo.'),
       },
+      chip('devvlooper/LooperMusic', 14),
+      chip('yhsj0919/MixMusic', 8),
+      chip('MatheusWDB/music-wave-player', 1),
+      chip('TechPsychotic/harp', 0),
+      chip('ashford232/maxtune-player', 0),
+      chip('liuchuancong/media_core', 0),
+      chip('luciferr1212/aestheticy', 0),
+      chip('luciferr1212/aestheticy-arg', 0),
+      chip('Alizesa/Motif-Music', 0),
     ],
   },
   'dart-smb2': {
     builtOn: ['libsmb2-scripts'],
-    usedBy: [],
+    buildNote: note('Builds the patched libsmb2 that dart_smb2 loads through FFI, for macOS, iOS, Android, Windows and Linux.', 'Compila il libsmb2 con le patch che dart_smb2 carica tramite FFI, per macOS, iOS, Android, Windows e Linux.'),
+    layout: [
+      { t: 'pkg', s: [4, 4, 6, 4] },
+      { t: 'chart', s: [8, 4, 6, 4] },
+      { t: 'dep', repo: 'mornyeapp/Mornye', s: [8, 6, 6, 5], hero: 'headline' },
+      { t: 'build', s: [4, 2, 6, 2] },
+      { t: 'intro', s: [4, 4, 6, 4] },
+      { t: 'dep', repo: 'varunsalian/debrify', s: [6, 5, 6, 4] },
+      { t: 'dep', repo: 'lokal-music/mobile', s: [3, 5, 3, 5] },
+      { t: 'dep', repo: 'catpuppyapp/HahaNote-Release', s: [3, 5, 3, 5] },
+      { t: 'dep', repo: 'axel10/vynody', s: [4, 3, 3, 3] },
+      { t: 'dep', repo: 'sen-to/mochi_player', s: [4, 3, 3, 3] },
+      { t: 'dep', repo: 'lonnnnnng/fluxdown', s: [4, 3, 3, 3] },
+      { t: 'dep', repo: 'voidvon/maimai-ktv', s: [6, 4, 3, 3] },
+      { t: 'dep', repo: 'freeKC/Immuch360', s: [6, 4, 6, 4] },
+    ],
+    usedBy: [
+      {
+        repo: 'mornyeapp/Mornye',
+        stars: 8095,
+        name: 'Mornye',
+        shots: shots('mornye', 'Mornye', ['dark', 'library, player, lyrics and equalizer', 'libreria, player, testi ed equalizzatore'], ['light', 'the same screens in the light theme', 'le stesse schermate con il tema chiaro']),
+        note: note('Mobile music app built with Flutter and Rust.', 'App musicale per telefono scritta in Flutter e Rust.'),
+      },
+      {
+        repo: 'varunsalian/debrify',
+        stars: 663,
+        name: 'Debrify',
+        shots: shots('debrify', 'Debrify', ['episodes', 'episodes', 'episodi'], ['search', 'search', 'ricerca'], ['catalog', 'catalog', 'catalogo']),
+        note: note('Personal media hub to browse, stream and organise your media.', 'Hub multimediale personale per sfogliare, riprodurre e organizzare i tuoi contenuti.'),
+      },
+      {
+        repo: 'axel10/vynody',
+        stars: 179,
+        name: 'Vynody',
+        shots: shots('vynody', 'Vynody', ['playback', 'playback'], ['lyric', 'lyrics', 'testo'], ['album', 'albums', 'album'], ['navidrome', 'Navidrome library', 'libreria Navidrome']),
+        note: note('Feature-rich Flutter music player for desktop and mobile.', 'Player musicale in Flutter, ricco di funzioni, per desktop e mobile.'),
+      },
+      {
+        repo: 'lokal-music/mobile',
+        stars: 145,
+        name: 'Lokal',
+        shots: shots('lokal', 'Lokal', ['home', 'home'], ['library', 'library', 'libreria']),
+        note: note('Mobile player for your own music files, with synced lyrics.', 'Player mobile per i tuoi file musicali, con testi sincronizzati.'),
+      },
+      {
+        repo: 'sen-to/mochi_player',
+        stars: 123,
+        name: 'Mochi Player',
+        shots: shots('mochi', 'Mochi Player', ['home', 'home'], ['detail', 'series page', 'pagina di una serie'], ['browser', 'file browser', 'esplora file']),
+        note: note('Media library player for macOS and Windows, with local, WebDAV and SMB sources.', 'Player per la libreria multimediale su macOS e Windows, con sorgenti locali, WebDAV e SMB.'),
+      },
+      {
+        repo: 'lonnnnnng/fluxdown',
+        stars: 120,
+        name: 'FluxDown',
+        shots: shots('fluxdown', 'FluxDown', ['list', 'downloads', 'download'], ['new', 'new task', 'nuova attività'], ['settings', 'settings', 'impostazioni']),
+        note: note('Cross-platform downloader for many protocols.', 'Downloader multipiattaforma per molti protocolli.'),
+      },
+      {
+        repo: 'catpuppyapp/HahaNote-Release',
+        stars: 38,
+        name: 'HahaNote',
+        framed: true,
+        shots: shots('hahanote', 'HahaNote', ['1', 'sync', 'sincronizzazione'], ['2', 'editor'], ['3', 'files', 'file']),
+        note: note('File-based notes with end-to-end encrypted sync.', 'Note basate su file, sincronizzate con crittografia end-to-end.'),
+      },
+      {
+        repo: 'voidvon/maimai-ktv',
+        stars: 32,
+        name: 'maimai KTV',
+        shots: shots('maimai', 'maimai KTV', ['desktop', 'song picker', 'scelta dei brani']),
+        note: note('Karaoke app for desktop and mobile.', 'App di karaoke per desktop e mobile.'),
+      },
+      {
+        repo: 'freeKC/Immuch360',
+        stars: 22,
+        name: 'Immuch360',
+        shots: shots('immuch', 'Immuch360', ['platforms', 'the app on phones, TVs and headsets', "l'app su telefoni, TV e visori"], ['hero', 'overview', 'panoramica']),
+        note: note('Flat, 360° and 3D photos and videos from your device, NAS or Immich server.', 'Foto e video normali, a 360° e 3D dal dispositivo, dal NAS o da un server Immich.'),
+      },
+      {
+        repo: 'joywareapps/foc-companion',
+        stars: 6,
+        name: 'FOC Companion',
+        shots: shots('foc', 'FOC Companion', ['1', '3-phase calibration', 'calibrazione trifase'], ['2', '4-phase calibration', 'calibrazione a 4 fasi'], ['3', 'pulse settings', 'impostazioni degli impulsi']),
+        note: note('Companion app to calibrate and drive a pulse device.', 'App per calibrare e pilotare un dispositivo a impulsi.'),
+      },
+      chip('opaiopaio/Venera-Nas', 26),
+      chip('huangshi10492/flutter_danmaku_player', 4),
+      chip('renierr/toollab', 3),
+      chip('snapetech-org/pleazyng', 3),
+      chip('CrispStrobe/CrispCloud', 1),
+      chip('Nihmar/cbzmanager', 1),
+      chip('PhoPersonalOrg/flutter_application_final_emotiv_logger', 1),
+      chip('foliageSea/Azusa', 0),
+      chip('miludeshiji/Reelva', 0),
+      chip('victoralvelais/navidrome-hyperstream', 0),
+      chip('wsciaroni/TrueTransfer', 0),
+      chip('zzzhr1990/player_demo', 0),
+      chip('liakos356/VR-App-Manager-Flutter', 0),
+      chip('chenshi221/tidyreel', 0),
+      chip('TranDangKhoaAutomation/Nas-For-Xiaomi-AC1200-Openwrt', 0),
+    ],
   },
 };
 

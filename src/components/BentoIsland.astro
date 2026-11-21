@@ -1,0 +1,1290 @@
+---
+/* A featured package as one bento grid: the package, its weekly downloads, the reference app, the
+   native build, how many apps use it and those apps' screenshots are all tiles of one 12-column grid
+   (6 on tablets, 1 on phones). Spans come from the island's layout in lib/islands.ts, where each band
+   is tuned to fill the row. Tile area follows importance: the most-starred dependent carries its star
+   count as a headline. Phone apps get tall tiles that show whole screens side by side, desktop apps
+   wide tiles cropped from the top. Extra screens switch on hover or tap, never on a timer. */
+import type { CollectionEntry } from 'astro:content';
+import { Image, getImage } from 'astro:assets';
+import Octicon from './Octicon.astro';
+import { getRepo, getPackage, getExternalRepo, compact, type Repo } from '../lib/data';
+import { MIN_STARS, USED_BY_LIST, type Island, type Span, type UsedBy } from '../lib/islands';
+import { t, localePath, type Lang } from '../lib/i18n';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  island: Island;
+  app?: CollectionEntry<'projects'>;
+  builtOn: Repo[];
+  lang: Lang;
+}
+
+const { project, island, app, builtOn, lang } = Astro.props;
+const T = t(lang).work.island;
+const p = project.data;
+const fmt = (n: number) => n.toLocaleString(lang === 'it' ? 'it-IT' : 'en-US');
+
+const [repo, pkg, appRepo, live] = await Promise.all([
+  p.repo ? getRepo(p.repo) : undefined,
+  p.package ? getPackage(p.package) : null,
+  app?.data.repo ? getRepo(app.data.repo) : undefined,
+  Promise.all(island.usedBy.map((u) => getExternalRepo(u.repo))),
+]);
+const deps = island.usedBy.map((u, i) => ({ ...u, stars: live[i]?.stargazers_count ?? u.stars }));
+// the filter uses the stars written in islands.ts, so the hand-tuned layout never loses a tile on a rebuild
+const shown = island.usedBy.filter((u) => u.stars >= MIN_STARS).map((u) => deps.find((d) => d.repo === u.repo)!);
+const byRepo = new Map(deps.map((d) => [d.repo, d]));
+
+// downloads chart: the last 26 weeks, the last 10 in the accent, growth = last 10 against the 10 before
+const weekly = (pkg?.weekly ?? []).slice(-26);
+const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
+const growth = weekly.length >= 20 && sum(weekly.slice(-20, -10)) > 0 ? sum(weekly.slice(-10)) / sum(weekly.slice(-20, -10)) : null;
+const W = 1000, H = 300, GAP = 6;
+const bw = weekly.length ? (W - GAP * (weekly.length - 1)) / weekly.length : 0;
+const wmax = Math.max(1, ...weekly);
+const barH = (v: number) => Math.max(3, (v / wmax) * (H - 8));
+
+const span = (s: Span) => `--c:${s[0]};--r:${s[1]};--tc:${s[2]};--tr:${s[3]}`;
+const kind = (d: UsedBy) => {
+  const img = d.shots![0].src;
+  return img.height > img.width ? 'phone' : img.width / img.height >= 1.9 ? 'wide' : 'desk';
+};
+const view = (alt: string) => alt.slice(alt.indexOf(': ') + 2);
+const caseStudy = (id: string) => localePath(lang, `/projects/${id}`);
+const owner = (r: string) => r.split('/')[0];
+
+// the gallery: every screenshot of the dependents in layout order, rendered large, opened by clicking a tile
+const galleryDeps = island.layout.flatMap((tile) => {
+  const d = tile.t === 'dep' ? byRepo.get(tile.repo) : undefined;
+  return d?.shots?.length ? [d] : [];
+});
+const gallery = await Promise.all(
+  galleryDeps.flatMap((d) =>
+    d.shots!.map(async (s, i) => {
+      const portrait = s.src.height > s.src.width;
+      const big = await getImage({ src: s.src, width: Math.min(s.src.width, portrait ? 1000 : 2000), format: 'webp' });
+      return {
+        src: big.src,
+        portrait,
+        framed: !!d.framed,
+        alt: s.alt[lang],
+        view: view(s.alt[lang]),
+        name: d.name ?? d.repo,
+        repo: d.repo,
+        stars: fmt(d.stars),
+        note: d.note?.[lang] ?? '',
+        i: i + 1,
+        n: d.shots!.length,
+      };
+    }),
+  ),
+);
+const galleryStart = new Map<string, number>();
+galleryDeps.reduce((k, d) => (galleryStart.set(d.repo, k), k + d.shots!.length), 0);
+---
+
+<section class="bx-island" aria-label={p.title}>
+  <div class="bx">
+    {island.layout.map((tile) => {
+      if (tile.t === 'pkg') return (
+        <article class="bx-t bx-hov bx-pkg" style={span(tile.s)}>
+          <svg class="bx-go" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" /></svg>
+          <div class="bx-pkg-top">
+            {p.logo && <Image src={p.logo} alt="" width={40} height={40} densities={[1, 2, 3]} class="size-10 rounded-lg object-contain" />}
+            <span class="bx-lbl"><Octicon name="package" size={12} /> {T.library} · pub.dev</span>
+          </div>
+          <h3 class="font-mono"><a class="bx-stretch" href={caseStudy(project.id)}>{p.title}</a></h3>
+          <p>{p.tagline}</p>
+          <div class="bx-tags">{p.stack.slice(0, 4).map((s) => <span class="bx-pill">{s}</span>)}</div>
+          <div class="bx-nums">
+            <div><b>{repo?.stargazers_count ?? '—'}</b><span><Octicon name="star-fill" size={12} class="text-star" /> {T.stars}</span></div>
+            <div><b>{pkg?.likes ?? '—'}</b><span><Octicon name="thumbsup" size={12} class="text-accent" /> {T.likes}</span></div>
+            <div><b class="font-mono text-lg!">{pkg?.version ? `v${pkg.version}` : '—'}</b><span>{T.latest}</span></div>
+          </div>
+        </article>
+      );
+
+      if (tile.t === 'chart') return (
+        <article class="bx-t bx-chart" style={span(tile.s)} data-chart data-label={T.weekly(weekly.length)}>
+          <div class="bx-chart-head">
+            <div>
+              <span class="bx-lbl"><Octicon name="download" size={12} /> {T.downloads}</span>
+              <div class="bx-bignum">{pkg ? compact(pkg.downloads30d) : '—'}<small>{T.per30}</small></div>
+            </div>
+            {growth && growth >= 1.2 && <div class="bx-growth"><b>×{growth.toFixed(1)}</b><span>{T.growth}</span></div>}
+          </div>
+          <div class="bx-readout" aria-live="polite">{T.weekly(weekly.length)}</div>
+          <div class="bx-bars">
+            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={T.weekly(weekly.length)}>
+              {weekly.map((v, i) => (
+                <rect class:list={[i >= weekly.length - 10 && 'hot']} x={i * (bw + GAP)} y={H - barH(v)} width={bw} height={barH(v)} rx="3" />
+              ))}
+              {weekly.map((v, i) => (
+                <rect class="hit" x={i * (bw + GAP) - GAP / 2} y="0" width={bw + GAP} height={H} data-text={T.downloadsIn(T.weeksAgo(weekly.length - 1 - i), fmt(v))} />
+              ))}
+            </svg>
+          </div>
+          <div class="bx-axis"><span>{T.weeksAgo(weekly.length)}</span><span>{T.peak(fmt(wmax))}</span><span>{T.thisWeek}</span></div>
+        </article>
+      );
+
+      if (tile.t === 'app') return app && app.data.cover && (
+        <article class="bx-t bx-hov bx-media bx-app" style={`${span(tile.s)};--ar:${app.data.cover.width} / ${app.data.cover.height}`}>
+          <Image src={app.data.cover} alt={app.data.coverAlt ?? ''} widths={[640, 960, 1400]} sizes="(min-width: 1100px) 760px, 100vw" class="bx-cover" />
+          <div class="bx-plate">
+            <div class="bx-plate-row">
+              {app.data.logo && <Image src={app.data.logo} alt="" width={34} height={34} densities={[1, 2, 3]} class="bx-ava bx-ava-lg object-contain" />}
+              <div class="bx-grow">
+                <span class="bx-lbl mb-1.5"><Octicon name="device-desktop" size={12} /> {T.app}</span>
+                <h4 class="text-lg!"><a class="bx-stretch" href={caseStudy(app.id)}>{app.data.title}</a></h4>
+              </div>
+              {appRepo && <span class="bx-st"><Octicon name="star-fill" size={12} class="text-star" /> {appRepo.stargazers_count}</span>}
+            </div>
+            <p class="bx-app-note">{app.data.tagline} {app.data.platforms.join(', ')}.</p>
+          </div>
+        </article>
+      );
+
+      if (tile.t === 'build') return builtOn.map((b) => (
+        <article class="bx-t bx-hov bx-build" style={span(tile.s)}>
+          <svg class="bx-go" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" /></svg>
+          <span class="bx-lbl"><Octicon name="tools" size={12} /> {T.build}</span>
+          <a class="bx-repo-name bx-stretch" href={b.html_url} target="_blank" rel="noopener">{b.name}</a>
+          <p>{island.buildNote[lang]}</p>
+          <div class="bx-foot">{b.language && <span>{b.language}</span>}<span><Octicon name="star-fill" size={12} class="text-star" /> {b.stargazers_count}</span></div>
+        </article>
+      ));
+
+      if (tile.t === 'intro') return (
+        <article class="bx-t bx-intro" style={span(tile.s)}>
+          <span class="bx-lbl"><Octicon name="people" size={12} /> {T.usedBy}</span>
+          <div class="bx-count"><b>{deps.length}</b><span set:html={T.dependOn(p.title)} /></div>
+          <!-- every app that uses the package, most-starred first; the ones with a tile above carry a dot -->
+          <ul class="bx-faces">
+            {[...deps].sort((a, b) => b.stars - a.stars).map((d) => (
+              <li>
+                <a href={`https://github.com/${d.repo}`} target="_blank" rel="noopener" data-tip={`${d.repo} · ${fmt(d.stars)}`} aria-label={`${d.repo}, ${fmt(d.stars)} ${T.stars}`} class:list={[shown.includes(d) && d.shots?.length && 'shown']}>
+                  <img src={`https://avatars.githubusercontent.com/${owner(d.repo)}?s=72`} alt="" width="36" height="36" loading="lazy" />
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div class="bx-intro-foot">
+            <!-- pointing at a face shows its name and stars here -->
+            <span class="bx-faces-out" aria-live="polite"><Octicon name="star-fill" size={12} class="text-star" /> <span data-rest={T.starsBetween(fmt(sum(deps.map((d) => d.stars))))}>{T.starsBetween(fmt(sum(deps.map((d) => d.stars))))}</span></span>
+            <a href={USED_BY_LIST} target="_blank" rel="noopener">{T.fullList} <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" /></svg></a>
+          </div>
+        </article>
+      );
+
+      if (tile.t === 'dep') {
+        const d = byRepo.get(tile.repo);
+        if (!d?.shots?.length) return null;
+        const k = kind(d);
+        const phone = k === 'phone';
+        const first = d.shots[0].src;
+        const ar = phone ? '4 / 5' : `${first.width} / ${first.height}`;
+        const imgs = d.shots.map((s, i) => (
+          <Image
+            src={s.src}
+            alt={s.alt[lang]}
+            widths={phone ? [240, 480] : [480, 960, 1440]}
+            sizes={phone ? '240px' : '(min-width: 1100px) 60vw, 100vw'}
+            class:list={[i === 0 && 'on', phone && i === 1 && 'on2']}
+          />
+        ));
+        return (
+          <article class:list={['bx-t bx-hov bx-media bx-dep', `bx-${k}`, d.framed && 'bx-framed', tile.hero && 'bx-hero', tile.hero === 'headline' && 'bx-headline']} style={`${span(tile.s)};--ar:${ar}`} data-start={galleryStart.get(d.repo)}>
+            <div class="bx-shot">{phone ? <div class="bx-phones">{imgs}</div> : imgs}</div>
+            {d.shots.length > 1 && (
+              <div class="bx-views" role="group" aria-label={T.screens(d.name ?? d.repo)}>
+                {d.shots.map((s, i) => (
+                  <button type="button" aria-pressed={i === 0 ? 'true' : 'false'} aria-label={T.show(view(s.alt[lang]))} title={view(s.alt[lang])} />
+                ))}
+                <span class="bx-vname">{view(d.shots[0].alt[lang])}</span>
+              </div>
+            )}
+            <div class="bx-plate">
+              {tile.hero && (
+                <div class="bx-hero-num">
+                  <b>{fmt(d.stars)}</b>
+                  <span><Octicon name="star-fill" size={12} class="text-star" /> {T.stars}<br />{tile.hero === 'headline' ? T.mostStarred(p.title) : T.topApp(p.title)}</span>
+                </div>
+              )}
+              <div class="bx-plate-row">
+                <img class="bx-ava" src={`https://avatars.githubusercontent.com/${owner(d.repo)}?s=44`} alt="" width="22" height="22" loading="lazy" />
+                <div class="bx-grow">
+                  <h4><button type="button" class="bx-stretch bx-open" aria-label={T.open(d.name ?? d.repo)}>{d.name}</button></h4>
+                  <a class="bx-repo bx-gh" href={`https://github.com/${d.repo}`} target="_blank" rel="noopener" title={T.onGitHub}>{d.repo}</a>
+                </div>
+                {!tile.hero && <span class="bx-st"><Octicon name="star-fill" size={12} class="text-star" /> {fmt(d.stars)}</span>}
+              </div>
+              {d.note && <p><span>{d.note[lang]}</span></p>}
+            </div>
+          </article>
+        );
+      }
+      return null;
+    })}
+  </div>
+
+  {gallery.length > 0 && (
+    <dialog class="bx-lb" aria-label={`${p.title} · ${T.gallery}`}>
+      <script type="application/json" set:html={JSON.stringify(gallery)} />
+      <div class="bx-lb-top">
+        <div class="bx-lb-title">
+          <b class="bx-lb-name"></b>
+          <a class="bx-lb-gh" target="_blank" rel="noopener"><span></span> <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 11 11 5M6 5h5v5" /></svg></a>
+          <span class="bx-lb-stars"><Octicon name="star-fill" size={12} class="text-star" /> <span></span></span>
+        </div>
+        <button type="button" class="bx-lb-btn bx-lb-close" aria-label={T.close}>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+        </button>
+      </div>
+      <figure class="bx-lb-stage">
+        <img alt="" />
+        <figcaption class="bx-lb-cap"><span class="bx-lb-view"></span><span class="bx-lb-count"></span><span class="bx-lb-note"></span></figcaption>
+      </figure>
+      <button type="button" class="bx-lb-btn bx-lb-nav bx-lb-prev" aria-label={T.prevShot}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg></button>
+      <button type="button" class="bx-lb-btn bx-lb-nav bx-lb-next" aria-label={T.nextShot}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg></button>
+    </dialog>
+  )}
+</section>
+
+<style is:global>
+  /* every class is bx- prefixed: the tiles hold <Image> output, which scoped styles would not reach */
+  .bx-island {
+    --bx-bar: color-mix(in oklab, var(--c-fg) 15%, transparent);
+    --bx-plate: color-mix(in oklab, var(--c-surface) 85%, transparent);
+    background: var(--c-surface-2);
+    border-radius: 12px;
+    padding: 8px;
+  }
+  .bx {
+    --row: clamp(58px, 5.6vw, 76px);
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: var(--row);
+    grid-auto-flow: dense;
+    gap: 8px;
+  }
+  .bx-t {
+    grid-column: span var(--c);
+    grid-row: span var(--r);
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--c-surface);
+    container-type: inline-size;
+  }
+  .bx-hov::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 6;
+    box-shadow: inset 0 0 0 1px transparent;
+    transition: box-shadow 0.18s;
+  }
+  .bx-hov:hover::after,
+  .bx-hov:focus-within::after {
+    box-shadow: inset 0 0 0 1px var(--c-accent);
+  }
+  .bx-stretch::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+  }
+  .bx-stretch:focus-visible {
+    outline: none;
+  }
+  .bx-t:has(.bx-stretch:focus-visible)::after {
+    box-shadow: inset 0 0 0 2px var(--c-accent);
+  }
+  @media (max-width: 1100px) {
+    .bx {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      --row: 68px;
+    }
+    .bx-t {
+      grid-column: span var(--tc, 6);
+      grid-row: span var(--tr, var(--r));
+    }
+  }
+  @media (max-width: 699px) {
+    .bx-island {
+      padding: 6px;
+    }
+    .bx {
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: auto;
+      gap: 6px;
+    }
+    .bx-t {
+      grid-column: auto;
+      grid-row: auto;
+    }
+    .bx-media {
+      aspect-ratio: var(--ar, 16 / 10);
+    }
+    .bx-dep.bx-phone {
+      aspect-ratio: 3 / 4 !important;
+    }
+    .bx-dep.bx-phone .bx-phones {
+      bottom: 112px;
+    }
+    .bx-bars {
+      min-height: 150px;
+    }
+  }
+
+  /* shared bits */
+  .bx-lbl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: 500 11px/1 "Geist Mono Variable", ui-monospace, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--c-subtle);
+  }
+  .bx-pill {
+    font: 11px/1 "Geist Mono Variable", ui-monospace, monospace;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: var(--c-surface-2);
+    color: var(--c-muted);
+    white-space: nowrap;
+  }
+  .bx-go {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    color: var(--c-subtle);
+    transition: color 0.15s;
+    z-index: 4;
+  }
+  .bx-t:hover .bx-go {
+    color: var(--c-fg);
+  }
+
+  /* package */
+  .bx-pkg {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .bx-pkg-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .bx-pkg h3 {
+    margin: 4px 0 0;
+    font-size: clamp(24px, 2.3vw, 32px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 600;
+  }
+  .bx-pkg p {
+    margin: 0;
+    color: var(--c-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 36ch;
+  }
+  .bx-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .bx-nums {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--c-border);
+    padding-top: 12px;
+  }
+  .bx-nums div {
+    display: grid;
+    gap: 6px;
+  }
+  .bx-nums div + div {
+    padding-left: 12px;
+    border-left: 1px solid var(--c-border);
+  }
+  .bx-nums b {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .bx-nums span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--c-subtle);
+  }
+
+  /* downloads chart */
+  .bx-chart {
+    padding: 20px 20px 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .bx-chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .bx-bignum {
+    font-size: clamp(40px, 4.6vw, 60px);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    font-variant-numeric: tabular-nums;
+    margin-top: 10px;
+  }
+  .bx-bignum small {
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--c-subtle);
+    margin-left: 6px;
+  }
+  .bx-growth {
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+    text-align: right;
+  }
+  .bx-growth b {
+    font: 600 13px/1 "Geist Mono Variable", ui-monospace, monospace;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+  }
+  .bx-growth span {
+    font-size: 12px;
+    color: var(--c-subtle);
+    max-width: 22ch;
+    line-height: 1.35;
+  }
+  .bx-readout {
+    font: 12px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-muted);
+    margin-top: 8px;
+    min-height: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .bx-bars {
+    flex: 1;
+    min-height: 90px;
+    margin: 8px -4px 0;
+    position: relative;
+  }
+  .bx-bars svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .bx-bars rect {
+    fill: var(--bx-bar);
+    transition: fill 0.12s;
+  }
+  .bx-bars rect.hot {
+    fill: var(--c-accent);
+  }
+  .bx-bars rect.hit {
+    fill: transparent;
+    cursor: crosshair;
+  }
+  .bx-bars rect.sel {
+    fill: var(--c-fg);
+  }
+  .bx-axis {
+    display: flex;
+    justify-content: space-between;
+    font: 10px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-subtle);
+    padding: 6px 0 12px;
+    border-top: 1px solid var(--c-border);
+  }
+
+  /* reference app */
+  .bx-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top left;
+    transition: transform 0.5s;
+  }
+  .bx-app .bx-plate {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    right: 12px;
+    max-width: 460px;
+    z-index: 4;
+  }
+  .bx-plate {
+    background: var(--bx-plate);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border-radius: 6px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in oklab, var(--c-border) 70%, transparent);
+  }
+  .bx-plate-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .bx-grow {
+    flex: 1;
+    min-width: 0;
+  }
+  .bx-plate h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bx-repo {
+    font: 11px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    margin-top: 2px;
+  }
+  .bx-st {
+    font: 500 12px "Geist Mono Variable", ui-monospace, monospace;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .bx-plate p,
+  .bx-app-note {
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--c-muted);
+  }
+  .bx-ava {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: var(--c-surface-2);
+    flex: none;
+  }
+  .bx-ava-lg {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+  }
+
+  /* native build */
+  .bx-build {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bx-repo-name {
+    font: 500 15px "Geist Mono Variable", ui-monospace, monospace;
+    letter-spacing: -0.01em;
+  }
+  .bx-build p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--c-muted);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .bx-foot {
+    margin-top: auto;
+    display: flex;
+    gap: 12px;
+    font: 12px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-subtle);
+  }
+  .bx-foot span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* used-by intro */
+  .bx-intro {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .bx-count {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .bx-count b {
+    font-size: clamp(44px, 4.6vw, 64px);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+  }
+  .bx-count span {
+    font-size: 15px;
+    color: var(--c-muted);
+    line-height: 1.25;
+  }
+  .bx-faces {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bx-faces a {
+    position: relative;
+    display: block;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--c-surface-2);
+    transition: box-shadow 0.15s;
+  }
+  .bx-faces img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+  }
+  .bx-faces a:hover,
+  .bx-faces a:focus-visible {
+    box-shadow: 0 0 0 2px var(--c-accent);
+    outline: none;
+  }
+  .bx-faces a.shown::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    box-shadow: 0 0 0 2px var(--c-surface);
+  }
+  .bx-intro-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid var(--c-border);
+    font: 12px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-subtle);
+  }
+  .bx-faces-out {
+    min-width: 0;
+    color: var(--c-muted);
+  }
+  .bx-faces-out > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bx-intro-foot > span,
+  .bx-intro-foot a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .bx-intro-foot a {
+    color: var(--c-muted);
+    transition: color 0.15s;
+  }
+  .bx-intro-foot a:hover {
+    color: var(--c-accent);
+  }
+  .bx-intro-foot svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+  }
+
+  /* dependents */
+  .bx-shot {
+    position: absolute;
+    inset: 0;
+  }
+  .bx-shot img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    opacity: 0;
+    transition: opacity 0.35s, transform 0.5s;
+  }
+  .bx-shot img.on {
+    opacity: 1;
+  }
+  .bx-wide .bx-shot img {
+    object-position: center;
+  }
+  .bx-dep .bx-plate {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    z-index: 4;
+    padding: 9px 11px;
+  }
+  .bx-dep .bx-plate p {
+    display: grid;
+    grid-template-rows: 0fr;
+    margin: 0;
+    transition: grid-template-rows 0.25s, margin 0.25s;
+  }
+  .bx-dep .bx-plate p > span {
+    overflow: hidden;
+  }
+  .bx-dep:hover .bx-plate p,
+  .bx-dep:focus-within .bx-plate p,
+  .bx-hero .bx-plate p {
+    grid-template-rows: 1fr;
+    margin-top: 6px;
+  }
+  @media (hover: none) {
+    .bx-dep .bx-plate p {
+      grid-template-rows: 1fr;
+      margin-top: 6px;
+    }
+  }
+  @container (max-width: 240px) {
+    .bx-dep .bx-repo {
+      display: none;
+    }
+    .bx-dep:not(.bx-hero) .bx-plate p {
+      display: none;
+    }
+  }
+
+  /* phone screenshots: whole, side by side when the tile is wide enough */
+  .bx-phone {
+    background: color-mix(in oklab, var(--c-surface) 60%, var(--c-surface-2));
+  }
+  .bx-phones {
+    position: absolute;
+    inset: 14px 14px 64px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  .bx-phones img {
+    position: static;
+    display: none;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-height: 100%;
+    max-width: calc(50% - 5px);
+    width: auto;
+    height: auto;
+    opacity: 1;
+    object-fit: contain;
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px var(--c-border-strong), 0 10px 30px -14px rgb(0 0 0 / 0.5);
+    transition: transform 0.35s;
+  }
+  .bx-phones img.on {
+    display: block;
+    order: 0;
+  }
+  .bx-phones img.on2 {
+    display: block;
+    order: 1;
+  }
+  .bx-framed .bx-phones img {
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .bx-phone .bx-plate h4 {
+    white-space: normal;
+    line-height: 1.2;
+  }
+  @container (max-width: 290px) {
+    .bx-phones img.on2 {
+      display: none !important;
+    }
+    .bx-phones img {
+      max-width: 100%;
+    }
+  }
+
+  /* screen switcher */
+  .bx-views {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 5;
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 6px;
+    background: var(--bx-plate);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  .bx-views button {
+    width: 22px;
+    height: 22px;
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+  }
+  .bx-views button::before {
+    content: '';
+    width: 12px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--c-subtle);
+    opacity: 0.6;
+    transition: background 0.15s, width 0.15s, opacity 0.15s;
+  }
+  .bx-views button[aria-pressed='true']::before {
+    background: var(--c-accent);
+    opacity: 1;
+    width: 16px;
+  }
+  .bx-views button:hover::before {
+    opacity: 1;
+  }
+  .bx-vname {
+    font: 10px/22px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-muted);
+    padding: 0 6px 0 4px;
+    white-space: nowrap;
+  }
+  @container (max-width: 340px) {
+    .bx-vname {
+      display: none;
+    }
+  }
+
+  /* headline tiles: the star count set as a headline */
+  .bx-hero .bx-plate {
+    left: 12px;
+    bottom: 12px;
+    right: auto;
+    width: min(420px, calc(100% - 24px));
+    padding: 14px 16px;
+  }
+  .bx-hero-num {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .bx-hero-num b {
+    font-size: clamp(28px, 2.6vw, 38px);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+  }
+  .bx-hero-num span {
+    font-size: 12px;
+    color: var(--c-subtle);
+    line-height: 1.3;
+  }
+  .bx-headline .bx-plate h4 {
+    font-size: 20px;
+  }
+  .bx-headline .bx-hero-num b {
+    font-size: clamp(44px, 5.4vw, 76px);
+  }
+  .bx-hero .bx-plate p {
+    font-size: 14px;
+  }
+
+  /* the whole dependent tile opens the gallery; the repo name stays a GitHub link above it */
+  .bx-dep {
+    cursor: pointer;
+  }
+  .bx-open {
+    all: unset;
+    cursor: pointer;
+  }
+  .bx-dep .bx-plate .bx-open::before {
+    /* the tile itself takes the click (see the script), so no stretched link over the plate */
+    display: none;
+  }
+  .bx-dep:has(.bx-open:focus-visible)::after {
+    box-shadow: inset 0 0 0 2px var(--c-accent);
+  }
+  .bx-gh {
+    position: relative;
+    z-index: 5;
+    cursor: pointer;
+  }
+  .bx-gh:hover {
+    color: var(--c-accent);
+  }
+
+  /* gallery */
+  .bx-lb {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--c-fg);
+    overflow: hidden;
+  }
+  .bx-lb[open] {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .bx-lb::backdrop {
+    background: color-mix(in oklab, var(--c-bg) 92%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  .bx-lb-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .bx-lb-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+  }
+  .bx-lb-name {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .bx-lb-gh {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font: 12px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-muted);
+  }
+  .bx-lb-gh:hover {
+    color: var(--c-accent);
+  }
+  .bx-lb-gh svg,
+  .bx-lb-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+  }
+  .bx-lb-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font: 12px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-muted);
+  }
+  .bx-lb-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: var(--c-surface);
+    color: var(--c-muted);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .bx-lb-btn:hover {
+    color: var(--c-fg);
+    background: var(--c-surface-2);
+  }
+  .bx-lb-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  .bx-lb-stage {
+    margin: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    justify-items: center;
+    gap: 12px;
+    padding: 0 72px 20px;
+  }
+  .bx-lb-stage img {
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    align-self: center;
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px var(--c-border), 0 30px 80px -30px rgb(0 0 0 / 0.6);
+    transition: opacity 0.2s;
+  }
+  .bx-lb-stage img.portrait {
+    border-radius: 22px;
+    border: 6px solid #0c0d10;
+  }
+  .bx-lb-stage img.framed {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .bx-lb-stage img.loading {
+    opacity: 0.4;
+  }
+  .bx-lb-cap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 12px;
+    max-width: 70ch;
+    text-align: center;
+    font-size: 13px;
+    color: var(--c-muted);
+  }
+  .bx-lb-view {
+    color: var(--c-fg);
+  }
+  .bx-lb-count {
+    font: 12px "Geist Mono Variable", ui-monospace, monospace;
+    color: var(--c-subtle);
+  }
+  .bx-lb-note {
+    flex-basis: 100%;
+  }
+  .bx-lb-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+  }
+  .bx-lb-prev {
+    left: 14px;
+  }
+  .bx-lb-next {
+    right: 14px;
+  }
+  @media (max-width: 699px) {
+    .bx-lb-stage {
+      padding: 0 12px 84px;
+    }
+    .bx-lb-nav {
+      top: auto;
+      bottom: 18px;
+      transform: none;
+    }
+    .bx-lb-prev {
+      left: calc(50% - 56px);
+    }
+    .bx-lb-next {
+      right: calc(50% - 56px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bx-island *,
+    .bx-island *::before,
+    .bx-island *::after {
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+  function setup() {
+    // chart: point at a bar to read that week
+    document.querySelectorAll<HTMLElement>('[data-chart]').forEach((el) => {
+      if (el.dataset.ready) return;
+      el.dataset.ready = '1';
+      const out = el.querySelector<HTMLElement>('.bx-readout')!;
+      const bars = [...el.querySelectorAll<SVGRectElement>('rect:not(.hit)')];
+      const box = el.querySelector('.bx-bars')!;
+      el.querySelectorAll<SVGRectElement>('rect.hit').forEach((hit, i) => {
+        hit.addEventListener('pointerenter', () => {
+          bars.forEach((b, j) => b.classList.toggle('sel', j === i));
+          out.textContent = hit.dataset.text ?? '';
+        });
+      });
+      box.addEventListener('pointerleave', () => {
+        bars.forEach((b) => b.classList.remove('sel'));
+        out.textContent = el.dataset.label ?? '';
+      });
+    });
+
+    // dependents: hover or tap a tick to switch the screen; phones show the next one beside it
+    document.querySelectorAll<HTMLElement>('.bx-dep').forEach((tile) => {
+      if (tile.dataset.ready) return;
+      tile.dataset.ready = '1';
+      const btns = [...tile.querySelectorAll<HTMLButtonElement>('.bx-views button')];
+      const imgs = [...tile.querySelectorAll<HTMLImageElement>('.bx-shot img')];
+      const label = tile.querySelector<HTMLElement>('.bx-vname');
+      if (!btns.length) return;
+      const phone = tile.classList.contains('bx-phone');
+      const set = (i: number) => {
+        imgs.forEach((im, j) => {
+          im.classList.toggle('on', j === i);
+          im.classList.toggle('on2', phone && j === (i + 1) % imgs.length && j !== i);
+        });
+        btns.forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
+        if (label) label.textContent = btns[i].title;
+      };
+      btns.forEach((b, i) => {
+        b.addEventListener('click', () => set(i));
+        b.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && set(i));
+      });
+    });
+  }
+
+  // gallery: a click on a dependent opens its screen large; arrows, keys and swipes walk through every
+  // screenshot of the island, project after project
+  type Shot = { src: string; portrait: boolean; framed: boolean; alt: string; view: string; name: string; repo: string; stars: string; note: string; i: number; n: number };
+
+  function setupGallery(island: HTMLElement) {
+    const dlg = island.querySelector<HTMLDialogElement>('.bx-lb');
+    if (!dlg) return;
+    const shots: Shot[] = JSON.parse(dlg.querySelector('script')!.textContent ?? '[]');
+    const img = dlg.querySelector<HTMLImageElement>('.bx-lb-stage img')!;
+    const q = <T extends HTMLElement>(sel: string) => dlg.querySelector<T>(sel)!;
+    let at = 0;
+
+    const show = (k: number) => {
+      at = (k + shots.length) % shots.length;
+      const s = shots[at];
+      img.classList.add('loading');
+      img.onload = () => img.classList.remove('loading');
+      img.src = s.src;
+      img.alt = s.alt;
+      img.className = [s.portrait && 'portrait', s.framed && 'framed', 'loading'].filter(Boolean).join(' ');
+      q('.bx-lb-name').textContent = s.name;
+      const gh = q<HTMLAnchorElement>('.bx-lb-gh');
+      gh.href = `https://github.com/${s.repo}`;
+      gh.querySelector('span')!.textContent = s.repo;
+      q('.bx-lb-stars span').textContent = s.stars;
+      q('.bx-lb-view').textContent = s.view;
+      q('.bx-lb-count').textContent = `${s.i} / ${s.n}`;
+      q('.bx-lb-note').textContent = s.note;
+      // warm the next one
+      new Image().src = shots[(at + 1) % shots.length].src;
+    };
+
+    island.querySelectorAll<HTMLElement>('.bx-dep[data-start]').forEach((tile) => {
+      const start = Number(tile.dataset.start);
+      const open = () => {
+        const pressed = [...tile.querySelectorAll('.bx-views button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true');
+        show(start + Math.max(0, pressed));
+        dlg.showModal();
+      };
+      tile.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('a, .bx-views')) return;
+        open();
+      });
+    });
+
+    q('.bx-lb-prev').addEventListener('click', () => show(at - 1));
+    q('.bx-lb-next').addEventListener('click', () => show(at + 1));
+    q('.bx-lb-close').addEventListener('click', () => dlg.close());
+    // a click on the backdrop (the dialog itself, outside the image and the controls) closes it
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg || e.target === q('.bx-lb-stage')) dlg.close();
+    });
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') show(at - 1);
+      else if (e.key === 'ArrowRight') show(at + 1);
+    });
+    let x0: number | null = null;
+    dlg.addEventListener('pointerdown', (e) => (x0 = e.pointerType === 'mouse' ? null : e.clientX));
+    dlg.addEventListener('pointerup', (e) => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0;
+      x0 = null;
+      if (Math.abs(dx) > 40) show(at + (dx < 0 ? 1 : -1));
+    });
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('.bx-island').forEach((island) => {
+      if (island.dataset.gallery) return;
+      island.dataset.gallery = '1';
+      setupGallery(island);
+    });
+  });
+  // used-by faces: name the one under the pointer in the tile's footer
+  function setupFaces() {
+    document.querySelectorAll<HTMLElement>('.bx-intro').forEach((tile) => {
+      if (tile.dataset.ready) return;
+      tile.dataset.ready = '1';
+      const out = tile.querySelector<HTMLElement>('.bx-faces-out [data-rest]');
+      if (!out) return;
+      const rest = () => (out.textContent = out.dataset.rest ?? '');
+      tile.querySelectorAll<HTMLAnchorElement>('.bx-faces a').forEach((a) => {
+        const say = () => (out.textContent = a.dataset.tip ?? '');
+        a.addEventListener('pointerenter', say);
+        a.addEventListener('focus', say);
+        a.addEventListener('pointerleave', rest);
+        a.addEventListener('blur', rest);
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', setupFaces);
+  document.addEventListener('astro:page-load', setup);
+</script>

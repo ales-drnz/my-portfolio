@@ -7,7 +7,7 @@ import FeaturedProject from './FeaturedProject.astro';
 import FeaturedPackage from './FeaturedPackage.astro';
 import RepoCard from './RepoCard.astro';
 import ProjectCard from './ProjectCard.astro';
-import ProjectIsland from './ProjectIsland.astro';
+import BentoIsland from './BentoIsland.astro';
 import ContributionGraph from './ContributionGraph.astro';
 import CodeLanguages from './CodeLanguages.astro';
 import CopyEmail from './CopyEmail.astro';
@@ -102,7 +102,7 @@ const prGroups = Object.entries(
 <Base lang={lang}>
   <!-- ===================== HERO ===================== -->
   <section class="relative">
-    <div class="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24">
+    <div class="relative mx-auto max-w-[84rem] px-4 sm:px-6 pt-16 sm:pt-24">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <!-- intro -->
         <div class="relative overflow-hidden md:col-span-2 md:row-span-2 rounded-2xl bg-surface p-6 sm:p-8 flex flex-col justify-center">
@@ -184,7 +184,7 @@ const prGroups = Object.entries(
             <div class="space-y-5">
               {g.featured.map((project, i) =>
                 ISLANDS[project.id] ? (
-                  <ProjectIsland
+                  <BentoIsland
                     project={project}
                     island={ISLANDS[project.id]}
                     app={projects.find((p) => p.id === ISLANDS[project.id].app)}
@@ -268,7 +268,7 @@ const prGroups = Object.entries(
   )}
 
   <!-- ===================== CONTACT ===================== -->
-  <section id="contact" class="mx-auto max-w-5xl px-4 sm:px-6 pt-24 scroll-mt-14">
+  <section id="contact" class="mx-auto max-w-[84rem] px-4 sm:px-6 pt-24 scroll-mt-14">
     <div class="relative overflow-hidden rounded-2xl bg-surface px-6 py-14 sm:px-12 text-center">
       <div class="relative">
         <p class="font-mono text-xs text-accent uppercase tracking-[0.14em] mb-3">{T.contact.eyebrow}</p>
