@@ -1,6 +1,7 @@
 @import "tailwindcss";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+/* the faces of dart.dev and flutter.dev: Google Sans Flex (weight and optical size axes) and Google Sans Code */
+@import "@fontsource-variable/google-sans-flex/opsz.css";
+@import "@fontsource-variable/google-sans-code";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -21,6 +22,7 @@
   /* green deep enough for text on the light grounds (about 5:1) */
   --c-accent: #3e7a0e;
   --c-accent-soft: #edf4e2;
+  --c-on-accent: #ffffff;
   --c-ok: #1a7f4b;
   --c-star: #3e7a0e;
   --c-merged: #3e7a0e;
@@ -31,6 +33,9 @@
   --c-mark: #3e7a0e;
   --c-wave: #11131838;
   --c-wave-hot: #3e7a0e4a;
+  /* floating screenshots: a long soft shadow and a hairline ring */
+  --c-shadow: 0 46px 80px -38px rgb(17 19 24 / 0.42), 0 16px 30px -16px rgb(17 19 24 / 0.25);
+  --c-ring: 0 0 0 1px rgb(17 19 24 / 0.07);
   color-scheme: light;
 }
 
@@ -46,6 +51,7 @@
   --c-subtle: #71757e;
   --c-accent: #c6f432;
   --c-accent-soft: #2a3312;
+  --c-on-accent: #17191d;
   --c-ok: #4ade80;
   --c-star: #c6f432;
   --c-merged: #c6f432;
@@ -54,7 +60,81 @@
   --c-mark: #c6f432;
   --c-wave: #ededed2c;
   --c-wave-hot: #c6f4323a;
+  --c-shadow: 0 50px 90px -40px rgb(0 0 0 / 0.85), 0 18px 36px -18px rgb(0 0 0 / 0.6);
+  --c-ring: 0 0 0 1px rgb(255 255 255 / 0.07);
   color-scheme: dark;
+}
+
+/* the inverted ground: paper in the dark theme, ink in the light one (the "built with" band on the home) */
+.ground-invert {
+  --c-bg: #17191d;
+  --c-surface: #1e2126;
+  --c-surface-2: #262a30;
+  --c-border: #2e3239;
+  --c-border-strong: #3c414a;
+  --c-fg: #ededed;
+  --c-muted: #a3a6ae;
+  --c-subtle: #71757e;
+  --c-accent: #c6f432;
+  --c-accent-soft: #2a3312;
+  --c-on-accent: #17191d;
+  --c-star: #c6f432;
+  --c-shadow: 0 50px 90px -40px rgb(0 0 0 / 0.85), 0 18px 36px -18px rgb(0 0 0 / 0.6);
+  --c-ring: 0 0 0 1px rgb(255 255 255 / 0.07);
+  color-scheme: dark;
+}
+[data-theme="dark"] .ground-invert {
+  --c-bg: #f2f2ef;
+  --c-surface: #ffffff;
+  --c-surface-2: #e6e6e1;
+  --c-border: #dcdcd6;
+  --c-border-strong: #cfcfc9;
+  --c-fg: #111318;
+  --c-muted: #5c5f68;
+  --c-subtle: #7d8089;
+  --c-accent: #3e7a0e;
+  --c-accent-soft: #e3edd2;
+  --c-on-accent: #ffffff;
+  --c-star: #3e7a0e;
+  --c-shadow: 0 46px 80px -38px rgb(17 19 24 / 0.45), 0 16px 30px -16px rgb(17 19 24 / 0.28);
+  --c-ring: 0 0 0 1px rgb(17 19 24 / 0.07);
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------
+   One spacing scale for the home page.
+   --sec: vertical padding of a calm section; --band: of a product band.
+   --s-*: the gaps inside a block (eyebrow, headline, lede, figures, media).
+   The content column is the header's: 84rem with --pad-x gutters.
+   ------------------------------------------------------------ */
+:root {
+  --sec: 48px;
+  --band: 48px;
+  --s-1: 8px;
+  --s-2: 16px;
+  --s-3: 24px;
+  --s-4: 32px;
+  --s-5: 48px;
+  --pad-x: 16px;
+}
+@media (min-width: 640px) {
+  :root {
+    --pad-x: 24px;
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --sec: 64px;
+    --band: 64px;
+    --s-5: 56px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --sec: 96px;
+    --band: 128px;
+    --s-5: 64px;
+  }
 }
 
 /* every box on the site shares one corner: 2xl matches xl (12px) instead of Tailwind's 16px */
@@ -63,8 +143,8 @@
 }
 
 @theme inline {
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --font-sans: "Google Sans Flex Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Google Sans Code Variable", ui-monospace, "SFMono-Regular", monospace;
 
   --color-bg: var(--c-bg);
   --color-surface: var(--c-surface);
@@ -76,6 +156,7 @@
   --color-subtle: var(--c-subtle);
   --color-accent: var(--c-accent);
   --color-accent-soft: var(--c-accent-soft);
+  --color-on-accent: var(--c-on-accent);
   --color-ok: var(--c-ok);
   --color-star: var(--c-star);
   --color-merged: var(--c-merged);
@@ -84,7 +165,8 @@
 @layer base {
   html {
     @apply bg-bg text-fg font-sans antialiased;
-    font-feature-settings: "ss01", "cv11";
+    /* the opsz axis follows the font size: tighter, sturdier shapes for the big headlines */
+    font-optical-sizing: auto;
     scroll-behavior: smooth;
   }
   ::selection {
@@ -119,11 +201,6 @@
   --veil: linear-gradient(90deg, #000 0, rgb(0 0 0 / 0.3) calc(50% - 480px), rgb(0 0 0 / 0.3) calc(50% + 480px), #000 100%);
   -webkit-mask-image: var(--veil);
   mask-image: var(--veil);
-}
-
-/* "open source": the brand green, lime on dark grounds and the deep green on light ones */
-.text-open {
-  color: var(--c-ramp-4);
 }
 
 /* hover for interactive cards: a fixed accent border, no movement. It sits in a pseudo-element above
@@ -212,4 +289,164 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* pill buttons of the home page */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.btn-primary {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+.btn-ghost {
+  color: var(--c-fg);
+  box-shadow: inset 0 0 0 1px var(--c-border-strong);
+}
+.btn-ghost:hover {
+  box-shadow: inset 0 0 0 1px var(--c-subtle);
+}
+
+/* ------------------------------------------------------------
+   Home page type and layout. Google Sans Flex runs wide: big
+   headlines get a little negative tracking, and the opsz axis
+   (font-optical-sizing: auto) draws them with display shapes.
+   ------------------------------------------------------------ */
+.wrap {
+  width: 100%;
+  max-width: 84rem;
+  margin-inline: auto;
+  padding-inline: var(--pad-x);
+}
+.eyebrow {
+  margin: 0;
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-subtle);
+}
+.eyebrow b {
+  font-weight: 500;
+  color: var(--c-accent);
+}
+.display-1,
+.display-2,
+.display-3,
+.title-3 {
+  margin: 0;
+  font-weight: 650;
+  text-wrap: balance;
+}
+.display-1 {
+  font-size: clamp(44px, 7.6vw, 112px);
+  line-height: 0.96;
+  letter-spacing: -0.032em;
+}
+.display-1 em,
+.display-2 em {
+  font-style: normal;
+  color: var(--c-accent);
+}
+.display-2 {
+  font-size: clamp(40px, 5.4vw, 80px);
+  line-height: 1;
+  letter-spacing: -0.028em;
+}
+.display-3 {
+  font-size: clamp(36px, 4vw, 58px);
+  line-height: 1.02;
+  letter-spacing: -0.024em;
+}
+.title-3 {
+  font-size: clamp(28px, 2.8vw, 40px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+.lede {
+  margin: 0;
+  font-size: clamp(18px, 1.5vw, 21px);
+  line-height: 1.45;
+  color: var(--c-muted);
+  text-wrap: pretty;
+}
+.fig-n {
+  display: block;
+  font-size: clamp(30px, 3.2vw, 46px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fig-n small {
+  margin-left: 3px;
+  font-size: 0.4em;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--c-subtle);
+}
+.fig-l {
+  display: block;
+  margin-top: var(--s-1);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--c-muted);
+}
+.link-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--c-accent);
+  font-weight: 500;
+}
+.link-accent:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* floating screenshots: absolutely placed in a box of fixed proportions, no frame around them */
+.comp {
+  position: relative;
+  margin: 0;
+}
+.comp .shot {
+  position: absolute;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--c-surface-2);
+  box-shadow: var(--c-shadow), var(--c-ring);
+  cursor: zoom-in;
+}
+/* no display here: preflight makes images blocks, and dark:hidden must still be able to hide one */
+.comp .shot img,
+.comp .shot video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* a star count: the filled star sits on the text's baseline */
+.star-n {
+  white-space: nowrap;
+}
+.star-n .symbol {
+  display: inline-block;
+  vertical-align: -0.15em;
 }

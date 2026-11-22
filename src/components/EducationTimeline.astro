@@ -1,5 +1,5 @@
 ---
-import Icon from './Icon.astro';
+// Studies as a ruled list: dates, degree and school, grade on the right; the thesis hangs under its degree.
 import type { EducationEntry } from '../lib/site';
 import { t, type Lang } from '../lib/i18n';
 
@@ -12,63 +12,104 @@ const { entries, lang } = Astro.props;
 const T = t(lang).timeline;
 ---
 
-<ol class="relative">
+<ol class="edu">
   {
-    entries.map((e, i) => {
-      const current = e.end === null;
-      const last = i === entries.length - 1;
-      return (
-        <li class="relative grid grid-cols-[24px_minmax(0,1fr)] sm:grid-cols-[132px_24px_minmax(0,1fr)] gap-x-4">
-          {/* dates (left column on wide screens) */}
-          <p class="hidden sm:block pt-5 text-right font-mono text-xs text-subtle tabular-nums">
-            {e.start} – {current ? <span class="text-accent">{T.present}</span> : e.end}
-          </p>
-
-          {/* rail + dot */}
-          <div class="relative flex justify-center">
-            {!last && <span class="absolute top-7 bottom-0 w-px bg-border" aria-hidden="true" />}
-            {i > 0 && <span class="absolute top-0 h-6 w-px bg-border" aria-hidden="true" />}
-            <span class="relative mt-6 flex size-3" aria-hidden="true">
-              <span class:list={['relative inline-flex size-3 rounded-full', current ? 'bg-accent' : 'bg-border-strong']} />
-            </span>
+    entries.map((e) => (
+      <li>
+        <p class="edu-when">
+          {e.start} – {e.end ?? T.present}
+        </p>
+        <div class="edu-what">
+          <h3>{e.degree}</h3>
+          <p>{e.school} · {e.place}</p>
+        </div>
+        <p class:list={['edu-grade', !e.end && 'is-live']}>{e.grade ?? (e.end ? '' : T.inProgress)}</p>
+        {e.thesis && (
+          <div class="edu-thesis">
+            <p class="edu-thesis-k">
+              {T.thesis} · {T.supervisor} {e.thesis.supervisor}
+            </p>
+            <p class="edu-thesis-t">{e.thesis.title}</p>
+            <p>{e.thesis.summary}</p>
           </div>
-
-          {/* card */}
-          <div class:list={['pb-4', last && 'pb-0']}>
-            <article class="rounded-2xl bg-surface p-5 sm:p-6">
-              <p class="sm:hidden font-mono text-xs text-subtle tabular-nums mb-2">
-                {e.start} – {current ? <span class="text-accent">{T.present}</span> : e.end}
-              </p>
-              <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-                <div class="min-w-0">
-                  <h3 class="font-semibold tracking-tight">{e.degree}</h3>
-                  <p class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted">
-                    <span>{e.school}</span>
-                    <span class="inline-flex items-center gap-1 text-subtle"><Icon name="map-pin" size={12} /> {e.place}</span>
-                  </p>
-                </div>
-                {e.grade && (
-                  <span class="shrink-0 font-mono text-xs px-2 py-1 rounded-md bg-accent-soft text-accent">{e.grade}</span>
-                )}
-                {current && (
-                  <span class="shrink-0 text-xs px-2 py-1 rounded-md bg-surface-2 text-muted">{T.inProgress}</span>
-                )}
-              </div>
-
-              {e.thesis && (
-                <div class="mt-4 pt-4">
-                  <p class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-subtle">
-                    <span class="inline-flex items-center gap-1.5"><Icon name="file-text" size={13} /> {T.thesis}</span>
-                    <span class="inline-flex items-center gap-1.5">{T.supervisor} <span class="text-muted">{e.thesis.supervisor}</span></span>
-                  </p>
-                  <p class="mt-1.5 text-sm text-fg font-medium leading-snug">{e.thesis.title}</p>
-                  <p class="mt-1.5 text-sm text-muted leading-relaxed">{e.thesis.summary}</p>
-                </div>
-              )}
-            </article>
-          </div>
-        </li>
-      );
-    })
+        )}
+      </li>
+    ))
   }
 </ol>
+
+<style>
+  .edu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr) auto;
+    gap: 6px var(--s-3);
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--c-border);
+  }
+  li:first-child {
+    padding-top: 0;
+  }
+  p {
+    margin: 0;
+  }
+  .edu-when {
+    padding-top: 3px;
+    font: 12px var(--font-mono);
+    color: var(--c-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+  h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .edu-what p {
+    margin-top: 2px;
+    font-size: 14px;
+    color: var(--c-muted);
+  }
+  .edu-grade {
+    padding-top: 2px;
+    font: 13px var(--font-mono);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .edu-grade.is-live {
+    color: var(--c-accent);
+  }
+  .edu-thesis {
+    grid-column: 2 / -1;
+    margin-top: var(--s-1);
+    padding-left: var(--s-2);
+    border-left: 2px solid var(--c-accent);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--c-muted);
+  }
+  .edu-thesis-k {
+    font: 11px var(--font-mono);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-subtle);
+  }
+  .edu-thesis-t {
+    margin: 4px 0;
+    color: var(--c-fg);
+    font-weight: 500;
+  }
+  @media (max-width: 767px) {
+    li {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .edu-when,
+    .edu-thesis {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

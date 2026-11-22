@@ -1,0 +1,30 @@
+---
+// One icon family for the UI: Material Symbols Rounded, inline (see lib/symbols.ts).
+// Brand marks stay on BrandIcon.astro (simple-icons) and Icon.astro (social marks).
+import { symbolPaths } from '../lib/symbols';
+
+interface Props {
+  /** the symbol's file name, e.g. "star", "arrow_outward" */
+  name: string;
+  /** the filled variant, where a solid glyph reads better (star, play) */
+  fill?: boolean;
+  size?: number;
+  class?: string;
+  /** an accessible name; without it the icon is decorative */
+  label?: string;
+}
+
+const { name, fill = false, size = 20, class: className, label } = Astro.props;
+---
+
+<svg
+  viewBox="0 -960 960 960"
+  width={size}
+  height={size}
+  fill="currentColor"
+  class:list={['symbol', className]}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+  set:html={symbolPaths(name, fill)}
+/>

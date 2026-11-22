@@ -1,5 +1,5 @@
 ---
-import Icon from './Icon.astro';
+import Symbol from './Symbol.astro';
 import Mark from './Mark.astro';
 import { SITE } from '../lib/site';
 import { t, localePath, switchPath, type Lang } from '../lib/i18n';
@@ -50,8 +50,8 @@ const nav = [
         class="size-8 grid place-items-center rounded-lg text-muted hover:text-fg hover:bg-surface-2 transition-colors"
         aria-label={T.themeToggle}
       >
-        <Icon name="sun" size={16} class="hidden dark:block" />
-        <Icon name="moon" size={16} class="dark:hidden" />
+        <Symbol name="light_mode" size={18} class="hidden dark:block" />
+        <Symbol name="dark_mode" size={18} class="dark:hidden" />
       </button>
     </div>
   </div>

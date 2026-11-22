@@ -37,7 +37,7 @@
       const g = sheet.getContext('2d');
       if (!g) return;
       g.scale(dpr, dpr);
-      g.font = `500 ${FONT_SIZE}px "Geist Mono Variable", monospace`;
+      g.font = `500 ${FONT_SIZE}px "Google Sans Code Variable", monospace`;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       ['--c-wave', '--c-wave-hot'].forEach((token, row) => {
@@ -117,6 +117,6 @@
 
     redraw();
     // the atlas needs the real font: redraw it once it has loaded
-    document.fonts.load(`500 ${FONT_SIZE}px "Geist Mono Variable"`).then(redraw, () => {});
+    document.fonts.load(`500 ${FONT_SIZE}px "Google Sans Code Variable"`).then(redraw, () => {});
   }
 </script>

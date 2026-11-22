@@ -1,0 +1,707 @@
+---
+/* Other developers' apps built on my libraries, as an auto-advancing media-card gallery in the manner of
+   apple.com's "Get the highlights": one large card per app in a scroll-snap track, the next one peeking in.
+   Under it a sticky control group: a pill of dots where the current one stretches and fills over the slide
+   time (the gallery advances when the fill completes), and a play / pause / replay button. Autoplay starts
+   when the gallery comes into view, stops at any interaction and while the tab is hidden, and never starts
+   on its own with reduced motion. A card opens its screenshots in the lightbox. */
+import { Image } from 'astro:assets';
+import Symbol from './Symbol.astro';
+import type { GalleryApp } from '../lib/showcase';
+import { t, type Lang } from '../lib/i18n';
+
+interface Props {
+  apps: GalleryApp[];
+  lang: Lang;
+  /** seconds each card stays before the gallery moves on */
+  slide?: number;
+}
+
+const { apps, lang, slide = 6 } = Astro.props;
+const T = t(lang).home.showcase;
+const H = t(lang).home;
+const fmt = (n: number) => n.toLocaleString(t(lang).locale);
+const owner = (repo: string) => repo.split('/')[0];
+// at most three phones side by side, two stacked desktop shots
+const onCard = (a: GalleryApp) => a.shots.slice(0, a.kind === 'phone' ? 3 : 2);
+const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
+---
+
+<div
+  class="ag"
+  data-gallery
+  data-state="paused"
+  data-btn="play"
+  style={`--ag-dur:${slide}s`}
+  data-label-play={T.play}
+  data-label-pause={T.pause}
+  data-label-replay={T.replay}
+>
+  <ul class="ag-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label={T.gallery}>
+    {apps.map((a, i) => (
+      <li
+        class:list={['ag-card', `is-${a.kind}`, a.framed && 'is-framed']}
+        role="group"
+        aria-roledescription="slide"
+        aria-label={T.slide(i + 1, apps.length, a.name)}
+      >
+        <div class="ag-copy">
+          <p class="ag-uses">{T.uses(a.pkg)}</p>
+          <h3 class="ag-name">
+            <button type="button" class="ag-open" data-lb="apps" data-lb-at={a.lbAt} aria-label={H.openScreens(a.name)}>{a.name}</button>
+          </h3>
+          <p class="ag-stars"><Symbol name="star" fill size={18} /> <span>{fmt(a.stars)}</span></p>
+          <p class="ag-who">
+            <img src={`https://avatars.githubusercontent.com/${owner(a.repo)}?s=64`} alt="" width="24" height="24" loading="lazy" />
+            <a href={`https://github.com/${a.repo}`} target="_blank" rel="noopener">{a.repo}</a>
+          </p>
+          <p class="ag-note">{a.note}{a.top && <> {T.mostStarred(a.pkg)}</>}</p>
+        </div>
+        <div class="ag-media" style={`--ar:${ratio(a).toFixed(4)};--n:${onCard(a).length}`}>
+          {a.kind === 'phone' ? (
+            <div class="ag-phones">
+              {onCard(a).map((s) => (
+                <Image src={s.src} alt={s.alt} widths={[280, 560]} sizes="280px" loading="lazy" draggable="false" class="ag-phone" />
+              ))}
+            </div>
+          ) : (
+            <div class:list={['ag-stack', onCard(a).length > 1 && 'ag-two']}>
+              {onCard(a)
+                .map((s, k) => (
+                  <Image
+                    src={s.src}
+                    alt={s.alt}
+                    widths={[480, 800, 1200, 1600]}
+                    sizes="(min-width: 1024px) 720px, 90vw"
+                    loading="lazy"
+                    draggable="false"
+                    class:list={['ag-shot', k === 0 ? 'ag-front' : 'ag-back']}
+                  />
+                ))
+                .reverse()}
+            </div>
+          )}
+        </div>
+      </li>
+    ))}
+  </ul>
+
+  <div class="ag-controls" role="group" aria-label={T.controls}>
+    <div class="ag-dots">
+      {apps.map((a, i) => (
+        <button type="button" class:list={['ag-dot', i === 0 && 'is-current']} aria-label={T.show(a.name)} aria-current={i === 0 ? 'true' : undefined} />
+      ))}
+    </div>
+    <button type="button" class="ag-play" aria-label={T.play}>
+      <Symbol name="play_arrow" fill size={28} class="ag-i-play" />
+      <Symbol name="pause" fill size={28} class="ag-i-pause" />
+      <Symbol name="replay" size={26} class="ag-i-replay" />
+    </button>
+  </div>
+</div>
+
+<style is:global>
+  /* ag- prefixed and global: the cards hold <Image> output, which scoped styles would not reach */
+  .ag {
+    --ag-gap: 16px;
+    --ag-peek: 32px;
+    --ag-h: 520px;
+    --ag-pad: 24px;
+    container-type: inline-size;
+    position: relative;
+  }
+  .ag-track {
+    /* the distance from the viewport edge to the content column, so the first card lines up with the text */
+    --ag-gut: max(var(--pad-x), calc((100cqw - 84rem) / 2 + var(--pad-x)));
+    position: relative;
+    display: flex;
+    gap: var(--ag-gap);
+    margin: 0;
+    padding: 8px var(--ag-gut) 0;
+    list-style: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--ag-gut);
+    scrollbar-width: none;
+    outline-offset: -2px;
+  }
+  .ag-track::-webkit-scrollbar {
+    display: none;
+  }
+  .ag-track.is-dragging {
+    scroll-snap-type: none;
+    cursor: grabbing;
+    user-select: none;
+  }
+  .ag-card {
+    flex: none;
+    position: relative;
+    width: min(1100px, calc(100cqw - 2 * var(--ag-gut) - var(--ag-peek)));
+    height: var(--ag-h);
+    scroll-snap-align: start;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--s-3);
+    padding: var(--ag-pad);
+    border-radius: 12px;
+    background: var(--c-surface);
+    overflow: hidden;
+    cursor: zoom-in;
+  }
+  @media (min-width: 768px) {
+    .ag {
+      --ag-gap: 24px;
+      --ag-peek: 64px;
+      --ag-h: 600px;
+      --ag-pad: 40px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .ag {
+      --ag-h: 580px;
+      --ag-peek: 96px;
+    }
+    .ag-card {
+      grid-template-rows: none;
+      grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+      gap: var(--s-5);
+    }
+  }
+  @media (min-width: 1280px) {
+    .ag {
+      --ag-h: 620px;
+    }
+  }
+
+  /* caption */
+  .ag-copy {
+    min-width: 0;
+  }
+  .ag-uses {
+    margin: 0;
+    font: 500 12px var(--font-mono);
+    color: var(--c-accent);
+  }
+  .ag-name {
+    margin: var(--s-1) 0 0;
+    font-size: clamp(26px, 2.4vw, 34px);
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  .ag-open {
+    all: unset;
+    cursor: zoom-in;
+  }
+  /* the name is the card's button: its hit area covers the whole card, links sit above it */
+  .ag-open::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .ag-open:focus-visible {
+    outline: none;
+  }
+  .ag-card:has(.ag-open:focus-visible) {
+    outline: 2px solid var(--c-accent);
+    outline-offset: -2px;
+  }
+  .ag-stars {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: var(--s-2) 0 0;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .ag-stars svg {
+    color: var(--c-star);
+  }
+  .ag-who {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: var(--s-2) 0 0;
+    font: 13px var(--font-mono);
+    color: var(--c-muted);
+    min-width: 0;
+  }
+  .ag-who img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--c-surface-2);
+    flex: none;
+  }
+  .ag-who a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .ag-who a:hover {
+    color: var(--c-accent);
+  }
+  .ag-note {
+    margin: var(--s-2) 0 0;
+    color: var(--c-muted);
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 40ch;
+  }
+  @media (max-width: 1023px) {
+    .ag-name {
+      display: inline;
+    }
+    .ag-copy {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: baseline;
+      column-gap: var(--s-2);
+    }
+    .ag-uses,
+    .ag-who,
+    .ag-note {
+      grid-column: 1 / -1;
+    }
+    .ag-name {
+      margin-top: var(--s-1);
+    }
+    .ag-stars {
+      margin: 0;
+      font-size: 17px;
+    }
+    .ag-who {
+      margin-top: var(--s-1);
+    }
+    .ag-note {
+      margin-top: var(--s-1);
+      font-size: 14px;
+    }
+  }
+
+  /* media, at the screens' true proportions, sized from the room the card leaves them */
+  .ag-media {
+    --bezel: 6px;
+    --pgap: 20px;
+    container-type: size;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ag-phones {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: var(--pgap);
+  }
+  .ag-phone {
+    --fit: calc((100cqw - (var(--n) - 1) * var(--pgap) - var(--n) * 2 * var(--bezel)) / var(--n) / var(--ar));
+    display: block;
+    height: min(calc(100cqh - 2 * var(--bezel)), var(--fit));
+    width: auto;
+    margin: var(--bezel);
+    object-fit: cover;
+    border-radius: 18px;
+    background: var(--c-surface-2);
+    /* the bezel is a ring of shadow, so it takes no room from the screen */
+    box-shadow: 0 0 0 var(--bezel) #0c0d10, 0 30px 50px -24px rgb(0 0 0 / 0.55);
+  }
+  .is-framed .ag-phone {
+    margin: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    filter: drop-shadow(0 24px 24px rgb(0 0 0 / 0.3));
+    height: min(100cqh, calc((100cqw - (var(--n) - 1) * var(--pgap)) / var(--n) / var(--ar)));
+  }
+  @container (max-width: 479px) {
+    .ag-phone {
+      --n: 2;
+    }
+    .ag-phone:nth-child(n + 3) {
+      display: none;
+    }
+  }
+  .ag-stack {
+    position: relative;
+    width: min(100cqw, calc(100cqh * var(--ar)));
+    aspect-ratio: var(--ar);
+  }
+  .ag-shot {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+    background: var(--c-surface-2);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--c-fg) 8%, transparent), 0 40px 60px -30px rgb(0 0 0 / 0.55);
+  }
+  /* a second screen peeks out behind the first, up and to the right */
+  .ag-two .ag-shot {
+    width: 89%;
+    height: 89%;
+  }
+  .ag-two .ag-back {
+    left: auto;
+    bottom: auto;
+    right: 0;
+    top: 0;
+  }
+
+  /* controls: sticky at the bottom of the viewport while the gallery is on screen */
+  .ag-controls {
+    position: sticky;
+    bottom: 32px;
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: var(--s-4);
+    padding: 0 var(--pad-x);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.9);
+    transition: opacity 0.4s, transform 0.4s, visibility 0.4s;
+  }
+  .ag.is-visible .ag-controls {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+  .ag-controls > * {
+    pointer-events: auto;
+  }
+  .ag-dots,
+  .ag-play {
+    height: 56px;
+    border-radius: 28px;
+    background: color-mix(in oklab, var(--c-surface-2) 72%, transparent);
+    -webkit-backdrop-filter: blur(7px) saturate(1.4);
+    backdrop-filter: blur(7px) saturate(1.4);
+  }
+  .ag-dots {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    min-width: 0;
+  }
+  .ag-dot {
+    position: relative;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin: 0 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--c-fg) 42%, transparent);
+    cursor: pointer;
+    overflow: hidden;
+    transition: width 0.25s, background-color 0.15s;
+  }
+  /* a bigger target than the dot itself */
+  .ag-dot::before {
+    content: '';
+    position: absolute;
+    inset: -16px -8px;
+  }
+  .ag-dot:hover {
+    background: color-mix(in oklab, var(--c-fg) 62%, transparent);
+  }
+  .ag-dot.is-current {
+    width: 48px;
+    background: color-mix(in oklab, var(--c-fg) 42%, transparent);
+  }
+  .ag-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    border-radius: inherit;
+    background: var(--c-accent);
+  }
+  .ag-dot.is-current::after {
+    animation: ag-fill var(--ag-dur) linear forwards;
+    animation-play-state: paused;
+  }
+  .ag[data-state='playing'] .ag-dot.is-current::after {
+    animation-play-state: running;
+  }
+  .ag[data-state='ended'] .ag-dot.is-current::after {
+    width: 115%;
+    animation: none;
+  }
+  @keyframes ag-fill {
+    from {
+      width: 0;
+    }
+    to {
+      width: 115%;
+    }
+  }
+  .ag-play {
+    flex: none;
+    width: 56px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    color: var(--c-fg);
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .ag-play:hover {
+    background: color-mix(in oklab, var(--c-surface-2) 92%, var(--c-fg));
+  }
+  .ag-play:active {
+    background: color-mix(in oklab, var(--c-surface-2) 84%, var(--c-fg));
+  }
+  .ag-play svg {
+    grid-area: 1 / 1;
+    display: none;
+  }
+  .ag[data-btn='play'] .ag-i-play,
+  .ag[data-btn='pause'] .ag-i-pause,
+  .ag[data-btn='replay'] .ag-i-replay {
+    display: block;
+  }
+  /* on a phone fifteen dots and the button share 343px: a tighter pitch, a shorter current dot */
+  @media (max-width: 479px) {
+    .ag-controls {
+      gap: 12px;
+    }
+    .ag-dots {
+      padding: 0 10px;
+    }
+    .ag-dot {
+      margin: 0 3px;
+    }
+    .ag-dot.is-current {
+      width: 28px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* the fill is the slide timer, not decoration: it keeps its real duration when the gallery is played */
+    .ag-dot.is-current::after {
+      animation-duration: var(--ag-dur) !important;
+    }
+  }
+</style>
+
+<script>
+  let page = new AbortController();
+
+  function setup() {
+    page.abort();
+    page = new AbortController();
+    const signal = page.signal;
+
+    document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
+      const track = root.querySelector<HTMLElement>('.ag-track')!;
+      const cards = [...track.querySelectorAll<HTMLElement>('.ag-card')];
+      const dots = [...root.querySelectorAll<HTMLButtonElement>('.ag-dot')];
+      const btn = root.querySelector<HTMLButtonElement>('.ag-play')!;
+      const last = cards.length - 1;
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      let index = 0;
+      let wants = !reduced; // the visitor's intent: play unless they paused (or prefer reduced motion)
+      let inView = false;
+      let ended = false;
+      let programmatic = false;
+      let settle = 0;
+
+      const playing = () => wants && inView && !document.hidden && !ended;
+      const render = () => {
+        root.dataset.state = ended ? 'ended' : playing() ? 'playing' : 'paused';
+        root.dataset.btn = ended ? 'replay' : wants ? 'pause' : 'play';
+        btn.setAttribute('aria-label', root.dataset[`label${ended ? 'Replay' : wants ? 'Pause' : 'Play'}`] ?? '');
+      };
+
+      // where the track scrolls to put a card at the content edge (the last ones stop at the end)
+      const target = (i: number) => {
+        const pad = parseFloat(getComputedStyle(track).paddingLeft) || 0;
+        return Math.min(cards[i].offsetLeft - pad, track.scrollWidth - track.clientWidth);
+      };
+      const nearest = () => {
+        let best = 0;
+        cards.forEach((_, i) => {
+          if (Math.abs(target(i) - track.scrollLeft) < Math.abs(target(best) - track.scrollLeft)) best = i;
+        });
+        return best;
+      };
+
+      // the current dot stretches and its fill starts over
+      const mark = (i: number) => {
+        index = i;
+        dots.forEach((d, j) => {
+          d.classList.remove('is-current');
+          if (j === i) d.setAttribute('aria-current', 'true');
+          else d.removeAttribute('aria-current');
+        });
+        void dots[i].offsetWidth;
+        dots[i].classList.add('is-current');
+      };
+
+      const go = (i: number) => {
+        ended = false;
+        mark(i);
+        programmatic = true;
+        track.scrollTo({ left: target(i), behavior: reduced ? 'auto' : 'smooth' });
+        render();
+      };
+
+      const pause = () => {
+        if (!wants && !ended) return;
+        wants = false;
+        render();
+      };
+
+      // the fill completing is the timer: move on, or stop with "replay" after the last card
+      root.querySelector('.ag-dots')!.addEventListener('animationend', (e) => {
+        if (!(e.target as Element).classList.contains('is-current')) return;
+        if (index < last) go(index + 1);
+        else {
+          ended = true;
+          wants = false;
+          render();
+        }
+      });
+
+      dots.forEach((d, i) =>
+        d.addEventListener('click', () => {
+          pause();
+          go(i);
+        }),
+      );
+
+      btn.addEventListener('click', () => {
+        if (ended) {
+          wants = true;
+          go(0);
+          return;
+        }
+        wants = !wants;
+        render();
+      });
+
+      // a swipe, a drag, the wheel or the keys take over from autoplay
+      track.addEventListener('touchstart', pause, { passive: true });
+      track.addEventListener('wheel', (e) => Math.abs(e.deltaX) > Math.abs(e.deltaY) && pause(), { passive: true });
+      track.addEventListener('keydown', (e) => {
+        if (e.target !== track) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          pause();
+          go(Math.max(0, Math.min(last, index + (e.key === 'ArrowRight' ? 1 : -1))));
+        }
+      });
+      root.addEventListener('lightbox:open', pause);
+
+      // after a scroll settles, the card at the edge is the current one
+      track.addEventListener(
+        'scroll',
+        () => {
+          clearTimeout(settle);
+          settle = window.setTimeout(() => {
+            if (programmatic) {
+              programmatic = false;
+              return;
+            }
+            const i = nearest();
+            if (i !== index) {
+              ended = false;
+              mark(i);
+              render();
+            }
+          }, 140);
+        },
+        { passive: true },
+      );
+
+      // drag with the mouse, like a swipe; a drag is not a click
+      let drag: { x: number; left: number; moved: boolean } | null = null;
+      let swallow = false;
+      track.addEventListener('pointerdown', (e) => {
+        pause();
+        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        drag = { x: e.clientX, left: track.scrollLeft, moved: false };
+      });
+      window.addEventListener(
+        'pointermove',
+        (e) => {
+          if (!drag) return;
+          const dx = e.clientX - drag.x;
+          if (!drag.moved && Math.abs(dx) < 6) return;
+          drag.moved = true;
+          track.classList.add('is-dragging');
+          track.scrollLeft = drag.left - dx;
+        },
+        { signal },
+      );
+      window.addEventListener(
+        'pointerup',
+        (e) => {
+          if (!drag) return;
+          const { moved, x } = drag;
+          drag = null;
+          if (!moved) return;
+          swallow = true;
+          setTimeout(() => (swallow = false), 0);
+          track.classList.remove('is-dragging');
+          const dx = e.clientX - x;
+          const from = index;
+          let i = nearest();
+          if (i === from && Math.abs(dx) > 60) i = Math.max(0, Math.min(last, from + (dx < 0 ? 1 : -1)));
+          go(i);
+        },
+        { signal },
+      );
+      track.addEventListener(
+        'click',
+        (e) => {
+          if (swallow) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        },
+        true,
+      );
+
+      // a click anywhere on a card (outside its links) opens its screens
+      cards.forEach((card) =>
+        card.addEventListener('click', (e) => {
+          if ((e.target as Element).closest('a, button')) return;
+          card.querySelector<HTMLButtonElement>('.ag-open')?.click();
+        }),
+      );
+
+      // autoplay runs only while the gallery is on screen and the tab is visible
+      new IntersectionObserver(
+        ([entry]) => {
+          inView = entry.isIntersecting;
+          root.classList.toggle('is-visible', inView);
+          render();
+        },
+        { threshold: 0.35 },
+      ).observe(track);
+      document.addEventListener('visibilitychange', render, { signal });
+
+      render();
+    });
+  }
+  document.addEventListener('astro:page-load', setup);
+</script>

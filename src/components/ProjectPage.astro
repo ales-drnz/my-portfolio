@@ -2,9 +2,8 @@
 import type { CollectionEntry } from 'astro:content';
 import { Image, getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
-import Icon from './Icon.astro';
 import Sparkline from './Sparkline.astro';
-import Octicon from './Octicon.astro';
+import Symbol from './Symbol.astro';
 import { getRepo, getPackage, compact, timeAgo } from '../lib/data';
 import { renderProject } from '../lib/projects';
 import { t, localePath, type Lang } from '../lib/i18n';
@@ -35,7 +34,7 @@ const facts = [
 <Base title={p.title} description={p.summary} image={ogImage?.src} lang={lang}>
   <article class="mx-auto max-w-5xl px-4 sm:px-6 pt-10 sm:pt-14">
     <a href={localePath(lang, '/#work')} class="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg transition-colors">
-      <Icon name="arrow-left" size={14} /> {T.allWork}
+      <Symbol name="arrow_back" size={16} /> {T.allWork}
     </a>
 
     <!-- header -->
@@ -59,7 +58,7 @@ const facts = [
               i === 0 ? 'bg-fg text-bg hover:opacity-90' : 'bg-surface-2 hover:bg-border',
             ]}
           >
-            {l.label} <Icon name="arrow-up-right" size={14} />
+            {l.label} <Symbol name="arrow_outward" size={16} />
           </a>
         ))}
       </div>
@@ -70,23 +69,23 @@ const facts = [
       <dl class="mt-10 grid grid-cols-2 sm:grid-cols-4 rounded-2xl bg-surface overflow-hidden">
         {repo && (
           <div class="p-4 sm:p-5">
-            <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="star-fill" size={12} class="text-star" /> {T.stars}</dt>
+            <dt class="text-xs text-subtle flex items-center gap-1.5"><Symbol name="star" fill size={14} class="text-star" /> {T.stars}</dt>
             <dd class="mt-1 text-2xl font-semibold tabular-nums">{repo.stargazers_count}</dd>
           </div>
         )}
         {pkg && (
           <>
             <div class="p-4 sm:p-5">
-              <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="thumbsup" size={12} class="text-accent" /> {T.likes}</dt>
+              <dt class="text-xs text-subtle flex items-center gap-1.5"><Symbol name="thumb_up" fill size={14} class="text-accent" /> {T.likes}</dt>
               <dd class="mt-1 text-2xl font-semibold tabular-nums">{pkg.likes}</dd>
             </div>
             <div class="p-4 sm:p-5">
-              <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="verified" size={12} class="text-ok" /> {T.points}</dt>
+              <dt class="text-xs text-subtle flex items-center gap-1.5"><Symbol name="verified" fill size={14} class="text-ok" /> {T.points}</dt>
               <dd class="mt-1 text-2xl font-semibold tabular-nums">{pkg.points != null ? `${pkg.points}/${pkg.maxPoints}` : '—'}</dd>
             </div>
             <div class="relative overflow-hidden p-4 sm:p-5">
               <div class="relative z-10">
-                <dt class="text-xs text-subtle flex items-center gap-1.5"><Octicon name="download" size={12} /> {T.downloads}</dt>
+                <dt class="text-xs text-subtle flex items-center gap-1.5"><Symbol name="download" size={14} /> {T.downloads}</dt>
                 <dd class="mt-1 text-2xl font-semibold tabular-nums">{compact(pkg.downloads30d)}</dd>
               </div>
               {pkg.weekly.length > 4 && <Sparkline edge values={pkg.weekly.slice(-26)} width={200} height={40} label={T.weekly} class="absolute inset-x-0 bottom-0 h-1/2 w-full" />}
@@ -138,7 +137,7 @@ const facts = [
               {p.links.map((l) => (
                 <li>
                   <a href={l.url} target="_blank" rel="noopener" class="group flex items-center gap-1.5 text-muted hover:text-fg transition-colors">
-                    {l.label} <Icon name="arrow-up-right" size={12} class="text-subtle group-hover:text-fg" />
+                    {l.label} <Symbol name="arrow_outward" size={14} class="text-subtle group-hover:text-fg" />
                   </a>
                 </li>
               ))}
@@ -157,7 +156,7 @@ const facts = [
           <p class="mt-1 text-xl font-semibold tracking-tight">{next.data.title}</p>
           <p class="mt-1 text-sm text-muted">{next.data.tagline}</p>
         </div>
-        <Icon name="arrow-right" size={20} class="shrink-0 text-subtle group-hover:text-fg group-hover:translate-x-1 transition-all" />
+        <Symbol name="arrow_forward" size={22} class="shrink-0 text-subtle group-hover:text-fg group-hover:translate-x-1 transition-all" />
       </a>
     )}
   </article>

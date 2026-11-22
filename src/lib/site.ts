@@ -138,7 +138,7 @@ export const PROJECT_GROUPS: {
   title: string;
   description: string;
   brand?: string; // simple-icons export name
-  octicon?: string; // fallback when there's no brand logo
+  symbol?: string; // Material Symbol, when there's no brand logo
   repos: string[];
 }[] = [
   {
@@ -166,14 +166,14 @@ export const PROJECT_GROUPS: {
     id: 'network',
     title: 'Networking & self-hosting',
     description: 'Tools for the networks and servers I run.',
-    octicon: 'globe',
+    symbol: 'lan',
     repos: [],
   },
   {
     id: 'build',
     title: 'Native build tooling',
     description: 'Reproducible cross-platform builds of the C libraries behind the Dart packages.',
-    octicon: 'tools',
+    symbol: 'construction',
     // libmpv-scripts and libsmb2-scripts sit in their package's island (lib/islands.ts)
     repos: [],
   },
@@ -181,7 +181,7 @@ export const PROJECT_GROUPS: {
     id: 'other',
     title: 'Other',
     description: 'Everything else on GitHub.',
-    octicon: 'repo',
+    symbol: 'folder',
     repos: [],
   },
 ];

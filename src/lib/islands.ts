@@ -1,9 +1,9 @@
 /* ------------------------------------------------------------
    Islands: a featured package on the home page together with
    what belongs to it. The reference app built on it, the repo
-   that builds its native library, and other people's projects
-   that depend on it. Everything listed here is taken out of
-   the ordinary group grids so it shows up only once.
+   that builds its native library (both in the package's band),
+   and other people's projects that depend on it (in the
+   "built with" gallery, apart from my own work).
 
    The "used by" lists come from a search of GitHub on
    2026-11-21 (pubspec dependencies, vendored copies and git
@@ -35,8 +35,8 @@ export interface UsedBy {
   repo: string;
   /** used when the GitHub API is unreachable at build time */
   stars: number;
-  /** with screenshots the project gets a card in the showcase, otherwise a chip under it.
-      The first is shown at rest, the others take turns while the card is hovered. */
+  /** with screenshots (and MIN_STARS) the project gets a card in the gallery, otherwise it is
+      summed up in the line under it. The first screens are the ones on the card. */
   shots?: Shot[];
   /** the screenshots already include a phone frame, so no bezel is drawn around them */
   framed?: boolean;
@@ -44,13 +44,6 @@ export interface UsedBy {
   name?: string;
   note?: Record<Lang, string>;
 }
-
-/** grid spans of a tile: [desktop columns, desktop rows, tablet columns, tablet rows] on a 12 / 6 column grid */
-export type Span = [number, number, number, number];
-export type Tile =
-  | { t: 'pkg' | 'chart' | 'app' | 'build' | 'intro'; s: Span }
-  /** hero: the star count is set big on the tile; 'headline' is the biggest version of it */
-  | { t: 'dep'; repo: string; s: Span; hero?: 'top' | 'headline' };
 
 /** only dependents with at least this many stars are shown, the rest are one link to the full list */
 export const MIN_STARS = 10;
@@ -63,9 +56,10 @@ export interface Island {
   /** short line under the native build repo's name */
   buildNote: Record<Lang, string>;
   usedBy: UsedBy[];
-  /** the bento: every tile in order with its spans, tuned by hand so each band fills the 12 columns */
-  layout: Tile[];
 }
+
+/** packages without an island that other projects depend on too: how many, as on the public list */
+export const OTHER_USED_BY: { pkg: string; count: number }[] = [{ pkg: 'dart_jellyfin', count: 3 }];
 
 /** shots('looper', 'Looper', ['home', 'Home'], ['player', 'Player']): one Shot per view, the view also names the file */
 const shots = (project: string, title: string, ...views: [file: string, en: string, it?: string][]): Shot[] =>
@@ -79,19 +73,6 @@ export const ISLANDS: Record<string, Island> = {
     app: 'mpv-studio',
     builtOn: ['libmpv-scripts'],
     buildNote: note('Audio-only build of libmpv and FFmpeg for macOS, iOS, Android, Windows and Linux, driven by one ./build TUI.', "Build solo audio di libmpv e FFmpeg per macOS, iOS, Android, Windows e Linux, guidata da un'unica TUI ./build."),
-    layout: [
-      { t: 'pkg', s: [4, 4, 6, 4] },
-      { t: 'chart', s: [8, 4, 6, 4] },
-      { t: 'app', s: [7, 6, 6, 5] },
-      { t: 'build', s: [5, 2, 6, 2] },
-      { t: 'intro', s: [5, 4, 6, 4] },
-      { t: 'dep', repo: 'xiaobaimc/myune_music', s: [6, 5, 6, 4], hero: 'top' },
-      { t: 'dep', repo: 'NaivG/bilimusic', s: [3, 5, 3, 5] },
-      { t: 'dep', repo: 'sthrnilshaaa/looper', s: [3, 5, 3, 5] },
-      { t: 'dep', repo: 'baishu136/myune_music_android', s: [8, 4, 6, 3] },
-      { t: 'dep', repo: 'afkcodes/sunoh', s: [2, 4, 3, 5] },
-      { t: 'dep', repo: 'Aetherfin/mobile-app', s: [2, 4, 3, 5] },
-    ],
     usedBy: [
       {
         repo: 'xiaobaimc/myune_music',
@@ -163,21 +144,6 @@ export const ISLANDS: Record<string, Island> = {
   'dart-smb2': {
     builtOn: ['libsmb2-scripts'],
     buildNote: note('Builds the patched libsmb2 that dart_smb2 loads through FFI, for macOS, iOS, Android, Windows and Linux.', 'Compila il libsmb2 con le patch che dart_smb2 carica tramite FFI, per macOS, iOS, Android, Windows e Linux.'),
-    layout: [
-      { t: 'pkg', s: [4, 4, 6, 4] },
-      { t: 'chart', s: [8, 4, 6, 4] },
-      { t: 'dep', repo: 'mornyeapp/Mornye', s: [8, 6, 6, 5], hero: 'headline' },
-      { t: 'build', s: [4, 2, 6, 2] },
-      { t: 'intro', s: [4, 4, 6, 4] },
-      { t: 'dep', repo: 'varunsalian/debrify', s: [6, 5, 6, 4] },
-      { t: 'dep', repo: 'lokal-music/mobile', s: [3, 5, 3, 5] },
-      { t: 'dep', repo: 'catpuppyapp/HahaNote-Release', s: [3, 5, 3, 5] },
-      { t: 'dep', repo: 'axel10/vynody', s: [4, 3, 3, 3] },
-      { t: 'dep', repo: 'sen-to/mochi_player', s: [4, 3, 3, 3] },
-      { t: 'dep', repo: 'lonnnnnng/fluxdown', s: [4, 3, 3, 3] },
-      { t: 'dep', repo: 'voidvon/maimai-ktv', s: [6, 4, 3, 3] },
-      { t: 'dep', repo: 'freeKC/Immuch360', s: [6, 4, 6, 4] },
-    ],
     usedBy: [
       {
         repo: 'mornyeapp/Mornye',

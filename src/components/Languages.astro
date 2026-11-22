@@ -1,7 +1,6 @@
 ---
-import Flag from './Flag.astro';
-import Octicon from './Octicon.astro';
-import { CEFR, type Language } from '../lib/site';
+// Spoken languages as one line each: name, level, and what backs it.
+import type { Language } from '../lib/site';
 import { t, type Lang } from '../lib/i18n';
 
 interface Props {
@@ -13,51 +12,46 @@ const { languages, lang } = Astro.props;
 const T = t(lang).languages;
 ---
 
-<div>
-  <h3 class="flex items-center gap-2 text-sm font-medium text-muted mb-4">
-    <Octicon name="comment-discussion" size={16} class="text-subtle" /> {T.title}
-  </h3>
-
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div class="langs">
+  <h3 class="eyebrow">{T.title}</h3>
+  <ul>
     {
-      languages.map((l) => {
-        // native speakers fill the whole scale
-        const filled = l.level === 'native' ? CEFR.length : CEFR.indexOf(l.level) + 1;
-        return (
-          <article class="rounded-2xl bg-surface p-5">
-            <div class="flex items-center gap-3">
-              <Flag code={l.flag} class="h-6 shrink-0 rounded-[4px]" />
-              <h4 class="font-semibold tracking-tight">{l.name}</h4>
-              <span class="ml-auto font-mono text-sm text-accent">{l.level === 'native' ? T.native : l.level}</span>
-            </div>
-
-            {/* CEFR scale */}
-            <div class="mt-5" role="img" aria-label={`${l.name}: ${l.level === 'native' ? T.nativeSpeaker : `${T.cefr} ${l.level}`}`}>
-              <div class="grid grid-cols-6 gap-1">
-                {CEFR.map((_, i) => (
-                  <span class:list={['h-1.5 rounded-full', i < filled ? 'bg-accent' : 'bg-surface-2']} />
-                ))}
-              </div>
-              <div class="mt-1.5 grid grid-cols-6 gap-1 font-mono text-[10px] text-subtle text-center" aria-hidden="true">
-                {CEFR.map((c, i) => (
-                  <span class:list={[l.level !== 'native' && i === filled - 1 && 'text-fg']}>{c}</span>
-                ))}
-              </div>
-            </div>
-
-            <div class="mt-4 pt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-              <span class="text-muted">{l.levelLabel}</span>
-              {l.certificate && (
-                <span class="ml-auto inline-flex items-center gap-1.5 text-xs text-muted">
-                  <Octicon name="verified" size={13} class="shrink-0 text-ok" />
-                  {l.certificate.name}
-                  {l.certificate.score && <span class="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-surface-2 text-fg tabular-nums">{l.certificate.score}</span>}
-                </span>
-              )}
-            </div>
-          </article>
-        );
-      })
+      languages.map((l) => (
+        <li>
+          <b>{l.name}</b>
+          <span class="lv" title={l.level === 'native' ? T.nativeSpeaker : `${T.cefr} ${l.level}`}>
+            {l.level === 'native' ? T.native : l.level}
+          </span>
+          <span class="txt">
+            {l.levelLabel}
+            {l.certificate && <> · {l.certificate.name}{l.certificate.score && ` (${l.certificate.score})`}</>}
+          </span>
+        </li>
+      ))
     }
-  </div>
+  </ul>
 </div>
+
+<style>
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-5);
+    margin: var(--s-2) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 15px;
+  }
+  b {
+    font-weight: 600;
+    margin-right: var(--s-1);
+  }
+  .lv {
+    margin-right: var(--s-1);
+    font: 12px var(--font-mono);
+    color: var(--c-accent);
+  }
+  .txt {
+    color: var(--c-muted);
+  }
+</style>

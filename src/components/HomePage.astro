@@ -1,25 +1,41 @@
 ---
+/* The home page as a run of full-bleed bands: the hero, my flagship libraries and their reference app, a calm
+   part with the rest of my work, other developers' apps on an inverted ground (clearly not mine), then
+   education, activity, upstream contributions and contact. Numbers are fetched at build time. */
+import { Image, getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 import Base from '../layouts/Base.astro';
-import Section from './Section.astro';
+import Symbol from './Symbol.astro';
 import Icon from './Icon.astro';
+import BrandIcon, { type BrandKey } from './BrandIcon.astro';
+import Mark from './Mark.astro';
 import Sparkline from './Sparkline.astro';
-import FeaturedProject from './FeaturedProject.astro';
-import FeaturedPackage from './FeaturedPackage.astro';
-import RepoCard from './RepoCard.astro';
-import ProjectCard from './ProjectCard.astro';
-import BentoIsland from './BentoIsland.astro';
+import LibraryBand from './LibraryBand.astro';
+import AppGallery from './AppGallery.astro';
+import Lightbox from './Lightbox.astro';
 import ContributionGraph from './ContributionGraph.astro';
 import CodeLanguages from './CodeLanguages.astro';
 import CopyEmail from './CopyEmail.astro';
 import EducationTimeline from './EducationTimeline.astro';
 import Languages from './Languages.astro';
-import Octicon from './Octicon.astro';
-import BrandIcon, { type BrandKey } from './BrandIcon.astro';
-import { SITE, SOCIALS, education, projectGroups, languages } from '../lib/site';
+import { SITE, SOCIALS, education, languages, projectGroups } from '../lib/site';
 import { getProjects } from '../lib/projects';
-import { ISLANDS, islandMembers } from '../lib/islands';
-import { t, type Lang } from '../lib/i18n';
-import { getRepos, getPackages, getContributions, getUpstreamPRs, getResolvedIssues, getCodeLanguages, compact } from '../lib/data';
+import { ISLANDS, MIN_STARS, OTHER_USED_BY, USED_BY_LIST, islandMembers } from '../lib/islands';
+import { OWN_SHOTS, type GalleryApp, type LightboxShot } from '../lib/showcase';
+import { t, localePath, type Lang } from '../lib/i18n';
+import {
+  getRepos,
+  getRepo,
+  getPackage,
+  getPackages,
+  getContributions,
+  getUpstreamPRs,
+  getResolvedIssues,
+  getCodeLanguages,
+  getExternalRepo,
+  compact,
+  timeAgo,
+} from '../lib/data';
 
 interface Props {
   lang: Lang;
@@ -27,11 +43,14 @@ interface Props {
 
 const { lang } = Astro.props;
 const T = t(lang);
-const PROJECT_GROUPS = projectGroups(lang);
+const H = T.home;
+const fmt = (n: number) => n.toLocaleString(T.locale);
+const caseStudy = (id: string) => localePath(lang, `/projects/${id}`);
 
 const HIDDEN_REPOS = new Set([SITE.handle, 'my-portfolio', 'svg-icons']);
 
 const projects = await getProjects(lang);
+const byId = (id: string) => projects.find((p) => p.id === id);
 
 const [repos, packages, contrib, prs, resolvedIssues, codeLanguages] = await Promise.all([
   getRepos(),
@@ -42,245 +61,945 @@ const [repos, packages, contrib, prs, resolvedIssues, codeLanguages] = await Pro
   getCodeLanguages(),
 ]);
 
+/* ---------- hero figures ---------- */
 const own = repos.filter((r) => !r.fork && !r.archived && !HIDDEN_REPOS.has(r.name));
 const totalStars = own.reduce((s, r) => s + r.stargazers_count, 0);
-const inIslands = islandMembers();
-const covered = new Set([...projects.flatMap((p) => [p.data.repo, ...p.data.alsoCovers]), ...inIslands.repos].filter(Boolean));
-const moreRepos = own
-  .filter((r) => !covered.has(r.name))
-  .sort((a, b) => b.stargazers_count - a.stargazers_count || +new Date(b.pushed_at) - +new Date(a.pushed_at));
-
-// bucket case studies and leftover repos into groups; empty groups are dropped
-const placed = new Set(PROJECT_GROUPS.flatMap((g) => g.repos));
-const groups = PROJECT_GROUPS.map((g) => {
-  const inGroup = projects.filter((p) => p.data.group === g.id && !inIslands.projects.has(p.id));
-  return {
-    ...g,
-    featured: inGroup.filter((p) => p.data.featured),
-    secondary: inGroup.filter((p) => !p.data.featured),
-    repos: moreRepos.filter((r) => (g.id === 'other' ? !placed.has(r.name) : g.repos.includes(r.name))),
-  };
-})
-  // an island counts as its package plus its reference app and native build repos
-  .map((g) => ({
-    ...g,
-    count:
-      g.featured.length + g.secondary.length + g.repos.length +
-      g.featured.reduce((n, p) => n + (ISLANDS[p.id] ? (ISLANDS[p.id].app ? 1 : 0) + ISLANDS[p.id].builtOn.length : 0), 0),
-  }))
-  .filter((g) => g.count > 0);
-
-// box-in-box tiles, the same as the project cards
-const tile = 'rounded-[6px] bg-surface min-w-0';
 const downloads30d = packages.reduce((s, p) => s + p.downloads30d, 0);
 const totalLikes = packages.reduce((s, p) => s + p.likes, 0);
-const stats = [
-  { href: 'https://github.com/ales-drnz?tab=repositories&sort=stargazers', external: true, icon: 'star-fill', color: 'text-star', label: T.stars, value: totalStars },
-  { href: SOCIALS[1].url, external: true, icon: 'thumbsup', color: 'text-accent', label: T.likes, value: totalLikes },
-  { href: '#open-source', external: false, icon: 'git-merge', color: 'text-merged', label: T.upstreamPRs, value: prs.length },
+const stats: { n: string; unit?: string; label: string; href: string }[] = [
+  { n: compact(downloads30d), unit: H.stats.per30, label: H.stats.downloads, href: SOCIALS[1].url },
+  { n: fmt(totalStars), label: H.stats.stars, href: 'https://github.com/ales-drnz?tab=repositories&sort=stargazers' },
+  { n: fmt(totalLikes), label: H.stats.likes, href: SOCIALS[1].url },
+  { n: fmt(prs.length), label: H.stats.prs, href: '#open-source' },
   {
+    n: fmt(resolvedIssues),
+    label: H.stats.issues,
     href: 'https://github.com/issues?q=user%3Aales-drnz+type%3Aissue+is%3Aclosed+reason%3Acompleted+-author%3Aales-drnz',
-    external: true,
-    icon: 'issue-closed',
-    color: 'text-ok',
-    label: T.issuesResolved,
-    value: resolvedIssues,
   },
-] as const;
-// sum weekly series aligned on the most recent week
-const weeks = Math.max(0, ...packages.map((p) => p.weekly.length));
-const weeklyTotal = Array.from({ length: weeks }, (_, i) =>
-  packages.reduce((s, p) => s + (p.weekly[p.weekly.length - weeks + i] ?? 0), 0),
-);
+];
 
-// merged upstream PRs, grouped by repository
-const prGroups = Object.entries(
-  prs.reduce<Record<string, typeof prs>>((acc, pr) => ((acc[pr.repo] ??= []).push(pr), acc), {}),
-).sort((a, b) => b[1].length - a[1].length);
+/* ---------- my work: library bands, their reference apps, then the rest ---------- */
+const members = islandMembers();
+const bands = await Promise.all(
+  projects
+    .filter((p) => ISLANDS[p.id])
+    .map(async (project) => {
+      const island = ISLANDS[project.id];
+      const app = island.app ? byId(island.app) : undefined;
+      const [repo, pkg, appRepo] = await Promise.all([
+        project.data.repo ? getRepo(project.data.repo) : undefined,
+        project.data.package ? getPackage(project.data.package) : null,
+        app?.data.repo ? getRepo(app.data.repo) : undefined,
+      ]);
+      const builtOn = island.builtOn.map((n) => repos.find((r) => r.name === n)).filter((r) => r !== undefined);
+      return { project, island, repo, pkg, app, appRepo, builtOn };
+    }),
+);
+const rest = projects.filter((p) => !ISLANDS[p.id] && !members.projects.has(p.id));
+const libs = await Promise.all(
+  rest
+    .filter((p) => p.data.package)
+    .map(async (p) => ({ p, pkg: await getPackage(p.data.package!) })),
+);
+const groupOf = new Map(projectGroups(lang).map((g) => [g.id, g]));
+const tools = await Promise.all(
+  rest.filter((p) => !p.data.package).map(async (p) => ({ p, repo: p.data.repo ? await getRepo(p.data.repo) : undefined })),
+);
+// anything public on GitHub that no section covers yet
+const covered = new Set([...projects.flatMap((p) => [p.data.repo, ...p.data.alsoCovers]), ...members.repos].filter(Boolean));
+const moreRepos = own.filter((r) => !covered.has(r.name)).sort((a, b) => b.stargazers_count - a.stargazers_count);
+
+const studioBand = bands.find((b) => b.app);
+const studio = studioBand?.app;
+const studioShots = studio ? (OWN_SHOTS[studio.id] ?? []) : [];
+const studioPoster = studio?.data.cover ? await getImage({ src: studio.data.cover, width: 1400, format: 'webp' }) : null;
+
+/* ---------- other developers' apps ---------- */
+const deps = Object.entries(ISLANDS).flatMap(([id, island]) => island.usedBy.map((u) => ({ ...u, pkg: byId(id)?.data.package ?? id })));
+const live = await Promise.all(deps.map((d) => getExternalRepo(d.repo)));
+const withStars = deps.map((d, i) => ({ ...d, live: live[i]?.stargazers_count ?? d.stars }));
+const topOf = new Map<string, string>();
+for (const d of [...withStars].sort((a, b) => b.live - a.live)) if (!topOf.has(d.pkg)) topOf.set(d.pkg, d.repo);
+// the threshold uses the stars written in islands.ts, so a rebuild never drops a card over a few stars
+const inGallery = withStars.filter((d) => d.stars >= MIN_STARS && d.shots?.length).sort((a, b) => b.live - a.live);
+const aboveNoShots = withStars.filter((d) => d.stars >= MIN_STARS && !d.shots?.length).sort((a, b) => b.live - a.live);
+const perPackage = [
+  ...Object.entries(ISLANDS).map(([id, island]) => ({ pkg: byId(id)?.data.package ?? id, count: island.usedBy.length })),
+  ...OTHER_USED_BY,
+];
+const totalApps = perPackage.reduce((s, p) => s + p.count, 0);
+const starsBetween = withStars.reduce((s, d) => s + d.live, 0);
+const underTen = totalApps - inGallery.length - aboveNoShots.length;
+const [pkgA, pkgB] = Object.keys(ISLANDS).map((id) => byId(id)?.data.package ?? id);
+
+const kindOf = (src: ImageMetadata): GalleryApp['kind'] => (src.height > src.width ? 'phone' : src.width / src.height >= 1.9 ? 'wide' : 'desk');
+const view = (alt: string) => alt.slice(alt.indexOf(': ') + 2);
+
+/* ---------- lightbox sets: every app's screens in gallery order, and each of my projects ---------- */
+const big = (src: ImageMetadata) =>
+  getImage({ src, width: Math.min(src.width, src.height > src.width ? 1000 : 2000), format: 'webp' }).then((i) => i.src);
+
+const apps: GalleryApp[] = [];
+const appShots: LightboxShot[] = [];
+for (const d of inGallery) {
+  const shots = d.shots!.map((s) => ({ src: s.src, alt: s.alt[lang] }));
+  apps.push({
+    repo: d.repo,
+    name: d.name ?? d.repo,
+    stars: d.live,
+    pkg: d.pkg,
+    note: d.note?.[lang] ?? '',
+    kind: kindOf(shots[0].src),
+    framed: !!d.framed,
+    shots,
+    lbAt: appShots.length,
+    top: topOf.get(d.pkg) === d.repo,
+  });
+  const srcs = await Promise.all(shots.map((s) => big(s.src)));
+  shots.forEach((s, i) =>
+    appShots.push({
+      src: srcs[i],
+      portrait: s.src.height > s.src.width,
+      framed: !!d.framed,
+      alt: s.alt,
+      view: view(s.alt),
+      name: d.name ?? d.repo,
+      href: `https://github.com/${d.repo}`,
+      link: d.repo,
+      stars: fmt(d.live),
+      note: [d.note?.[lang], H.showcase.uses(d.pkg)].filter(Boolean).join(' · '),
+      i: i + 1,
+      n: shots.length,
+    }),
+  );
+}
+
+const sets: Record<string, LightboxShot[]> = { apps: appShots };
+for (const [id, shots] of Object.entries(OWN_SHOTS)) {
+  const p = byId(id);
+  if (!p) continue;
+  const repo = p.data.repo ? await getRepo(p.data.repo) : undefined;
+  sets[id] = await Promise.all(
+    shots.map(async (s, i) => ({
+      src: await big(s.src),
+      dark: s.dark ? await big(s.dark) : undefined,
+      portrait: s.src.height > s.src.width,
+      framed: false,
+      alt: `${p.data.title}: ${s.view[lang]}`,
+      view: s.view[lang],
+      name: p.data.title,
+      href: caseStudy(p.id),
+      link: H.caseStudy,
+      stars: repo ? fmt(repo.stargazers_count) : undefined,
+      note: p.data.tagline,
+      i: i + 1,
+      n: shots.length,
+    })),
+  );
+}
+
+/* ---------- the hero composition: three of my apps, each opening its own screens ---------- */
+// positions in units of the box width; the box is 0.425 as tall as it is wide, with no empty margin
+const HERO_H = 0.425;
+const heroShots = [
+  { id: 'netmap', i: 0, x: 'left:0', top: 0.076, w: 0.4, z: 1 },
+  { id: 'mpv-studio', i: 3, x: 'left:22%', top: 0, w: 0.56, z: 3 },
+  { id: 'minesync', i: 1, x: 'right:0', top: 0.1045, w: 0.4, z: 2 },
+].flatMap((h) => {
+  const s = OWN_SHOTS[h.id]?.[h.i];
+  const p = byId(h.id);
+  return s && p ? [{ ...h, s, title: p.data.title }] : [];
+});
+
+/* ---------- upstream PRs, grouped by repository ---------- */
+const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr) => ((acc[pr.repo] ??= []).push(pr), acc), {})).sort(
+  (a, b) => b[1].length - a[1].length,
+);
 ---
 
 <Base lang={lang}>
   <!-- ===================== HERO ===================== -->
-  <section class="relative">
-    <div class="relative mx-auto max-w-[84rem] px-4 sm:px-6 pt-16 sm:pt-24">
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <!-- intro -->
-        <div class="relative overflow-hidden md:col-span-2 md:row-span-2 rounded-2xl bg-surface p-6 sm:p-8 flex flex-col justify-center">
-          <h1 class="relative text-3xl sm:text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-balance">
-            <Fragment set:html={T.headline} />
-          </h1>
-          <p class="relative mt-5 text-muted leading-relaxed max-w-xl">
-            {T.studies}
-          </p>
-
-          <div class="relative mt-8 flex flex-wrap items-center gap-3">
-            <CopyEmail lang={lang} />
-            <div class="flex items-center gap-0.5 ml-1">
-              {SOCIALS.slice(0, 3).map((s) => (
-                <a href={s.url} target="_blank" rel="noopener" aria-label={s.label} title={s.label} class="size-10 grid place-items-center rounded-lg text-muted hover:text-fg hover:bg-surface-2 transition-colors">
-                  <Icon name={s.id} size={17} />
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <!-- pub.dev tile -->
-        <a href={SOCIALS[1].url} target="_blank" rel="noopener" class="hover-card group flex flex-col gap-2 p-2 rounded-2xl bg-surface-2">
-          <div class:list={[tile, 'px-4 py-3 flex items-center justify-between text-sm text-muted']}>
-            <span class="flex items-center gap-2"><Octicon name="download" size={14} /> {T.pubDownloads}</span>
-            <Icon name="arrow-up-right" size={14} class="text-subtle group-hover:text-fg transition-colors" />
-          </div>
-          <div class:list={[tile, 'relative flex-1 overflow-hidden px-4 pt-3 pb-14']}>
-            <p class="relative z-10 text-3xl font-semibold tracking-tight tabular-nums">
-              {compact(downloads30d)}<span class="text-base font-normal text-subtle"> {T.perMonth}</span>
-            </p>
-            <Sparkline edge values={weeklyTotal.slice(-26)} width={260} height={56} label={T.weeklyAll} class="absolute inset-x-0 bottom-0 h-14 w-full" />
-          </div>
-        </a>
-
-        <!-- numbers tile -->
-        <div class="grid grid-cols-2 gap-2 p-2 rounded-2xl bg-surface-2">
-          {stats.map((s) => (
-            <a href={s.href} target={s.external ? '_blank' : undefined} rel={s.external ? 'noopener' : undefined} class:list={['hover-card', tile, 'px-3 py-3 flex flex-col justify-between gap-3']}>
-              <span class="flex items-center gap-1.5 text-xs text-subtle"><Octicon name={s.icon} size={12} class={s.color} /> {s.label}</span>
-              <span class="text-xl font-semibold tracking-tight tabular-nums">{s.value}</span>
-            </a>
-          ))}
-        </div>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap">
+      <p class="hero-who"><Mark size={28} disc class="rounded-full" /> {H.who}</p>
+      <h1 id="hero-title" class="display-1 hero-title" set:html={H.headline} />
+      <p class="lede hero-sub">{H.sub}</p>
+      <div class="hero-cta">
+        <CopyEmail primary lang={lang} />
+        <a class="btn btn-ghost" href={SOCIALS[0].url} target="_blank" rel="noopener"><Icon name="github" size={16} /> GitHub</a>
+        <a class="btn btn-ghost" href={SOCIALS[1].url} target="_blank" rel="noopener"><Icon name="pubdev" size={16} /> pub.dev</a>
       </div>
+
+      <dl class="statline">
+        {stats.map((s) => (
+          <div class="stat">
+            <dt class="fig-l">
+              <a href={s.href} target={s.href.startsWith('#') ? undefined : '_blank'} rel={s.href.startsWith('#') ? undefined : 'noopener'}>{s.label}</a>
+            </dt>
+            <dd class="fig-n">{s.n}{s.unit && <small>{s.unit}</small>}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <figure class="comp hero-comp" aria-label={H.heroShots} style={`aspect-ratio: 1 / ${HERO_H}`}>
+        {heroShots.map((h) => (
+          <button
+            type="button"
+            class="shot"
+            data-lb={h.id}
+            data-lb-at={h.i}
+            aria-label={H.openScreens(h.title)}
+            style={`${h.x};top:${((h.top / HERO_H) * 100).toFixed(2)}%;width:${h.w * 100}%;aspect-ratio:${h.s.src.width} / ${h.s.src.height};z-index:${h.z}`}
+          >
+            <Image src={h.s.src} alt={`${h.title}: ${h.s.view[lang]}`} widths={[640, 960, 1400]} sizes="(min-width: 1344px) 660px, 56vw" loading="eager" class:list={[h.s.dark && 'dark:hidden']} />
+            {h.s.dark && <Image src={h.s.dark} alt={`${h.title}: ${h.s.view[lang]}`} widths={[640, 960, 1400]} sizes="(min-width: 1344px) 480px, 40vw" loading="eager" class="hidden dark:block" />}
+          </button>
+        ))}
+      </figure>
     </div>
   </section>
 
-  <!-- ===================== WORK ===================== -->
-  <Section id="work" eyebrow={T.work.eyebrow} title={T.work.title} lead={T.work.lead}>
-    <nav slot="aside" class="flex flex-wrap gap-2" aria-label={T.work.groups}>
-      {groups.map((g) => (
-        <a href={`#group-${g.id}`} class="inline-flex items-center gap-2 h-8 px-3 rounded-lg bg-surface text-sm text-muted hover:text-fg hover:bg-surface-2 transition-colors">
-          {g.brand ? <BrandIcon name={g.brand as BrandKey} size={13} /> : <Octicon name={g.octicon as any} size={13} />}
-          {g.title}
-          <span class="font-mono text-xs text-subtle tabular-nums">{g.count}</span>
-        </a>
-      ))}
-    </nav>
-
-    <div class="space-y-16">
-      {groups.map((g) => (
-        <div id={`group-${g.id}`} class="scroll-mt-20">
-          <header class="flex items-center gap-3 mb-5 pb-4">
-            <span class="shrink-0">
-              {g.brand ? <BrandIcon name={g.brand as BrandKey} size={26} /> : <Octicon name={g.octicon as any} size={26} class="text-muted" />}
-            </span>
-            <div class="min-w-0">
-              <h3 class="font-semibold tracking-tight">{g.title}</h3>
-              <p class="text-sm text-muted">{g.description}</p>
-            </div>
-            <span class="ml-auto shrink-0 font-mono text-xs text-subtle tabular-nums">
-              {T.work.count(g.count)}
-            </span>
-          </header>
-
-          {g.featured.length > 0 && (
-            <div class="space-y-5">
-              {g.featured.map((project, i) =>
-                ISLANDS[project.id] ? (
-                  <BentoIsland
-                    project={project}
-                    island={ISLANDS[project.id]}
-                    app={projects.find((p) => p.id === ISLANDS[project.id].app)}
-                    builtOn={ISLANDS[project.id].builtOn.map((n) => repos.find((r) => r.name === n)).filter((r) => r !== undefined)}
-                    lang={lang}
-                  />
-                ) : project.data.package && !project.data.cover ? (
-                  <FeaturedPackage project={project} lang={lang} />
+  <!-- ===================== MY WORK: library bands and the reference app ===================== -->
+  {bands.map((b, i) => (
+    <Fragment>
+      <LibraryBand
+        id={i === 0 ? 'work' : undefined}
+        project={b.project}
+        island={b.island}
+        repo={b.repo}
+        pkg={b.pkg}
+        builtOn={b.builtOn}
+        shots={OWN_SHOTS[b.project.id] ?? []}
+        reverse={i % 2 === 1}
+        surface
+        lang={lang}
+      />
+      {b === studioBand && studio && studioShots.length >= 3 && (
+        <section class="studio" aria-labelledby="band-studio">
+          <div class="wrap">
+            <p class="eyebrow"><b>{H.mine}</b> · {H.refApp(b.project.data.title)}</p>
+            <h2 id="band-studio" class="display-2 studio-title">{studio.data.title}</h2>
+            <p class="lede studio-lede">{studio.data.tagline}</p>
+            <p class="studio-platforms">
+              {studio.data.platforms.map((pl) => <span>{pl}</span>)}
+              {b.appRepo && <span class="star-n"><Symbol name="star" fill size={14} /> {fmt(b.appRepo.stargazers_count)}</span>}
+            </p>
+            <figure class="comp studio-comp" style="aspect-ratio: 16 / 8.4">
+              <button type="button" class="shot" data-lb={studio.id} data-lb-at="2" aria-label={`${studio.data.title}: ${studioShots[2].view[lang]}`} style={`right:0;top:0;width:42%;aspect-ratio:${studioShots[2].src.width} / ${studioShots[2].src.height};z-index:1`}>
+                <Image src={studioShots[2].src} alt={`${studio.data.title}: ${studioShots[2].view[lang]}`} widths={[480, 800, 1200]} sizes="(min-width: 1344px) 470px, 42vw" />
+              </button>
+              <button type="button" class="shot" data-lb={studio.id} data-lb-at="1" aria-label={`${studio.data.title}: ${studioShots[1].view[lang]}`} style={`left:0;top:39%;width:42%;aspect-ratio:${studioShots[1].src.width} / ${studioShots[1].src.height};z-index:2`}>
+                <Image src={studioShots[1].src} alt={`${studio.data.title}: ${studioShots[1].view[lang]}`} widths={[480, 800, 1200]} sizes="(min-width: 1344px) 470px, 42vw" />
+              </button>
+              <button type="button" class="shot" data-lb={studio.id} data-lb-at="0" aria-label={`${studio.data.title}: ${studioShots[0].view[lang]}`} style={`left:21%;top:14%;width:58%;aspect-ratio:${studioShots[0].src.width} / ${studioShots[0].src.height};z-index:3`}>
+                {studio.data.coverVideo && studioPoster ? (
+                  <video src={studio.data.coverVideo} poster={studioPoster.src} muted loop playsinline preload="none" data-autoplay aria-label={studio.data.coverAlt} />
                 ) : (
-                  <FeaturedProject project={project} index={i} lang={lang} />
-                ),
-              )}
-            </div>
-          )}
-
-          {(g.secondary.length > 0 || g.repos.length > 0) && (
-            <div class:list={['grid grid-cols-1 gap-3 sm:grid-cols-2', ![2, 4].includes(g.secondary.length + g.repos.length) && 'lg:grid-cols-3', g.featured.length > 0 && 'mt-5']}>
-              {g.secondary.map((p) => <ProjectCard project={p} lang={lang} />)}
-              {g.repos.map((r) => <RepoCard repo={r} lang={lang} />)}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  </Section>
-
-  <!-- ===================== EDUCATION ===================== -->
-  <Section id="education" eyebrow={T.education.eyebrow} title={T.education.title}>
-    <EducationTimeline entries={education(lang)} lang={lang} />
-    <div class="mt-14">
-      <Languages languages={languages(lang)} lang={lang} />
-    </div>
-  </Section>
-
-  <!-- ===================== ACTIVITY ===================== -->
-  <Section id="activity" eyebrow={T.activity.eyebrow} title={T.activity.title}>
-    <div class:list={['grid gap-3', codeLanguages.length > 0 && 'lg:grid-cols-[minmax(0,1fr)_300px]']}>
-      <div class="min-w-0 rounded-2xl bg-surface p-5 sm:p-6">
-        <ContributionGraph days={contrib.days} total={contrib.total} lang={lang} />
-      </div>
-      {codeLanguages.length > 0 && (
-        <div class="rounded-2xl bg-surface p-5 sm:p-6">
-          <CodeLanguages languages={codeLanguages} lang={lang} />
-        </div>
-      )}
-    </div>
-  </Section>
-
-  <!-- ===================== OPEN SOURCE ===================== -->
-  {prGroups.length > 0 && (
-    <Section id="open-source" eyebrow={T.upstream.eyebrow} title={T.upstream.title} lead={T.upstream.lead}>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {prGroups.map(([repo, list]) => (
-          <div class="rounded-2xl bg-surface p-5">
-            <div class="flex items-center justify-between gap-3">
-              <a href={list[0].repoUrl} target="_blank" rel="noopener" class="flex items-center gap-2.5 min-w-0 font-mono text-sm text-fg hover:text-accent transition-colors">
-                {list[0].avatar ? (
-                  <img src={list[0].avatar} alt="" width="24" height="24" loading="lazy" class="size-6 shrink-0 rounded-md" />
-                ) : (
-                  <Octicon name="repo" size={20} class="shrink-0 text-subtle" />
+                  <Image src={studioShots[0].src} alt={`${studio.data.title}: ${studioShots[0].view[lang]}`} widths={[640, 960, 1400]} sizes="(min-width: 1344px) 640px, 58vw" />
                 )}
-                <span class="truncate">{repo}</span>
-                <BrandIcon name={list[0].host === 'gitlab' ? 'siGitlab' : 'siGithub'} size={13} class="shrink-0 opacity-70" />
-              </a>
-              <span class="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-merged/12 text-merged"><Octicon name="git-merge" size={12} /> {T.upstream.merged(list.length)}</span>
-            </div>
-            <ul class="mt-3 space-y-1.5">
-              {list.slice(0, 4).map((pr) => (
+              </button>
+            </figure>
+            <p class="studio-actions">
+              <a class="link-accent" href={caseStudy(studio.id)}>{H.caseStudy} →</a>
+              <button type="button" class="link-accent" data-lb={studio.id} data-lb-at="0">{H.viewScreens(studioShots.length)}</button>
+            </p>
+          </div>
+        </section>
+      )}
+    </Fragment>
+  ))}
+
+  <!-- ===================== MY WORK: the calm part ===================== -->
+  {(libs.length > 0 || tools.length > 0) && (
+    <section class="calm" aria-labelledby="more-title">
+      <div class="wrap">
+        <p class="eyebrow"><b>{H.mine}</b> · {H.alsoMine}</p>
+        <h2 id="more-title" class="title-3 calm-title">{H.more}</h2>
+
+        {libs.length > 0 && (
+          <ul class="libs">
+            {libs.map(({ p, pkg }) => (
+              <li>
+                <a class="lib-row" href={caseStudy(p.id)}>
+                  {p.data.logo && <Image src={p.data.logo} alt="" width={40} height={40} densities={[1, 2, 3]} class="lib-row-logo" />}
+                  <span class="lib-row-main">
+                    <span class="lib-row-name">{p.data.title}{pkg?.version && <span>v{pkg.version}</span>}</span>
+                    <span class="lib-row-tag">{p.data.tagline} {pkg && `${H.likesN(pkg.likes)}.`}</span>
+                  </span>
+                  {pkg && (
+                    <span class="lib-row-dl">
+                      {pkg.weekly.length > 4 && <Sparkline values={pkg.weekly.slice(-26)} width={72} height={28} label={T.project.weekly} class="lib-row-spark" />}
+                      <span><b>{compact(pkg.downloads30d)}</b><small>{H.stats.per30}</small></span>
+                    </span>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {tools.length > 0 && (
+          <div class="tools">
+            {tools.map(({ p, repo }) => {
+              const s = OWN_SHOTS[p.id]?.[0];
+              const cover = s?.src ?? p.data.cover;
+              return (
+                <article class="tool">
+                  {cover && (
+                    <button type="button" class="tool-pic" data-lb={s ? p.id : undefined} data-lb-at="0" aria-label={H.openScreens(p.data.title)}>
+                      <Image src={cover} alt={p.data.coverAlt ?? p.data.title} widths={[480, 800, 1200]} sizes="(min-width: 1344px) 420px, (min-width: 768px) 31vw, 92vw" class:list={[s?.dark && 'dark:hidden']} />
+                      {s?.dark && <Image src={s.dark} alt={p.data.coverAlt ?? p.data.title} widths={[480, 800, 1200]} sizes="(min-width: 1344px) 420px, (min-width: 768px) 31vw, 92vw" class="hidden dark:block" />}
+                    </button>
+                  )}
+                  <p class="tool-kind">
+                    {groupOf.get(p.data.group)?.brand ? (
+                      <BrandIcon name={groupOf.get(p.data.group)!.brand as BrandKey} size={13} />
+                    ) : (
+                      groupOf.get(p.data.group)?.symbol && <Symbol name={groupOf.get(p.data.group)!.symbol!} size={15} />
+                    )}
+                    {groupOf.get(p.data.group)?.title}
+                  </p>
+                  <h3 class="tool-name"><a href={caseStudy(p.id)}>{p.data.title}</a></h3>
+                  <p class="tool-tag">{p.data.tagline}</p>
+                  <p class="tool-meta">
+                    {p.data.stack.slice(0, 4).join(' · ')}
+                    {repo && <span class="star-n"> · <Symbol name="star" fill size={13} /> {repo.stargazers_count}</span>}
+                    <br />
+                    {[p.data.platforms.join(' · '), repo && H.pushed(timeAgo(repo.pushed_at, lang))].filter(Boolean).join(' · ')}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        )}
+
+        {moreRepos.length > 0 && (
+          <div class="more-repos">
+            <p class="eyebrow">{H.alsoOnGitHub}</p>
+            <ul>
+              {moreRepos.map((r) => (
                 <li>
-                  <a href={pr.url} target="_blank" rel="noopener" class="flex gap-2 text-sm text-muted hover:text-fg transition-colors">
-                    <Octicon name="git-merge" size={14} class="shrink-0 mt-0.5 text-merged/80" />
-                    <span class="line-clamp-1">{pr.title}</span>
-                  </a>
+                  <a href={r.html_url} target="_blank" rel="noopener">{r.name}</a>
+                  <span>{[r.description, r.language].filter(Boolean).join(' · ')} <span class="star-n"><Symbol name="star" fill size={13} /> {r.stargazers_count}</span></span>
                 </li>
               ))}
             </ul>
           </div>
-        ))}
+        )}
       </div>
-    </Section>
+    </section>
   )}
 
-  <!-- ===================== CONTACT ===================== -->
-  <section id="contact" class="mx-auto max-w-[84rem] px-4 sm:px-6 pt-24 scroll-mt-14">
-    <div class="relative overflow-hidden rounded-2xl bg-surface px-6 py-14 sm:px-12 text-center">
-      <div class="relative">
-        <p class="font-mono text-xs text-accent uppercase tracking-[0.14em] mb-3">{T.contact.eyebrow}</p>
-        <h2 class="text-2xl sm:text-4xl font-semibold tracking-tight text-balance">{T.contact.title}</h2>
-        <p class="mt-4 text-muted max-w-lg mx-auto">{T.contact.lead}</p>
-        <div class="mt-8 flex flex-wrap justify-center gap-3">
-          <CopyEmail primary lang={lang} />
-          <a href={SOCIALS[2].url} target="_blank" rel="noopener" class="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-surface-2 text-sm hover:bg-border transition-colors">
-            <Icon name="linkedin" size={15} /> LinkedIn
-          </a>
+  <!-- ===================== OTHERS' APPS (not mine) ===================== -->
+  {apps.length > 0 && (
+    <section id="built-with" class="ground-invert showcase" aria-labelledby="showcase-title">
+      <div class="wrap showcase-head">
+        <p class="eyebrow"><b>{H.showcase.notMine}</b> · {H.showcase.madeBy}</p>
+        <h2 id="showcase-title" class="display-2 showcase-title" set:html={H.showcase.title(pkgA, pkgB)} />
+        <p class="lede showcase-lede">{H.showcase.lede}</p>
+        <dl class="statline">
+          <div class="stat"><dt class="fig-l">{H.showcase.depend}</dt><dd class="fig-n">{fmt(totalApps)}</dd></div>
+          {perPackage.map((p) => (
+            <div class="stat"><dt class="fig-l">{H.showcase.on(p.pkg)}</dt><dd class="fig-n">{fmt(p.count)}</dd></div>
+          ))}
+          <div class="stat"><dt class="fig-l">{H.showcase.starsBetween}</dt><dd class="fig-n">{compact(starsBetween)}</dd></div>
+        </dl>
+      </div>
+
+      <AppGallery apps={apps} lang={lang} />
+
+      <div class="wrap">
+        <p class="endnote">
+          <span>
+            {aboveNoShots.length > 0 && H.showcase.also}{' '}
+            {aboveNoShots.map((d, i) => (
+              <Fragment>
+                {i > 0 && ' · '}
+                <a href={`https://github.com/${d.repo}`} target="_blank" rel="noopener"><b>{d.repo.split('/')[1]}</b></a>{' '}
+                <span class="endnote-st star-n"><Symbol name="star" fill size={13} /> {fmt(d.live)}</span> {H.showcase.on(d.pkg)}
+              </Fragment>
+            ))}
+            {underTen > 0 && `, ${H.showcase.rest(underTen)}`}
+          </span>
+          <a class="link-accent" href={USED_BY_LIST} target="_blank" rel="noopener">{H.showcase.all(totalApps)} →</a>
+        </p>
+      </div>
+    </section>
+  )}
+
+  <!-- ===================== EDUCATION ===================== -->
+  <section id="education" class="sec" aria-labelledby="education-title">
+    <div class="wrap sec-grid">
+      <header class="sec-head">
+        <p class="eyebrow">{T.education.eyebrow}</p>
+        <h2 id="education-title" class="title-3">{T.education.title}</h2>
+      </header>
+      <div class="sec-body">
+        <EducationTimeline entries={education(lang)} lang={lang} />
+        <div class="sec-after">
+          <Languages languages={languages(lang)} lang={lang} />
         </div>
       </div>
     </div>
   </section>
+
+  <!-- ===================== ACTIVITY ===================== -->
+  <section id="activity" class="sec" aria-labelledby="activity-title">
+    <div class="wrap sec-grid">
+      <header class="sec-head">
+        <p class="eyebrow">{T.activity.eyebrow}</p>
+        <h2 id="activity-title" class="title-3">{T.activity.title}</h2>
+        <p class="sec-lead">{T.activity.lead}</p>
+      </header>
+      <div class="sec-body activity-graph">
+        <ContributionGraph days={contrib.days} total={contrib.total} lang={lang} />
+      </div>
+      {codeLanguages.length > 0 && (
+        <div class="activity-pie">
+          <CodeLanguages languages={codeLanguages} lang={lang} />
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- ===================== UPSTREAM ===================== -->
+  {prGroups.length > 0 && (
+    <section id="open-source" class="sec" aria-labelledby="open-source-title">
+      <div class="wrap sec-grid">
+        <header class="sec-head">
+          <p class="eyebrow">{T.upstream.eyebrow}</p>
+          <h2 id="open-source-title" class="title-3">{T.upstream.title}</h2>
+          <p class="sec-lead">{T.upstream.lead}</p>
+        </header>
+        <div class="sec-body prs">
+          {prGroups.map(([repo, list]) => (
+            <div class="pr">
+              <p class="pr-repo">
+                <a href={list[0].repoUrl} target="_blank" rel="noopener">
+                  {list[0].avatar && <img src={list[0].avatar} alt="" width="20" height="20" loading="lazy" />}
+                  <span>{repo}</span>
+                  <BrandIcon name={list[0].host === 'gitlab' ? 'siGitlab' : 'siGithub'} size={12} class="pr-host" />
+                </a>
+                <span class="pr-count">{T.upstream.merged(list.length)}</span>
+              </p>
+              <ul>
+                {list.slice(0, 4).map((pr) => (
+                  <li>
+                    <a href={pr.url} target="_blank" rel="noopener"><Symbol name="merge" size={16} class="pr-icon" /> <span>{pr.title}</span></a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ===================== CONTACT ===================== -->
+  <section id="contact" class="contact" aria-labelledby="contact-title">
+    <div class="wrap">
+      <div class="contact-inner">
+        <p class="eyebrow">{T.contact.eyebrow}</p>
+        <h2 id="contact-title" class="display-1 contact-title">{T.contact.title}</h2>
+        <p class="lede contact-lede">{T.contact.lead}</p>
+        <div class="contact-cta">
+          <CopyEmail primary lang={lang} />
+          <a class="btn btn-ghost" href={SOCIALS[2].url} target="_blank" rel="noopener"><Icon name="linkedin" size={16} /> LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Lightbox sets={sets} lang={lang} />
 </Base>
+
+<style>
+  /* ---------- hero ---------- */
+  .hero {
+    padding-block: var(--band);
+    text-align: center;
+  }
+  .hero-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 14px;
+    color: var(--c-muted);
+  }
+  .hero-title {
+    max-width: 13ch;
+    margin: var(--s-3) auto 0;
+  }
+  .hero-sub {
+    max-width: 42ch;
+    margin: var(--s-3) auto 0;
+  }
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: var(--s-4);
+  }
+  .statline {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    margin: var(--s-5) 0 0;
+    border-top: 1px solid var(--c-border);
+    text-align: center;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    padding: var(--s-3) var(--s-1) 0;
+  }
+  .stat + .stat {
+    border-left: 1px solid var(--c-border);
+  }
+  .stat dd {
+    margin: 0;
+  }
+  .stat a:hover {
+    color: var(--c-fg);
+  }
+  @media (max-width: 767px) {
+    .statline {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .stat {
+      padding: var(--s-3) var(--s-1);
+    }
+    .stat:first-child {
+      grid-column: 1 / -1;
+    }
+    .stat + .stat {
+      border-left: 0;
+      border-top: 1px solid var(--c-border);
+    }
+    .stat:nth-child(odd):not(:first-child) {
+      border-left: 1px solid var(--c-border);
+    }
+  }
+  .hero-comp {
+    max-width: 1180px;
+    margin: var(--s-5) auto 0;
+  }
+
+  /* ---------- MPV Studio, centred ---------- */
+  .studio {
+    padding-block: var(--band);
+    text-align: center;
+  }
+  .studio-title {
+    margin-top: var(--s-3);
+  }
+  .studio-lede {
+    max-width: 40ch;
+    margin: var(--s-2) auto 0;
+  }
+  .studio-platforms {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 24px;
+    margin: var(--s-3) 0 0;
+    font: 12px var(--font-mono);
+    color: var(--c-subtle);
+  }
+  .studio-comp {
+    max-width: 1100px;
+    margin: var(--s-5) auto 0;
+  }
+  .studio-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-1) var(--s-3);
+    margin: var(--s-5) 0 0;
+    font-size: 15px;
+  }
+  .studio-actions button {
+    cursor: pointer;
+  }
+
+  /* ---------- the calm part ---------- */
+  .calm {
+    padding-block: var(--sec);
+  }
+  .calm-title {
+    margin-top: var(--s-2);
+  }
+  .libs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--c-border);
+  }
+  @media (min-width: 768px) {
+    .libs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 24px;
+    }
+  }
+  .lib-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .lib-row :global(.lib-row-logo) {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: contain;
+  }
+  .lib-row-main {
+    min-width: 0;
+  }
+  .lib-row-name {
+    display: block;
+    font-weight: 600;
+  }
+  .lib-row:hover .lib-row-name {
+    color: var(--c-accent);
+  }
+  .lib-row-name span {
+    margin-left: var(--s-1);
+    font: 12px var(--font-mono);
+    color: var(--c-subtle);
+  }
+  .lib-row-tag {
+    display: block;
+    margin-top: 2px;
+    font-size: 14px;
+    color: var(--c-muted);
+  }
+  .lib-row-dl {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .lib-row-dl b {
+    display: block;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .lib-row-dl small {
+    font-size: 12px;
+    color: var(--c-subtle);
+  }
+  @media (max-width: 479px) {
+    .lib-row-dl :global(.lib-row-spark) {
+      display: none;
+    }
+  }
+  .tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-5) 24px;
+    margin-top: var(--s-5);
+  }
+  @media (min-width: 768px) {
+    .tools {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  /* one proportion for the three, so the captions line up; the screens are cropped from the top */
+  .tool-pic {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--c-surface-2);
+    box-shadow: var(--c-shadow), var(--c-ring);
+    cursor: zoom-in;
+  }
+  .tool-pic :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top left;
+  }
+  .tool-kind {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: var(--s-3) 0 0;
+    font: 500 11px var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-subtle);
+  }
+  .tool-name {
+    margin: var(--s-1) 0 0;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .tool-name a:hover {
+    color: var(--c-accent);
+  }
+  .tool-tag {
+    margin: var(--s-1) 0 0;
+    font-size: 15px;
+    color: var(--c-muted);
+  }
+  .tool-meta {
+    margin: var(--s-2) 0 0;
+    font: 12px/1.7 var(--font-mono);
+    color: var(--c-subtle);
+  }
+  .more-repos {
+    margin-top: var(--s-5);
+  }
+  .more-repos ul {
+    margin: var(--s-2) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--c-border);
+  }
+  .more-repos li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px var(--s-2);
+    padding: var(--s-2) 0;
+    border-bottom: 1px solid var(--c-border);
+    font-size: 14px;
+  }
+  .more-repos a {
+    font-weight: 600;
+  }
+  .more-repos span {
+    color: var(--c-muted);
+  }
+
+  /* ---------- others' apps, on the inverted ground ---------- */
+  .showcase {
+    padding-block: var(--band);
+    background: var(--c-bg);
+    color: var(--c-fg);
+    scroll-margin-top: 56px;
+  }
+  .showcase-head {
+    text-align: center;
+    margin-bottom: var(--s-5);
+  }
+  .showcase-title {
+    max-width: 16ch;
+    margin: var(--s-3) auto 0;
+  }
+  .showcase-title :global(code) {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 0.78em;
+    letter-spacing: -0.04em;
+  }
+  .showcase-lede {
+    max-width: 46ch;
+    margin: var(--s-3) auto 0;
+  }
+  .endnote {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s-1) var(--s-4);
+    margin: var(--s-5) 0 0;
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--c-border);
+    font-size: 14px;
+    color: var(--c-muted);
+  }
+  .endnote b {
+    color: var(--c-fg);
+    font-weight: 600;
+  }
+  .endnote a:hover b {
+    color: var(--c-accent);
+  }
+  .endnote-st {
+    font: 12px var(--font-mono);
+    color: var(--c-accent);
+  }
+
+  /* ---------- calm sections: a 4 / 8 split of the 12 columns, ruled from each other ---------- */
+  .sec {
+    padding-top: var(--sec);
+    scroll-margin-top: 56px;
+  }
+  /* the rule between sections spans the content column, not the gutters */
+  .sec + .sec .sec-grid {
+    position: relative;
+    padding-top: var(--sec);
+  }
+  .sec + .sec .sec-grid::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: var(--pad-x);
+    right: var(--pad-x);
+    border-top: 1px solid var(--c-border);
+  }
+  .sec-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s-4);
+  }
+  @media (min-width: 1024px) {
+    .sec-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: 24px;
+    }
+    .sec-head {
+      grid-column: 1 / span 4;
+    }
+    .sec-body {
+      grid-column: 5 / span 8;
+    }
+  }
+  .sec-head h2 {
+    margin-top: var(--s-2);
+  }
+  .sec-lead {
+    margin: var(--s-2) 0 0;
+    max-width: 34ch;
+    color: var(--c-muted);
+  }
+  .sec-after {
+    margin-top: var(--s-5);
+  }
+  /* the language pie sits under the heading on wide screens, so the graph gets all eight columns */
+  .activity-pie {
+    max-width: 16rem;
+  }
+  @media (min-width: 1024px) {
+    .activity-graph {
+      grid-row: 1 / span 2;
+    }
+    .activity-pie {
+      grid-column: 1 / span 3;
+      grid-row: 2;
+      margin-top: var(--s-2);
+    }
+  }
+  .prs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 24px;
+  }
+  @media (min-width: 768px) {
+    .prs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .prs .pr:nth-child(-n + 2) {
+      padding-top: 0;
+    }
+  }
+  .pr {
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--c-border);
+    min-width: 0;
+  }
+  .prs .pr:first-child {
+    padding-top: 0;
+  }
+  .pr-repo {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    font: 13px var(--font-mono);
+  }
+  .pr-repo a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .pr-repo a span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pr-repo a:hover span {
+    color: var(--c-accent);
+  }
+  .pr-repo img {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    flex: none;
+  }
+  .pr-repo :global(.pr-host) {
+    flex: none;
+    opacity: 0.7;
+  }
+  .pr-count {
+    flex: none;
+    color: var(--c-accent);
+  }
+  .pr ul {
+    margin: var(--s-2) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+  }
+  .pr li a {
+    display: flex;
+    gap: var(--s-1);
+    padding: 3px 0;
+    color: var(--c-muted);
+  }
+  .pr li a:hover {
+    color: var(--c-fg);
+  }
+  .pr li a span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pr li :global(.pr-icon) {
+    flex: none;
+    margin-top: 2px;
+    color: var(--c-accent);
+  }
+
+  /* ---------- contact ---------- */
+  .contact {
+    padding-top: var(--sec);
+    text-align: center;
+  }
+  .contact-inner {
+    padding-top: var(--band);
+    border-top: 1px solid var(--c-border);
+  }
+  .contact-title {
+    margin-top: var(--s-3);
+  }
+  .contact-lede {
+    margin-top: var(--s-3);
+  }
+  .contact-cta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: var(--s-4);
+  }
+</style>
