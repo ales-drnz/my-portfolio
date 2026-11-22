@@ -1,4 +1,7 @@
 ---
+/* The site header: the name, one link per section of the home page in its order, the language and the theme.
+   From 1024px the links sit in the bar; below, a menu button opens them in a panel under it. On the home page
+   the link of the section in view is marked (aria-current), so the bar doubles as a table of contents. */
 import Symbol from './Symbol.astro';
 import Mark from './Mark.astro';
 import { SITE } from '../lib/site';
@@ -12,24 +15,30 @@ const { lang } = Astro.props;
 const T = t(lang);
 const other: Lang = lang === 'en' ? 'it' : 'en';
 
+// in the order of the home page
 const nav = [
-  { href: '/#work', label: T.nav.work },
-  { href: '/#education', label: T.nav.education },
-  { href: '/#open-source', label: T.nav.openSource },
-  { href: '/#contact', label: T.nav.contact },
+  { id: 'work', label: T.nav.work },
+  { id: 'more', label: T.nav.tools },
+  { id: 'built-with', label: T.nav.builtWith },
+  { id: 'education', label: T.nav.education },
+  { id: 'activity', label: T.nav.activity },
+  { id: 'open-source', label: T.nav.openSource },
+  { id: 'contact', label: T.nav.contact },
 ];
 ---
 
-<header class="sticky top-0 z-40 bg-bg">
-  <div class="mx-auto max-w-[84rem] px-4 sm:px-6 h-14 flex items-center gap-6">
+<header class="site-header sticky top-0 z-40 bg-bg" data-header>
+  <div class="mx-auto max-w-[84rem] px-4 sm:px-6 h-14 flex items-center gap-4 xl:gap-6">
     <a href={localePath(lang, '/')} class="flex items-center gap-2.5 font-medium tracking-tight shrink-0" aria-label="Home">
       <Mark size={28} disc class="rounded-full" />
       <span class="hidden sm:inline">{SITE.name}</span>
     </a>
 
-    <nav class="hidden md:flex items-center gap-1 text-sm text-muted" aria-label="Main">
+    <nav class="hidden lg:flex items-center text-sm text-muted" aria-label="Main">
       {nav.map((n) => (
-        <a href={localePath(lang, n.href)} class="px-3 py-1.5 rounded-lg hover:text-fg hover:bg-surface-2 transition-colors">{n.label}</a>
+        <a href={localePath(lang, `/#${n.id}`)} data-section={n.id} class="nav-link px-2.5 xl:px-3 py-1.5 rounded-lg whitespace-nowrap hover:text-fg hover:bg-surface-2 transition-colors">
+          {n.label}
+        </a>
       ))}
     </nav>
 
@@ -53,19 +62,122 @@ const nav = [
         <Symbol name="light_mode" size={18} class="hidden dark:block" />
         <Symbol name="dark_mode" size={18} class="dark:hidden" />
       </button>
+      <button
+        type="button"
+        data-menu-toggle
+        aria-expanded="false"
+        aria-controls="site-menu"
+        aria-label={T.nav.menu}
+        class="lg:hidden size-8 grid place-items-center rounded-lg text-muted hover:text-fg hover:bg-surface-2 transition-colors"
+      >
+        <Symbol name="menu" size={20} class="menu-open" />
+        <Symbol name="close" size={20} class="menu-close" />
+      </button>
     </div>
   </div>
+
+  <!-- below 1024px: the same links, in a panel under the bar -->
+  <nav id="site-menu" class="site-menu lg:hidden" aria-label="Main" hidden>
+    <ul class="mx-auto max-w-[84rem] px-4 sm:px-6 py-2">
+      {nav.map((n) => (
+        <li>
+          <a href={localePath(lang, `/#${n.id}`)} data-section={n.id} class="nav-link">
+            {n.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
 </header>
 
+<style>
+  .nav-link[aria-current='true'] {
+    color: var(--c-fg);
+    background: var(--c-surface-2);
+  }
+  /* the icons are Symbol's own elements, out of this component's scope */
+  [data-menu-toggle] :global(.menu-close),
+  [data-menu-toggle][aria-expanded='true'] :global(.menu-open) {
+    display: none;
+  }
+  [data-menu-toggle][aria-expanded='true'] :global(.menu-close) {
+    display: block;
+  }
+  .site-menu {
+    border-bottom: 1px solid var(--c-border);
+    background: var(--c-bg);
+  }
+  .site-menu ul {
+    list-style: none;
+    margin-block: 0;
+  }
+  .site-menu a {
+    display: block;
+    padding: 12px;
+    margin-inline: -12px;
+    border-radius: 10px;
+    font-size: 17px;
+    color: var(--c-muted);
+  }
+  .site-menu a:hover {
+    color: var(--c-fg);
+  }
+</style>
+
 <script>
+  let page = new AbortController();
+
   function setup() {
-    document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      try {
-        localStorage.setItem('theme', next);
-      } catch {}
-    });
+    page.abort();
+    page = new AbortController();
+    const signal = page.signal;
+
+    document.querySelector('[data-theme-toggle]')?.addEventListener(
+      'click',
+      () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try {
+          localStorage.setItem('theme', next);
+        } catch {}
+      },
+      { signal },
+    );
+
+    // the menu below 1024px: a link, Escape, a click outside or a wider window close it
+    const header = document.querySelector<HTMLElement>('[data-header]');
+    const btn = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+    const menu = document.querySelector<HTMLElement>('#site-menu');
+    if (header && btn && menu) {
+      const open = (on: boolean) => {
+        menu.hidden = !on;
+        btn.setAttribute('aria-expanded', String(on));
+      };
+      btn.addEventListener('click', () => open(menu.hidden), { signal });
+      menu.addEventListener('click', (e) => (e.target as Element).closest('a') && open(false), { signal });
+      document.addEventListener('keydown', (e) => e.key === 'Escape' && !menu.hidden && (open(false), btn.focus()), { signal });
+      document.addEventListener('click', (e) => !menu.hidden && !header.contains(e.target as Node) && open(false), { signal });
+      matchMedia('(min-width: 1024px)').addEventListener('change', (m) => m.matches && open(false), { signal });
+    }
+
+    // on the home page, mark the section in view: the last one whose top has passed under the header
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-header] [data-section]')];
+    const sections = [...new Set(links.map((a) => a.dataset.section!))]
+      .map((id) => document.getElementById(id))
+      .filter((s): s is HTMLElement => s !== null);
+    if (!sections.length) return;
+    let frame = 0;
+    const mark = () => {
+      frame = 0;
+      const line = 56 + innerHeight * 0.3;
+      let current: string | undefined;
+      for (const s of sections) if (s.getBoundingClientRect().top <= line) current = s.id;
+      // at the very bottom the last section is the one in view, however short
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) current = sections[sections.length - 1].id;
+      links.forEach((a) => (a.dataset.section === current ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+    };
+    addEventListener('scroll', () => (frame ||= requestAnimationFrame(mark)), { passive: true, signal });
+    mark();
   }
   document.addEventListener('astro:page-load', setup);
 </script>

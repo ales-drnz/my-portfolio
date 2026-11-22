@@ -346,6 +346,16 @@
   vertical-align: baseline;
   color: var(--c-accent);
 }
+/* a library's logo on its figure: the same height as the digits, round */
+.fig-logo {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.16em;
+  vertical-align: -0.04em;
+  border-radius: 50%;
+  object-fit: contain;
+}
 .fig-n small {
   margin-left: 3px;
   font-size: 0.4em;

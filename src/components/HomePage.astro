@@ -130,7 +130,8 @@ const totalApps = perPackage.reduce((s, p) => s + p.count, 0);
 const starsBetween = withStars.reduce((s, d) => s + d.live, 0);
 // packages without an island are only counted, not listed one by one
 const jellyfinCount = OTHER_USED_BY.reduce((s, p) => s + p.count, 0);
-const [pkgA, pkgB] = Object.keys(ISLANDS).map((id) => byId(id)?.data.package ?? id);
+// each package's own logo on its figure, from its case study
+const logoOf = (pkg: string) => projects.find((p) => p.data.package === pkg)?.data.logo;
 
 const kindOf = (src: ImageMetadata): GalleryApp['kind'] => (src.height > src.width ? 'phone' : src.width / src.height >= 1.9 ? 'wide' : 'desk');
 const view = (alt: string) => alt.slice(alt.indexOf(': ') + 2);
@@ -287,7 +288,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
 
   <!-- ===================== MY WORK: the calm part ===================== -->
   {(libs.length > 0 || tools.length > 0) && (
-    <section class="calm" aria-labelledby="more-title">
+    <section id="more" class="calm" aria-labelledby="more-title">
       <div class="wrap">
         <p class="eyebrow"><b>{H.mine}</b> · {H.alsoMine}</p>
         <h2 id="more-title" class="title-3 calm-title">{H.more}</h2>
@@ -362,12 +363,19 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     <section id="built-with" class="showcase" aria-labelledby="showcase-title">
       <div class="wrap showcase-head">
         <p class="eyebrow"><b>{H.showcase.notMine}</b> · {H.showcase.madeBy}</p>
-        <h2 id="showcase-title" class="display-2 showcase-title" set:html={H.showcase.title(pkgA, pkgB)} />
+        <h2 id="showcase-title" class="display-2 showcase-title">{H.showcase.title}</h2>
         <p class="lede showcase-lede">{H.showcase.lede}</p>
         <dl class="statline">
           <div class="stat"><dt class="fig-l">{H.showcase.depend}</dt><dd class="fig-n"><Symbol name="apps" fill size={32} trim class="fig-i" />{fmt(totalApps)}</dd></div>
           {perPackage.map((p) => (
-            <div class="stat"><dt class="fig-l">{H.showcase.on(p.pkg)}</dt><dd class="fig-n"><Symbol name="deployed_code" fill size={32} trim class="fig-i" />{fmt(p.count)}</dd></div>
+            <div class="stat"><dt class="fig-l">{H.showcase.on(p.pkg)}</dt><dd class="fig-n">
+                {logoOf(p.pkg) ? (
+                  <Image src={logoOf(p.pkg)!} alt="" width={40} height={40} densities={[1, 2]} class="fig-logo" />
+                ) : (
+                  <Symbol name="deployed_code" fill size={32} trim class="fig-i" />
+                )}
+                {fmt(p.count)}
+              </dd></div>
           ))}
           <div class="stat"><dt class="fig-l">{H.showcase.starsBetween}</dt><dd class="fig-n"><Symbol name="star" fill size={32} trim class="fig-i" />{compact(starsBetween)}</dd></div>
         </dl>
@@ -506,13 +514,15 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     text-align: center;
   }
   /* the header is 56px tall and sticky; svh so a phone's collapsing toolbar does not make it jump */
+  /* the whole first screen, figures included, fits under the header on any screen: type and spacing follow
+     the height as well as the width (svh), so a short laptop window or a phone shrinks them too */
   .hero-intro {
     min-height: calc(100svh - 56px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-block: var(--s-5);
+    padding-block: clamp(16px, 4svh, 64px);
   }
   .hero-intro .statline {
     align-self: stretch;
@@ -527,18 +537,22 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   }
   .hero-title {
     max-width: 13ch;
-    margin: var(--s-3) auto 0;
+    margin: clamp(10px, 2.4svh, 32px) auto 0;
+    font-size: clamp(34px, min(7.6vw, 10.5svh), 112px);
   }
   .hero-sub {
     max-width: 42ch;
-    margin: var(--s-3) auto 0;
+    margin: clamp(10px, 2.4svh, 32px) auto 0;
   }
   .hero-cta {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 12px;
-    margin-top: var(--s-4);
+    margin-top: clamp(14px, 3.4svh, 48px);
+  }
+  .hero-intro .statline {
+    margin-top: clamp(16px, 4.6svh, 64px);
   }
   .statline {
     display: grid;
@@ -580,6 +594,35 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     }
     .stat:nth-child(odd):not(:first-child) {
       border-left: 1px solid var(--c-border);
+    }
+  }
+  /* on a phone the hero's five figures are a compact 3 + 2 grid, not five stacked rows */
+  @media (max-width: 767px) {
+    .hero-sub {
+      font-size: 16px;
+    }
+    .hero-cta :global(.btn) {
+      height: 40px;
+      padding: 0 16px;
+      font-size: 14px;
+    }
+    .hero-intro .statline {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      row-gap: 4px;
+    }
+    .hero-intro .stat {
+      grid-column: span 2;
+      padding: 10px 2px 0;
+      border: 0;
+    }
+    .hero-intro .stat:nth-child(n + 4) {
+      grid-column: span 3;
+    }
+    .hero-intro .fig-n {
+      font-size: clamp(22px, 6.6vw, 30px);
+    }
+    .hero-intro .fig-l {
+      font-size: 12px;
     }
   }
   /* ---------- MPV Studio, centred ---------- */
@@ -630,6 +673,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   /* ---------- the calm part ---------- */
   .calm {
     padding-block: var(--sec);
+    scroll-margin-top: 56px;
   }
   .calm-title {
     margin-top: var(--s-2);
