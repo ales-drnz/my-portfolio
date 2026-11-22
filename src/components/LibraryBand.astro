@@ -110,9 +110,19 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
 </section>
 
 <style>
+  /* a band is one screen under the 56px header, its content centred, so the Work link (or a scroll) shows it
+     whole, buttons included. Spacing, title and chart follow the screen height (svh) as well as the width,
+     so a short window shrinks them instead of pushing the buttons off. */
   .lib-band {
     position: relative;
-    padding-block: var(--band);
+    display: flex;
+    align-items: center;
+    min-height: calc(100svh - 56px);
+    padding-block: clamp(20px, 5svh, 128px);
+    --gap-y: clamp(10px, 2.4svh, 40px);
+  }
+  .lib-band > .wrap {
+    width: 100%;
   }
   .lib-surface {
     background: var(--c-surface);
@@ -154,6 +164,7 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
   }
   /* the logo sits beside the name, sized to its cap height */
   .lib-title {
+    font-size: clamp(32px, min(4vw, 7.5svh), 58px);
     display: flex;
     align-items: center;
     gap: 0.28em;
@@ -171,7 +182,7 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
     flex: none;
   }
   .lib-lede {
-    margin-top: var(--s-2);
+    margin-top: clamp(6px, 1.4svh, 16px);
     max-width: 30ch;
   }
   .lib-figs {
@@ -179,7 +190,7 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
     grid-template-columns: repeat(3, auto);
     justify-content: start;
     gap: var(--s-2) clamp(24px, 3vw, 48px);
-    margin: var(--s-4) 0 0;
+    margin: var(--gap-y) 0 0;
   }
   .lib-figs div {
     display: flex;
@@ -189,21 +200,26 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
   .lib-figs dd {
     margin: 0;
   }
+  /* the figures shrink with a short screen too */
+  .lib-figs .fig-n {
+    font-size: clamp(26px, min(3.2vw, 6svh), 46px);
+  }
   .lib-figs dt {
     margin-top: var(--s-1);
   }
   .lib-band :global(.lib-chart) {
-    margin-top: var(--s-4);
+    margin-top: var(--gap-y);
+    --bars-h: clamp(40px, 9svh, 96px);
   }
   .lib-also {
-    margin: var(--s-4) 0 0;
+    margin: var(--gap-y) 0 0;
   }
   /* the native build repo in its own box: a separate repo, not part of the package */
   .lib-also > div {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 4px var(--s-2);
-    padding: var(--s-2) var(--s-3);
+    padding: clamp(8px, 1.6svh, 16px) var(--s-3);
     border: 1px solid var(--c-border);
     border-radius: 12px;
     background: var(--c-bg);
@@ -243,7 +259,7 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    margin: var(--s-4) 0 0;
+    margin: var(--gap-y) 0 0;
   }
   /* between 1024 and 1279px the copy column is under 410px: a tighter pill keeps the three on one line */
   @media (min-width: 1024px) and (max-width: 1279px) {

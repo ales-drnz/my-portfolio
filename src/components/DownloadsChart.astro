@@ -77,7 +77,8 @@ const barH = (v: number) => Math.max(4, (v / wmax) * (H - 8));
   }
   .dl-bars {
     position: relative;
-    height: 96px;
+    /* a page can make it shorter on short screens */
+    height: var(--bars-h, 96px);
     margin-top: 12px;
   }
   .dl-bars svg {
