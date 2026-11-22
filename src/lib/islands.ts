@@ -25,6 +25,11 @@ const img = (name: string) => {
   return hit[1];
 };
 
+// app icons of the projects without screenshots, from their own repos, named <owner>__<name>.png
+const icons = import.meta.glob<ImageMetadata>('../assets/used-by-icons/*.png', { eager: true, import: 'default' });
+/** the app's own icon, or undefined (the tile then shows the owner's GitHub avatar) */
+export const appIcon = (repo: string) => icons[`../assets/used-by-icons/${repo.replace('/', '__')}.png`];
+
 export interface Shot {
   src: ImageMetadata;
   alt: Record<Lang, string>;
@@ -72,7 +77,7 @@ export const ISLANDS: Record<string, Island> = {
   'mpv-audio-kit': {
     app: 'mpv-studio',
     builtOn: ['libmpv-scripts'],
-    buildNote: note('Audio-only build of libmpv and FFmpeg for macOS, iOS, Android, Windows and Linux, driven by one ./build TUI.', "Build solo audio di libmpv e FFmpeg per macOS, iOS, Android, Windows e Linux, guidata da un'unica TUI ./build."),
+    buildNote: note('libmpv and FFmpeg, audio only, built for every platform.', 'libmpv e FFmpeg, solo audio, compilati per ogni piattaforma.'),
     usedBy: [
       {
         repo: 'xiaobaimc/myune_music',
@@ -143,7 +148,7 @@ export const ISLANDS: Record<string, Island> = {
   },
   'dart-smb2': {
     builtOn: ['libsmb2-scripts'],
-    buildNote: note('Builds the patched libsmb2 that dart_smb2 loads through FFI, for macOS, iOS, Android, Windows and Linux.', 'Compila il libsmb2 con le patch che dart_smb2 carica tramite FFI, per macOS, iOS, Android, Windows e Linux.'),
+    buildNote: note('libsmb2 with my patches, built for every platform.', 'libsmb2 con le mie patch, compilato per ogni piattaforma.'),
     usedBy: [
       {
         repo: 'mornyeapp/Mornye',

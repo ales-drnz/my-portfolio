@@ -1,13 +1,13 @@
 ---
 /* The home page as a run of full-bleed bands: the hero, my flagship libraries and their reference app, a calm
-   part with the rest of my work, other developers' apps on an inverted ground (clearly not mine), then
+   part with the rest of my work, other developers' apps in their own band, headed "Not my apps", then
    education, activity, upstream contributions and contact. Numbers are fetched at build time. */
 import { Image, getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Base from '../layouts/Base.astro';
 import Symbol from './Symbol.astro';
 import Icon from './Icon.astro';
-import BrandIcon, { type BrandKey } from './BrandIcon.astro';
+import BrandIcon from './BrandIcon.astro';
 import Mark from './Mark.astro';
 import Sparkline from './Sparkline.astro';
 import LibraryBand from './LibraryBand.astro';
@@ -18,9 +18,9 @@ import CodeLanguages from './CodeLanguages.astro';
 import CopyEmail from './CopyEmail.astro';
 import EducationTimeline from './EducationTimeline.astro';
 import Languages from './Languages.astro';
-import { SITE, SOCIALS, education, languages, projectGroups } from '../lib/site';
+import { SITE, SOCIALS, education, languages } from '../lib/site';
 import { getProjects } from '../lib/projects';
-import { ISLANDS, MIN_STARS, OTHER_USED_BY, USED_BY_LIST, islandMembers } from '../lib/islands';
+import { ISLANDS, MIN_STARS, OTHER_USED_BY, USED_BY_LIST, appIcon, islandMembers } from '../lib/islands';
 import { OWN_SHOTS, type GalleryApp, type LightboxShot } from '../lib/showcase';
 import { t, localePath, type Lang } from '../lib/i18n';
 import {
@@ -34,7 +34,6 @@ import {
   getCodeLanguages,
   getExternalRepo,
   compact,
-  timeAgo,
 } from '../lib/data';
 
 interface Props {
@@ -66,15 +65,16 @@ const own = repos.filter((r) => !r.fork && !r.archived && !HIDDEN_REPOS.has(r.na
 const totalStars = own.reduce((s, r) => s + r.stargazers_count, 0);
 const downloads30d = packages.reduce((s, p) => s + p.downloads30d, 0);
 const totalLikes = packages.reduce((s, p) => s + p.likes, 0);
-const stats: { n: string; unit?: string; label: string; href: string }[] = [
-  { n: compact(downloads30d), unit: H.stats.per30, label: H.stats.downloads, href: SOCIALS[1].url },
-  { n: fmt(totalStars), label: H.stats.stars, href: 'https://github.com/ales-drnz?tab=repositories&sort=stargazers' },
-  { n: fmt(totalLikes), label: H.stats.likes, href: SOCIALS[1].url },
-  { n: fmt(prs.length), label: H.stats.prs, href: '#open-source' },
+const stats: { n: string; unit?: string; label: string; href: string; icon: string }[] = [
+  { n: compact(downloads30d), unit: H.stats.per30, label: H.stats.downloads, href: SOCIALS[1].url, icon: 'download' },
+  { n: fmt(totalStars), label: H.stats.stars, href: 'https://github.com/ales-drnz?tab=repositories&sort=stargazers', icon: 'star' },
+  { n: fmt(totalLikes), label: H.stats.likes, href: SOCIALS[1].url, icon: 'thumb_up' },
+  { n: fmt(prs.length), label: H.stats.prs, href: '#open-source', icon: 'merge' },
   {
     n: fmt(resolvedIssues),
     label: H.stats.issues,
     href: 'https://github.com/issues?q=user%3Aales-drnz+type%3Aissue+is%3Aclosed+reason%3Acompleted+-author%3Aales-drnz',
+    icon: 'task_alt',
   },
 ];
 
@@ -101,10 +101,8 @@ const libs = await Promise.all(
     .filter((p) => p.data.package)
     .map(async (p) => ({ p, pkg: await getPackage(p.data.package!) })),
 );
-const groupOf = new Map(projectGroups(lang).map((g) => [g.id, g]));
-const tools = await Promise.all(
-  rest.filter((p) => !p.data.package).map(async (p) => ({ p, repo: p.data.repo ? await getRepo(p.data.repo) : undefined })),
-);
+// the tool cards show only name and tagline, so they need no GitHub data
+const tools = rest.filter((p) => !p.data.package).map((p) => ({ p }));
 // anything public on GitHub that no section covers yet
 const covered = new Set([...projects.flatMap((p) => [p.data.repo, ...p.data.alsoCovers]), ...members.repos].filter(Boolean));
 const moreRepos = own.filter((r) => !covered.has(r.name)).sort((a, b) => b.stargazers_count - a.stargazers_count);
@@ -122,14 +120,16 @@ const topOf = new Map<string, string>();
 for (const d of [...withStars].sort((a, b) => b.live - a.live)) if (!topOf.has(d.pkg)) topOf.set(d.pkg, d.repo);
 // the threshold uses the stars written in islands.ts, so a rebuild never drops a card over a few stars
 const inGallery = withStars.filter((d) => d.stars >= MIN_STARS && d.shots?.length).sort((a, b) => b.live - a.live);
-const aboveNoShots = withStars.filter((d) => d.stars >= MIN_STARS && !d.shots?.length).sort((a, b) => b.live - a.live);
+// everything that gets no card in the gallery, as an icon grid under it
+const others = withStars.filter((d) => !inGallery.includes(d)).sort((a, b) => b.live - a.live || a.repo.localeCompare(b.repo));
 const perPackage = [
   ...Object.entries(ISLANDS).map(([id, island]) => ({ pkg: byId(id)?.data.package ?? id, count: island.usedBy.length })),
   ...OTHER_USED_BY,
 ];
 const totalApps = perPackage.reduce((s, p) => s + p.count, 0);
 const starsBetween = withStars.reduce((s, d) => s + d.live, 0);
-const underTen = totalApps - inGallery.length - aboveNoShots.length;
+// packages without an island are only counted, not listed one by one
+const jellyfinCount = OTHER_USED_BY.reduce((s, p) => s + p.count, 0);
 const [pkgA, pkgB] = Object.keys(ISLANDS).map((id) => byId(id)?.data.package ?? id);
 
 const kindOf = (src: ImageMetadata): GalleryApp['kind'] => (src.height > src.width ? 'phone' : src.width / src.height >= 1.9 ? 'wide' : 'desk');
@@ -140,7 +140,7 @@ const big = (src: ImageMetadata) =>
   getImage({ src, width: Math.min(src.width, src.height > src.width ? 1000 : 2000), format: 'webp' }).then((i) => i.src);
 
 const apps: GalleryApp[] = [];
-const appShots: LightboxShot[] = [];
+const appSets: Record<string, LightboxShot[]> = {};
 for (const d of inGallery) {
   const shots = d.shots!.map((s) => ({ src: s.src, alt: s.alt[lang] }));
   apps.push({
@@ -152,12 +152,11 @@ for (const d of inGallery) {
     kind: kindOf(shots[0].src),
     framed: !!d.framed,
     shots,
-    lbAt: appShots.length,
+    lbSet: `app:${d.repo}`,
     top: topOf.get(d.pkg) === d.repo,
   });
   const srcs = await Promise.all(shots.map((s) => big(s.src)));
-  shots.forEach((s, i) =>
-    appShots.push({
+  appSets[`app:${d.repo}`] = shots.map((s, i) => ({
       src: srcs[i],
       portrait: s.src.height > s.src.width,
       framed: !!d.framed,
@@ -170,11 +169,10 @@ for (const d of inGallery) {
       note: [d.note?.[lang], H.showcase.uses(d.pkg)].filter(Boolean).join(' · '),
       i: i + 1,
       n: shots.length,
-    }),
-  );
+  }));
 }
 
-const sets: Record<string, LightboxShot[]> = { apps: appShots };
+const sets: Record<string, LightboxShot[]> = { ...appSets };
 for (const [id, shots] of Object.entries(OWN_SHOTS)) {
   const p = byId(id);
   if (!p) continue;
@@ -198,19 +196,6 @@ for (const [id, shots] of Object.entries(OWN_SHOTS)) {
   );
 }
 
-/* ---------- the hero composition: three of my apps, each opening its own screens ---------- */
-// positions in units of the box width; the box is 0.425 as tall as it is wide, with no empty margin
-const HERO_H = 0.425;
-const heroShots = [
-  { id: 'netmap', i: 0, x: 'left:0', top: 0.076, w: 0.4, z: 1 },
-  { id: 'mpv-studio', i: 3, x: 'left:22%', top: 0, w: 0.56, z: 3 },
-  { id: 'minesync', i: 1, x: 'right:0', top: 0.1045, w: 0.4, z: 2 },
-].flatMap((h) => {
-  const s = OWN_SHOTS[h.id]?.[h.i];
-  const p = byId(h.id);
-  return s && p ? [{ ...h, s, title: p.data.title }] : [];
-});
-
 /* ---------- upstream PRs, grouped by repository ---------- */
 const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr) => ((acc[pr.repo] ??= []).push(pr), acc), {})).sort(
   (a, b) => b[1].length - a[1].length,
@@ -221,6 +206,8 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   <!-- ===================== HERO ===================== -->
   <section class="hero" aria-labelledby="hero-title">
     <div class="wrap">
+      <!-- the first screen: who, headline, links and figures, centred in the room under the header -->
+      <div class="hero-intro">
       <p class="hero-who"><Mark size={28} disc class="rounded-full" /> {H.who}</p>
       <h1 id="hero-title" class="display-1 hero-title" set:html={H.headline} />
       <p class="lede hero-sub">{H.sub}</p>
@@ -236,26 +223,11 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
             <dt class="fig-l">
               <a href={s.href} target={s.href.startsWith('#') ? undefined : '_blank'} rel={s.href.startsWith('#') ? undefined : 'noopener'}>{s.label}</a>
             </dt>
-            <dd class="fig-n">{s.n}{s.unit && <small>{s.unit}</small>}</dd>
+            <dd class="fig-n"><Symbol name={s.icon} fill size={32} trim class="fig-i" />{s.n}{s.unit && <small>{s.unit}</small>}</dd>
           </div>
         ))}
       </dl>
-
-      <figure class="comp hero-comp" aria-label={H.heroShots} style={`aspect-ratio: 1 / ${HERO_H}`}>
-        {heroShots.map((h) => (
-          <button
-            type="button"
-            class="shot"
-            data-lb={h.id}
-            data-lb-at={h.i}
-            aria-label={H.openScreens(h.title)}
-            style={`${h.x};top:${((h.top / HERO_H) * 100).toFixed(2)}%;width:${h.w * 100}%;aspect-ratio:${h.s.src.width} / ${h.s.src.height};z-index:${h.z}`}
-          >
-            <Image src={h.s.src} alt={`${h.title}: ${h.s.view[lang]}`} widths={[640, 960, 1400]} sizes="(min-width: 1344px) 660px, 56vw" loading="eager" class:list={[h.s.dark && 'dark:hidden']} />
-            {h.s.dark && <Image src={h.s.dark} alt={`${h.title}: ${h.s.view[lang]}`} widths={[640, 960, 1400]} sizes="(min-width: 1344px) 480px, 40vw" loading="eager" class="hidden dark:block" />}
-          </button>
-        ))}
-      </figure>
+      </div>
     </div>
   </section>
 
@@ -278,7 +250,10 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
         <section class="studio" aria-labelledby="band-studio">
           <div class="wrap">
             <p class="eyebrow"><b>{H.mine}</b> · {H.refApp(b.project.data.title)}</p>
-            <h2 id="band-studio" class="display-2 studio-title">{studio.data.title}</h2>
+            <h2 id="band-studio" class="display-2 studio-title">
+              {studio.data.logo && <Image src={studio.data.logo} alt="" width={80} height={80} densities={[1, 2, 3]} class="studio-logo" />}
+              <span>{studio.data.title}</span>
+            </h2>
             <p class="lede studio-lede">{studio.data.tagline}</p>
             <p class="studio-platforms">
               {studio.data.platforms.map((pl) => <span>{pl}</span>)}
@@ -300,8 +275,9 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
               </button>
             </figure>
             <p class="studio-actions">
-              <a class="link-accent" href={caseStudy(studio.id)}>{H.caseStudy} →</a>
-              <button type="button" class="link-accent" data-lb={studio.id} data-lb-at="0">{H.viewScreens(studioShots.length)}</button>
+              <a class="btn btn-primary" href={caseStudy(studio.id)}>{H.caseStudy} <Symbol name="arrow_forward" size={18} /></a>
+              <button type="button" class="btn btn-ghost" data-lb={studio.id} data-lb-at="0"><Symbol name="photo_library" size={18} /> {H.viewScreens(studioShots.length)}</button>
+              {studio.data.repo && <a class="btn btn-ghost" href={`https://github.com/ales-drnz/${studio.data.repo}`} target="_blank" rel="noopener"><Icon name="github" size={16} /> GitHub</a>}
             </p>
           </div>
         </section>
@@ -340,7 +316,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
 
         {tools.length > 0 && (
           <div class="tools">
-            {tools.map(({ p, repo }) => {
+            {tools.map(({ p }) => {
               const s = OWN_SHOTS[p.id]?.[0];
               const cover = s?.src ?? p.data.cover;
               return (
@@ -351,22 +327,13 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
                       {s?.dark && <Image src={s.dark} alt={p.data.coverAlt ?? p.data.title} widths={[480, 800, 1200]} sizes="(min-width: 1344px) 420px, (min-width: 768px) 31vw, 92vw" class="hidden dark:block" />}
                     </button>
                   )}
-                  <p class="tool-kind">
-                    {groupOf.get(p.data.group)?.brand ? (
-                      <BrandIcon name={groupOf.get(p.data.group)!.brand as BrandKey} size={13} />
-                    ) : (
-                      groupOf.get(p.data.group)?.symbol && <Symbol name={groupOf.get(p.data.group)!.symbol!} size={15} />
-                    )}
-                    {groupOf.get(p.data.group)?.title}
-                  </p>
-                  <h3 class="tool-name"><a href={caseStudy(p.id)}>{p.data.title}</a></h3>
-                  <p class="tool-tag">{p.data.tagline}</p>
-                  <p class="tool-meta">
-                    {p.data.stack.slice(0, 4).join(' · ')}
-                    {repo && <span class="star-n"> · <Symbol name="star" fill size={13} /> {repo.stargazers_count}</span>}
-                    <br />
-                    {[p.data.platforms.join(' · '), repo && H.pushed(timeAgo(repo.pushed_at, lang))].filter(Boolean).join(' · ')}
-                  </p>
+                  <div class="tool-head">
+                    {p.data.logo && <Image src={p.data.logo} alt="" width={44} height={44} densities={[1, 2, 3]} class="tool-logo" />}
+                    <div class="tool-titles">
+                      <h3 class="tool-name"><a href={caseStudy(p.id)}>{p.data.title}</a></h3>
+                      <p class="tool-tag">{p.data.tagline}</p>
+                    </div>
+                  </div>
                 </article>
               );
             })}
@@ -392,36 +359,54 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
 
   <!-- ===================== OTHERS' APPS (not mine) ===================== -->
   {apps.length > 0 && (
-    <section id="built-with" class="ground-invert showcase" aria-labelledby="showcase-title">
+    <section id="built-with" class="showcase" aria-labelledby="showcase-title">
       <div class="wrap showcase-head">
         <p class="eyebrow"><b>{H.showcase.notMine}</b> · {H.showcase.madeBy}</p>
         <h2 id="showcase-title" class="display-2 showcase-title" set:html={H.showcase.title(pkgA, pkgB)} />
         <p class="lede showcase-lede">{H.showcase.lede}</p>
         <dl class="statline">
-          <div class="stat"><dt class="fig-l">{H.showcase.depend}</dt><dd class="fig-n">{fmt(totalApps)}</dd></div>
+          <div class="stat"><dt class="fig-l">{H.showcase.depend}</dt><dd class="fig-n"><Symbol name="apps" fill size={32} trim class="fig-i" />{fmt(totalApps)}</dd></div>
           {perPackage.map((p) => (
-            <div class="stat"><dt class="fig-l">{H.showcase.on(p.pkg)}</dt><dd class="fig-n">{fmt(p.count)}</dd></div>
+            <div class="stat"><dt class="fig-l">{H.showcase.on(p.pkg)}</dt><dd class="fig-n"><Symbol name="deployed_code" fill size={32} trim class="fig-i" />{fmt(p.count)}</dd></div>
           ))}
-          <div class="stat"><dt class="fig-l">{H.showcase.starsBetween}</dt><dd class="fig-n">{compact(starsBetween)}</dd></div>
+          <div class="stat"><dt class="fig-l">{H.showcase.starsBetween}</dt><dd class="fig-n"><Symbol name="star" fill size={32} trim class="fig-i" />{compact(starsBetween)}</dd></div>
         </dl>
       </div>
 
       <AppGallery apps={apps} lang={lang} />
 
-      <div class="wrap">
-        <p class="endnote">
-          <span>
-            {aboveNoShots.length > 0 && H.showcase.also}{' '}
-            {aboveNoShots.map((d, i) => (
-              <Fragment>
-                {i > 0 && ' · '}
-                <a href={`https://github.com/${d.repo}`} target="_blank" rel="noopener"><b>{d.repo.split('/')[1]}</b></a>{' '}
-                <span class="endnote-st star-n"><Symbol name="star" fill size={13} /> {fmt(d.live)}</span> {H.showcase.on(d.pkg)}
-              </Fragment>
-            ))}
-            {underTen > 0 && `, ${H.showcase.rest(underTen)}`}
-          </span>
-          <a class="link-accent" href={USED_BY_LIST} target="_blank" rel="noopener">{H.showcase.all(totalApps)} →</a>
+      <!-- the rest: no screenshots, so each app shows its own icon (or its owner's avatar) -->
+      <div class="wrap others">
+        <h3 class="title-3 others-title">{H.showcase.others(others.length + jellyfinCount)}</h3>
+        <p class="others-lede">{H.showcase.othersLede}</p>
+        <ul class="others-grid">
+          {others.map((d) => {
+            const icon = appIcon(d.repo);
+            const [owner, name] = d.repo.split('/');
+            return (
+              <li>
+                <a class="other" href={`https://github.com/${d.repo}`} target="_blank" rel="noopener">
+                  {icon ? (
+                    <Image src={icon} alt="" width={48} height={48} densities={[1, 2, 3]} class="other-icon" loading="lazy" />
+                  ) : (
+                    <img src={`https://avatars.githubusercontent.com/${owner}?s=96`} alt="" width="48" height="48" loading="lazy" class="other-icon is-avatar" />
+                  )}
+                  <span class="other-main">
+                    <span class="other-name">{name}</span>
+                    <span class="other-meta">{owner}</span>
+                  </span>
+                  <span class="other-side">
+                    {d.live > 0 && <span class="star-n"><Symbol name="star" fill size={13} /> {fmt(d.live)}</span>}
+                    <span>{d.pkg}</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        <p class="others-foot">
+          {jellyfinCount > 0 && <span>{H.showcase.jellyfin(jellyfinCount)}</span>}
+          <a class="btn btn-ghost" href={USED_BY_LIST} target="_blank" rel="noopener"><Icon name="github" size={16} /> {H.showcase.all(totalApps)}</a>
         </p>
       </div>
     </section>
@@ -516,9 +501,21 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
 
 <style>
   /* ---------- hero ---------- */
+  /* the hero is the first screen only: the mpv_audio_kit band follows straight after it */
   .hero {
-    padding-block: var(--band);
     text-align: center;
+  }
+  /* the header is 56px tall and sticky; svh so a phone's collapsing toolbar does not make it jump */
+  .hero-intro {
+    min-height: calc(100svh - 56px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-block: var(--s-5);
+  }
+  .hero-intro .statline {
+    align-self: stretch;
   }
   .hero-who {
     display: inline-flex;
@@ -585,18 +582,25 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
       border-left: 1px solid var(--c-border);
     }
   }
-  .hero-comp {
-    max-width: 1180px;
-    margin: var(--s-5) auto 0;
-  }
-
   /* ---------- MPV Studio, centred ---------- */
   .studio {
     padding-block: var(--band);
     text-align: center;
   }
+  /* the app icon beside the name, as on the library bands */
   .studio-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25em;
     margin-top: var(--s-3);
+  }
+  .studio-title :global(.studio-logo) {
+    width: 0.9em;
+    height: 0.9em;
+    border-radius: 22%;
+    object-fit: contain;
+    flex: none;
   }
   .studio-lede {
     max-width: 40ch;
@@ -619,12 +623,8 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: var(--s-1) var(--s-3);
+    gap: 12px;
     margin: var(--s-5) 0 0;
-    font-size: 15px;
-  }
-  .studio-actions button {
-    cursor: pointer;
   }
 
   /* ---------- the calm part ---------- */
@@ -736,19 +736,26 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     object-fit: cover;
     object-position: top left;
   }
-  .tool-kind {
+  /* logo beside the name, the tagline under it: nothing else */
+  .tool-head {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: var(--s-3) 0 0;
-    font: 500 11px var(--font-mono);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--c-subtle);
+    gap: 14px;
+    margin-top: var(--s-3);
+  }
+  .tool-head :global(.tool-logo) {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    object-fit: contain;
+  }
+  .tool-titles {
+    min-width: 0;
   }
   .tool-name {
-    margin: var(--s-1) 0 0;
+    margin: 0;
     font-size: 21px;
+    line-height: 1.2;
     font-weight: 600;
     letter-spacing: -0.02em;
   }
@@ -756,14 +763,10 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     color: var(--c-accent);
   }
   .tool-tag {
-    margin: var(--s-1) 0 0;
+    margin: 4px 0 0;
     font-size: 15px;
+    line-height: 1.45;
     color: var(--c-muted);
-  }
-  .tool-meta {
-    margin: var(--s-2) 0 0;
-    font: 12px/1.7 var(--font-mono);
-    color: var(--c-subtle);
   }
   .more-repos {
     margin-top: var(--s-5);
@@ -789,11 +792,10 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     color: var(--c-muted);
   }
 
-  /* ---------- others' apps, on the inverted ground ---------- */
+  /* ---------- others' apps: same theme as the rest, set apart by a rule and the "Not my apps" eyebrow ---------- */
   .showcase {
     padding-block: var(--band);
-    background: var(--c-bg);
-    color: var(--c-fg);
+    border-top: 1px solid var(--c-border);
     scroll-margin-top: 56px;
   }
   .showcase-head {
@@ -814,28 +816,93 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     max-width: 46ch;
     margin: var(--s-3) auto 0;
   }
-  .endnote {
+  .others {
+    margin-top: var(--band);
+  }
+  .others-title {
+    margin: 0;
+  }
+  .others-lede {
+    margin: var(--s-1) 0 0;
+    font-size: 15px;
+    color: var(--c-muted);
+  }
+  .others-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    column-gap: var(--s-4);
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .other {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--c-border);
+    min-width: 0;
+  }
+  .other-icon {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: var(--c-surface-2);
+  }
+  .other-icon.is-avatar {
+    border-radius: 50%;
+  }
+  .other-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .other-name {
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .other:hover .other-name {
+    color: var(--c-accent);
+  }
+  .other-meta {
+    font: 12px var(--font-mono);
+    color: var(--c-subtle);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .other-side {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    font: 12px var(--font-mono);
+    color: var(--c-subtle);
+  }
+  .other-side .star-n {
+    color: var(--c-accent);
+  }
+  .others-foot {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
-    align-items: baseline;
     gap: var(--s-1) var(--s-4);
-    margin: var(--s-5) 0 0;
+    margin: 0;
     padding-top: var(--s-3);
     border-top: 1px solid var(--c-border);
     font-size: 14px;
     color: var(--c-muted);
   }
-  .endnote b {
-    color: var(--c-fg);
-    font-weight: 600;
-  }
-  .endnote a:hover b {
-    color: var(--c-accent);
-  }
-  .endnote-st {
-    font: 12px var(--font-mono);
-    color: var(--c-accent);
+  .others-foot a {
+    margin-left: auto;
   }
 
   /* ---------- calm sections: a 4 / 8 split of the 12 columns, ruled from each other ---------- */

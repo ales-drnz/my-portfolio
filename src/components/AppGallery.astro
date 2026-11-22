@@ -3,8 +3,9 @@
    apple.com's "Get the highlights": one large card per app in a scroll-snap track, the next one peeking in.
    Under it a sticky control group: a pill of dots where the current one stretches and fills over the slide
    time (the gallery advances when the fill completes), and a play / pause / replay button. Autoplay starts
-   when the gallery comes into view, stops at any interaction and while the tab is hidden, and never starts
-   on its own with reduced motion. A card opens its screenshots in the lightbox. */
+   when the gallery comes into view and stops while the tab is hidden, on a swipe, a drag or the pause
+   button; the dots and a click on the card peeking in move it without stopping it. It never starts on its
+   own with reduced motion. The current card opens its own screenshots in the lightbox. */
 import { Image } from 'astro:assets';
 import Symbol from './Symbol.astro';
 import type { GalleryApp } from '../lib/showcase';
@@ -40,7 +41,7 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
   <ul class="ag-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label={T.gallery}>
     {apps.map((a, i) => (
       <li
-        class:list={['ag-card', `is-${a.kind}`, a.framed && 'is-framed']}
+        class:list={['ag-card', `is-${a.kind}`, a.framed && 'is-framed', i === 0 && 'is-current']}
         role="group"
         aria-roledescription="slide"
         aria-label={T.slide(i + 1, apps.length, a.name)}
@@ -48,7 +49,7 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
         <div class="ag-copy">
           <p class="ag-uses">{T.uses(a.pkg)}</p>
           <h3 class="ag-name">
-            <button type="button" class="ag-open" data-lb="apps" data-lb-at={a.lbAt} aria-label={H.openScreens(a.name)}>{a.name}</button>
+            <button type="button" class="ag-open" data-lb={a.lbSet} data-lb-at="0" aria-label={H.openScreens(a.name)}>{a.name}</button>
           </h3>
           <p class="ag-stars"><Symbol name="star" fill size={18} /> <span>{fmt(a.stars)}</span></p>
           <p class="ag-who">
@@ -193,6 +194,11 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
   .ag-open {
     all: unset;
     cursor: zoom-in;
+  }
+  /* a card peeking in comes over on click rather than opening */
+  .ag-card:not(.is-current),
+  .ag-card:not(.is-current) .ag-open {
+    cursor: pointer;
   }
   /* the name is the card's button: its hit area covers the whole card, links sit above it */
   .ag-open::before {
@@ -547,6 +553,7 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
       // the current dot stretches and its fill starts over
       const mark = (i: number) => {
         index = i;
+        cards.forEach((c, j) => c.classList.toggle('is-current', j === i));
         dots.forEach((d, j) => {
           d.classList.remove('is-current');
           if (j === i) d.setAttribute('aria-current', 'true');
@@ -582,8 +589,9 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
       });
 
       dots.forEach((d, i) =>
+        // a dot jumps to its card and the timer starts over; autoplay keeps going
         d.addEventListener('click', () => {
-          pause();
+          if (ended) wants = true;
           go(i);
         }),
       );
@@ -636,7 +644,6 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
       let drag: { x: number; left: number; moved: boolean } | null = null;
       let swallow = false;
       track.addEventListener('pointerdown', (e) => {
-        pause();
         if (e.pointerType !== 'mouse' || e.button !== 0) return;
         drag = { x: e.clientX, left: track.scrollLeft, moved: false };
       });
@@ -646,6 +653,7 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
           if (!drag) return;
           const dx = e.clientX - drag.x;
           if (!drag.moved && Math.abs(dx) < 6) return;
+          if (!drag.moved) pause();
           drag.moved = true;
           track.classList.add('is-dragging');
           track.scrollLeft = drag.left - dx;
@@ -670,12 +678,21 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
         },
         { signal },
       );
+      // a drag is not a click; a click on a card that is not the current one (the one peeking in) brings it
+      // over instead of opening its screens, and autoplay keeps going
       track.addEventListener(
         'click',
         (e) => {
-          if (swallow) {
+          const card = (e.target as Element).closest<HTMLElement>('.ag-card');
+          const i = card ? cards.indexOf(card) : -1;
+          const link = (e.target as Element).closest('a');
+          if (swallow || (i >= 0 && i !== index && !link)) {
             e.preventDefault();
             e.stopPropagation();
+          }
+          if (!swallow && i >= 0 && i !== index && !link) {
+            if (ended) wants = true;
+            go(i);
           }
         },
         true,

@@ -1,5 +1,9 @@
 ---
-// Studies as a ruled list: dates, degree and school, grade on the right; the thesis hangs under its degree.
+/* Studies as the timeline of my CV (CV LaTeX, \tlentry and \tlbranches): dates on the left, aligned to the
+   dot; a thin line through plain dots, green while in progress and pale once finished; the thesis is a
+   branch, git-graph style, leaving its degree's dot with a rounded elbow that ends on a small dot.
+   Each degree is one grid (date | rail | text, then the thesis row). The elbow spans the degree's first row
+   and reaches down into the thesis row with a negative margin, so it follows the text however it wraps. */
 import type { EducationEntry } from '../lib/site';
 import { t, type Lang } from '../lib/i18n';
 
@@ -10,28 +14,41 @@ interface Props {
 
 const { entries, lang } = Astro.props;
 const T = t(lang).timeline;
+const last = entries.length - 1;
 ---
 
-<ol class="edu">
+<ol class="tl">
   {
-    entries.map((e) => (
-      <li>
-        <p class="edu-when">
-          {e.start} – {e.end ?? T.present}
+    entries.map((e, i) => (
+      <li class:list={['tl-item', !e.end && 'is-live', i === 0 && 'is-first', i === last && 'is-last']}>
+        <p class="tl-when">
+          {e.start} – {e.end ?? <span class="tl-now">{T.present}</span>}
         </p>
-        <div class="edu-what">
+        <span class="tl-rail" aria-hidden="true">
+          <span class="tl-dot" />
+        </span>
+        <div class="tl-head">
           <h3>{e.degree}</h3>
-          <p>{e.school} · {e.place}</p>
+          <p>
+            {e.school}
+            {e.grade && (
+              <>
+                {' · '}
+                {T.grade} {e.grade}
+              </>
+            )}
+          </p>
         </div>
-        <p class:list={['edu-grade', !e.end && 'is-live']}>{e.grade ?? (e.end ? '' : T.inProgress)}</p>
         {e.thesis && (
-          <div class="edu-thesis">
-            <p class="edu-thesis-k">
-              {T.thesis} · {T.supervisor} {e.thesis.supervisor}
-            </p>
-            <p class="edu-thesis-t">{e.thesis.title}</p>
-            <p>{e.thesis.summary}</p>
-          </div>
+          <>
+            <span class="tl-elbow" aria-hidden="true" />
+            <div class="tl-thesis">
+              <p>
+                <b>{T.thesis}</b> <em>{e.thesis.title}</em> ({T.supervisor.toLowerCase()}: {e.thesis.supervisor}).
+              </p>
+              <p class="tl-summary">{e.thesis.summary}</p>
+            </div>
+          </>
         )}
       </li>
     ))
@@ -39,77 +56,178 @@ const T = t(lang).timeline;
 </ol>
 
 <style>
-  .edu {
+  .tl {
+    /* the title's line, the middle of it, the space between degrees and before a thesis */
+    --line-h: 24px;
+    --mid: 12px;
+    --space: 28px;
+    --thesis-mt: 12px;
+    --gap: 14px;
+    --rail: 20px;
+    --rule: var(--c-border-strong);
+    --pale: color-mix(in oklab, var(--c-accent) 35%, var(--c-bg));
+    --branch: color-mix(in oklab, var(--c-accent) 60%, var(--c-bg));
     list-style: none;
     margin: 0;
     padding: 0;
   }
-  li {
+  .tl-item {
     display: grid;
-    grid-template-columns: 9.5rem minmax(0, 1fr) auto;
-    gap: 6px var(--s-3);
-    padding: var(--s-3) 0;
-    border-bottom: 1px solid var(--c-border);
+    grid-template-columns: 10.5rem var(--rail) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: var(--gap);
   }
-  li:first-child {
-    padding-top: 0;
+  .tl-item + .tl-item {
+    margin-top: var(--space);
   }
   p {
     margin: 0;
   }
-  .edu-when {
-    padding-top: 3px;
-    font: 12px var(--font-mono);
+
+  /* ---------- dates, level with the title ---------- */
+  .tl-when {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    line-height: var(--line-h);
+    text-align: right;
+    font: 12px / var(--line-h) var(--font-mono);
     color: var(--c-subtle);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .tl-now {
+    color: var(--c-accent);
+  }
+
+  /* ---------- the rail: a thin line through the dots, broken a little around each ---------- */
+  .tl-rail {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    position: relative;
+  }
+  .tl-rail::before,
+  .tl-rail::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 0.5px);
+    width: 1px;
+    background: var(--rule);
+  }
+  .tl-rail::before {
+    top: 0;
+    height: calc(var(--mid) - 6px);
+  }
+  .tl-rail::after {
+    top: calc(var(--mid) + 6px);
+    bottom: calc(-1 * var(--space));
+  }
+  .is-first .tl-rail::before,
+  .is-last .tl-rail::after {
+    display: none;
+  }
+  .tl-dot {
+    position: absolute;
+    top: var(--mid);
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--pale);
+    transform: translate(-50%, -50%);
+  }
+  .is-live .tl-dot {
+    width: 9px;
+    height: 9px;
+    background: var(--c-accent);
+  }
+
+  /* ---------- the degree ---------- */
+  .tl-head {
+    grid-column: 3;
+    grid-row: 1;
   }
   h3 {
     margin: 0;
     font-size: 17px;
+    line-height: var(--line-h);
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  .edu-what p {
+  .tl-head p {
     margin-top: 2px;
-    font-size: 14px;
+    font-size: 15px;
     color: var(--c-muted);
   }
-  .edu-grade {
-    padding-top: 2px;
-    font: 13px var(--font-mono);
-    text-align: right;
-    white-space: nowrap;
+
+  /* ---------- the thesis branch ---------- */
+  /* from the degree's dot down, then right into the thesis's dot, one rounded corner */
+  .tl-elbow {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    justify-self: start;
+    width: calc(var(--rail) / 2 + var(--gap) - 1px);
+    margin-top: calc(var(--mid) + 6px);
+    margin-bottom: calc(-1 * (var(--thesis-mt) + var(--mid)));
+    margin-left: calc(var(--rail) / 2 - 0.5px);
+    border-left: 1px solid var(--pale);
+    border-bottom: 1px solid var(--pale);
+    border-bottom-left-radius: 7px;
   }
-  .edu-grade.is-live {
-    color: var(--c-accent);
+  .tl-thesis {
+    grid-column: 3;
+    grid-row: 2;
+    position: relative;
+    margin-top: var(--thesis-mt);
+    padding-left: 16px;
+    font-size: 15px;
+    line-height: var(--line-h);
   }
-  .edu-thesis {
-    grid-column: 2 / -1;
-    margin-top: var(--s-1);
-    padding-left: var(--s-2);
-    border-left: 2px solid var(--c-accent);
-    font-size: 14px;
-    line-height: 1.5;
+  .tl-thesis::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--mid) - 3px);
+    left: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--branch);
+  }
+  .tl-thesis b {
+    font-weight: 600;
+  }
+  .tl-summary {
+    margin-top: 4px;
     color: var(--c-muted);
+    line-height: 1.55;
   }
-  .edu-thesis-k {
-    font: 11px var(--font-mono);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--c-subtle);
-  }
-  .edu-thesis-t {
-    margin: 4px 0;
-    color: var(--c-fg);
-    font-weight: 500;
-  }
+
+  /* on a phone the date goes above the degree, on the dot's line */
   @media (max-width: 767px) {
-    li {
-      grid-template-columns: minmax(0, 1fr) auto;
+    .tl-item {
+      grid-template-columns: var(--rail) minmax(0, 1fr);
+      grid-template-rows: auto auto auto;
+      column-gap: 12px;
+      --gap: 12px;
     }
-    .edu-when,
-    .edu-thesis {
-      grid-column: 1 / -1;
+    .tl-when {
+      grid-column: 2;
+      text-align: left;
+    }
+    .tl-rail {
+      grid-column: 1;
+    }
+    .tl-head {
+      grid-column: 2;
+      grid-row: 2;
+    }
+    .tl-elbow {
+      grid-column: 1 / 3;
+      grid-row: 1 / 3;
+    }
+    .tl-thesis {
+      grid-column: 2;
+      grid-row: 3;
     }
   }
 </style>

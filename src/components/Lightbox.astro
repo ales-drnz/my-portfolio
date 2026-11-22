@@ -90,6 +90,7 @@ const T = t(lang).home.lightbox;
   .lb-link:hover {
     color: var(--c-accent);
   }
+  .lb-nav[hidden],
   .lb-stars[hidden] {
     display: none;
   }
@@ -226,6 +227,8 @@ const T = t(lang).home.lightbox;
     q('.lb-view').textContent = s.view;
     q('.lb-count').textContent = `${s.i} / ${s.n}`;
     q('.lb-note').textContent = s.note;
+    // a set of one has nowhere to go
+    dlg.querySelectorAll<HTMLElement>('.lb-nav').forEach((b) => (b.hidden = set.length < 2));
     // warm the next one
     const next = set[(at + 1) % set.length];
     new Image().src = (dark() && next.dark) || next.src;

@@ -4,6 +4,7 @@ import { Image, getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Sparkline from './Sparkline.astro';
 import Symbol from './Symbol.astro';
+import Icon from './Icon.astro';
 import { getRepo, getPackage, compact, timeAgo } from '../lib/data';
 import { renderProject } from '../lib/projects';
 import { t, localePath, type Lang } from '../lib/i18n';
@@ -22,6 +23,10 @@ const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.p
 const ogSource = p.cover ?? p.logo;
 const ogImage = ogSource ? await getImage({ src: ogSource, width: p.cover ? 1200 : 512, format: 'png' }) : null;
 const poster = p.cover && p.coverVideo ? await getImage({ src: p.cover, width: 1600, format: 'webp' }) : null;
+
+// GitHub and pub.dev links carry their mark, as on the home page
+const siteMark = (url: string) =>
+  url.startsWith('https://github.com/') ? ('github' as const) : url.startsWith('https://pub.dev/') ? ('pubdev' as const) : undefined;
 
 const facts = [
   { label: T.type, value: t(lang).kind[p.kind][0].toUpperCase() + t(lang).kind[p.kind].slice(1) },
@@ -47,20 +52,16 @@ const facts = [
         <h1 class="mt-4 text-3xl sm:text-5xl font-semibold tracking-tight">{p.title}</h1>
         <p class="mt-4 text-lg text-muted leading-relaxed">{p.summary}</p>
       </div>
-      <div class="flex flex-wrap gap-2 md:justify-end">
-        {p.links.slice(0, 2).map((l, i) => (
-          <a
-            href={l.url}
-            target="_blank"
-            rel="noopener"
-            class:list={[
-              'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium transition-colors',
-              i === 0 ? 'bg-fg text-bg hover:opacity-90' : 'bg-surface-2 hover:bg-border',
-            ]}
-          >
-            {l.label} <Symbol name="arrow_outward" size={16} />
-          </a>
-        ))}
+      <!-- the same pills as the home page: the first link filled, the next one outlined, with the site's mark -->
+      <div class="flex flex-wrap gap-3 md:justify-end">
+        {p.links.slice(0, 2).map((l, i) => {
+          const mark = siteMark(l.url);
+          return (
+            <a href={l.url} target="_blank" rel="noopener" class:list={['btn', i === 0 ? 'btn-primary' : 'btn-ghost']}>
+              {mark && <Icon name={mark} size={16} />} {l.label} <Symbol name="arrow_outward" size={16} />
+            </a>
+          );
+        })}
       </div>
     </header>
 

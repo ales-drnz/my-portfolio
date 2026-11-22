@@ -53,11 +53,12 @@ export const OWN_SHOTS: Record<string, OwnShot[]> = {
     shot('vocem-overlay/settings-tray.png', 'tray', 'area di notifica'),
   ],
   netmap: [
-    shot('netmap/overview.png', 'overview', 'panoramica', 'netmap/overview-dark.png'),
-    shot('netmap/map.png', 'map', 'mappa'),
-    shot('netmap/devices.png', 'devices', 'dispositivi'),
-    shot('netmap/stats.png', 'stats', 'statistiche'),
-    shot('netmap/phone.png', 'on a phone', 'su un telefono'),
+    shot('netmap/home.png', 'overview', 'panoramica', 'netmap/home-dark.png'),
+    shot('netmap/device.png', 'map', 'mappa'),
+    shot('netmap/device-list.png', 'devices', 'dispositivi'),
+    shot('netmap/network.png', 'stats', 'statistiche'),
+    shot('netmap/phone-map.png', 'on a phone', 'su un telefono'),
+    shot('netmap/big-network.png', 'a big network', 'una rete grande'),
   ],
   minesync: [
     shot('minesync/tui-play.png', 'hosting a session', 'una sessione in corso'),
@@ -103,7 +104,8 @@ export interface GalleryApp {
   framed: boolean;
   shots: { src: ImageMetadata; alt: string }[];
   /** where its screens start in the lightbox set */
-  lbAt: number;
+  /** the lightbox set holding this app's screenshots, and only them */
+  lbSet: string;
   /** the most-starred app on its library */
   top: boolean;
 }

@@ -1,10 +1,11 @@
 ---
-/* One of my flagship libraries as a full-bleed band: the copy (name, tagline, figures, downloads chart, the repo
-   that builds its native library) beside a floating composition of its diagrams. */
+/* One of my flagship libraries as a full-bleed band: the copy (logo and name, tagline, figures, downloads chart,
+   the repo that builds its native library, boxed) beside a floating composition of its diagrams. */
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import DownloadsChart from './DownloadsChart.astro';
 import Symbol from './Symbol.astro';
+import Icon from './Icon.astro';
 import type { Island } from '../lib/islands';
 import type { OwnShot } from '../lib/showcase';
 import { compact, type PubPackage, type Repo } from '../lib/data';
@@ -47,21 +48,16 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
 <section id={id} class:list={['lib-band', surface && 'lib-surface', reverse && 'lib-rev']} aria-labelledby={headingId}>
   <div class="wrap lib-grid">
     <div class="lib-copy">
-      <div class="lib-head">
-        {p.logo && <Image src={p.logo} alt="" width={48} height={48} densities={[1, 2, 3]} class="lib-logo" />}
-        <p class="eyebrow"><b>{T.mine}</b> · {T.library} · pub.dev</p>
-      </div>
-      <h2 id={headingId} class="display-3 lib-title">{p.title}</h2>
+      <h2 id={headingId} class="display-3 lib-title">
+        {p.logo && <Image src={p.logo} alt="" width={64} height={64} densities={[1, 2, 3]} class="lib-logo" />}
+        <span>{p.title}</span>
+      </h2>
       <p class="lede lib-lede">{p.tagline}</p>
-      <p class="lib-tags">
-        {p.stack.slice(0, 5).map((s) => <span>{s}</span>)}
-        {pkg?.version && <span>v{pkg.version}</span>}
-      </p>
 
       <dl class="lib-figs">
-        <div><dt class="fig-l">{T.downloads30}</dt><dd class="fig-n">{pkg ? compact(pkg.downloads30d) : '—'}</dd></div>
-        <div><dt class="fig-l">{T.stars}</dt><dd class="fig-n">{repo ? fmt(repo.stargazers_count) : '—'}</dd></div>
-        <div><dt class="fig-l">{T.likes}</dt><dd class="fig-n">{pkg ? fmt(pkg.likes) : '—'}</dd></div>
+        <div><dt class="fig-l">{T.downloads30}</dt><dd class="fig-n"><Symbol name="download" fill size={32} trim class="fig-i" />{pkg ? compact(pkg.downloads30d) : '—'}</dd></div>
+        <div><dt class="fig-l">{T.stars}</dt><dd class="fig-n"><Symbol name="star" fill size={32} trim class="fig-i" />{repo ? fmt(repo.stargazers_count) : '—'}</dd></div>
+        <div><dt class="fig-l">{T.likes}</dt><dd class="fig-n"><Symbol name="thumb_up" fill size={32} trim class="fig-i" />{pkg ? fmt(pkg.likes) : '—'}</dd></div>
       </dl>
 
       {pkg && <DownloadsChart weekly={pkg.weekly} lang={lang} class="lib-chart" />}
@@ -82,9 +78,9 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
       )}
 
       <p class="lib-actions">
-        <a class="link-accent" href={localePath(lang, `/projects/${project.id}`)}>{T.caseStudy} →</a>
-        {p.package && <a class="lib-muted" href={`https://pub.dev/packages/${p.package}`} target="_blank" rel="noopener">pub.dev</a>}
-        {p.repo && <a class="lib-muted" href={`https://github.com/ales-drnz/${p.repo}`} target="_blank" rel="noopener">GitHub</a>}
+        <a class="btn btn-primary" href={localePath(lang, `/projects/${project.id}`)}>{T.caseStudy} <Symbol name="arrow_forward" size={18} /></a>
+        {p.repo && <a class="btn btn-ghost" href={`https://github.com/ales-drnz/${p.repo}`} target="_blank" rel="noopener"><Icon name="github" size={16} /> GitHub</a>}
+        {p.package && <a class="btn btn-ghost" href={`https://pub.dev/packages/${p.package}`} target="_blank" rel="noopener"><Icon name="pubdev" size={16} /> pub.dev</a>}
       </p>
     </div>
 
@@ -157,33 +153,27 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
       grid-row: 1;
     }
   }
-  .lib-head {
+  /* the logo sits beside the name, sized to its cap height */
+  .lib-title {
     display: flex;
     align-items: center;
-    gap: var(--s-2);
+    gap: 0.28em;
+    margin: 0;
+    overflow-wrap: anywhere;
   }
-  .lib-head :global(.lib-logo) {
-    width: 48px;
-    height: 48px;
+  .lib-title span {
+    min-width: 0;
+  }
+  .lib-title :global(.lib-logo) {
+    width: 0.9em;
+    height: 0.9em;
     border-radius: 50%;
     object-fit: contain;
     flex: none;
   }
-  .lib-title {
-    margin-top: var(--s-3);
-    overflow-wrap: anywhere;
-  }
   .lib-lede {
     margin-top: var(--s-2);
     max-width: 30ch;
-  }
-  .lib-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    margin: var(--s-2) 0 0;
-    font: 12px var(--font-mono);
-    color: var(--c-subtle);
   }
   .lib-figs {
     display: grid;
@@ -209,12 +199,18 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
   .lib-also {
     margin: var(--s-4) 0 0;
   }
+  /* the native build repo in its own box: a separate repo, not part of the package */
   .lib-also > div {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 4px var(--s-2);
-    padding-top: var(--s-2);
-    border-top: 1px solid var(--c-border);
+    padding: var(--s-2) var(--s-3);
+    border: 1px solid var(--c-border);
+    border-radius: 12px;
+    background: var(--c-bg);
+  }
+  .lib-also > div + div {
+    margin-top: var(--s-1);
   }
   .lib-also dt {
     font: 500 11px/1.9 var(--font-mono);
@@ -243,18 +239,22 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
     line-height: 1.5;
     color: var(--c-muted);
   }
+  /* the same pills as the hero's links */
   .lib-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--s-1) var(--s-3);
-    margin: var(--s-3) 0 0;
-    font-size: 15px;
+    gap: 12px;
+    margin: var(--s-4) 0 0;
   }
-  .lib-muted {
-    color: var(--c-muted);
-  }
-  .lib-muted:hover {
-    color: var(--c-fg);
+  /* between 1024 and 1279px the copy column is under 410px: a tighter pill keeps the three on one line */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .lib-actions {
+      gap: 8px;
+    }
+    .lib-actions .btn {
+      padding: 0 16px;
+      font-size: 14px;
+    }
   }
   @media (max-width: 479px) {
     .lib-figs {

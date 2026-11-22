@@ -28,10 +28,10 @@ export const UI = {
     copied: 'Copied!',
 
     home: {
-      who: 'ales-drnz · Rome',
+      who: 'ales-drnz',
       // the words in <em> take the accent colour
       headline: 'Building open source <em>tools and apps.</em>',
-      sub: 'Dart and Flutter libraries, Linux and network tools. Electronics and Telecommunication Engineering at Sapienza University of Rome.',
+      sub: 'Electronics and Telecommunication Engineering at Sapienza University of Rome.',
       stats: {
         downloads: 'pub.dev downloads',
         per30: '/30d',
@@ -40,7 +40,6 @@ export const UI = {
         prs: 'upstream PRs merged',
         issues: 'issues resolved',
       },
-      heroShots: 'Screens of Netmap, MPV Studio and MineSync',
       mine: 'My work',
       library: 'Library',
       refApp: (pkg: string) => `Reference app for ${pkg}`,
@@ -49,7 +48,7 @@ export const UI = {
       likes: 'likes',
       latest: 'latest',
       native: 'Native build',
-      caseStudy: 'Case study',
+      caseStudy: 'Learn more',
       viewScreens: (n: number) => `View ${n} screens`,
       openScreens: (name: string) => `Open ${name} screenshots`,
       alsoMine: 'Also mine',
@@ -58,11 +57,8 @@ export const UI = {
       pushed: (ago: string) => `pushed ${ago}`,
       alsoOnGitHub: 'Also on GitHub',
       chart: {
-        growth: 'last 10 weeks against the 10 before',
-        weekly: (n: number) => `Weekly downloads, last ${n} weeks`,
+        weekly: 'Weekly downloads',
         weeksAgo: (n: number) => (n === 0 ? 'This week' : n === 1 ? 'Last week' : `${n} weeks ago`),
-        thisWeek: 'this week',
-        peak: (n: string) => `peak ${n}/wk`,
         downloadsIn: (label: string, n: string) => `${label} · ${n} downloads`,
       },
       showcase: {
@@ -82,8 +78,9 @@ export const UI = {
         replay: 'Play the gallery again',
         uses: (pkg: string) => `uses ${pkg}`,
         mostStarred: (pkg: string) => `The most-starred app on ${pkg}.`,
-        also: 'Also above 10 stars:',
-        rest: (n: number) => `and ${n} more under 10 stars.`,
+        others: (n: number) => `${n} more built with them`,
+        othersLede: 'Without screenshots here, each one a link to its repository.',
+        jellyfin: (n: number) => `+ ${n} on dart_jellyfin`,
         all: (n: number) => `All ${n} on GitHub`,
       },
       lightbox: {
@@ -112,7 +109,7 @@ export const UI = {
 
     kind: { library: 'library', app: 'app', tool: 'tool', system: 'system' },
 
-    timeline: { present: 'present', inProgress: 'In progress', thesis: 'Thesis', supervisor: 'Supervisor' },
+    timeline: { present: 'present', inProgress: 'In progress', thesis: 'Thesis', supervisor: 'Supervisor', grade: 'Grade' },
     languages: { title: 'Languages', native: 'Native', nativeSpeaker: 'native speaker', cefr: 'CEFR level' },
     graph: {
       contributions: 'contributions',
@@ -156,9 +153,9 @@ export const UI = {
     copied: 'Copiata!',
 
     home: {
-      who: 'ales-drnz · Roma',
+      who: 'ales-drnz',
       headline: 'Creo strumenti e app <em>open source.</em>',
-      sub: 'Librerie Dart e Flutter, strumenti per Linux e per le reti. Ingegneria Elettronica e delle Telecomunicazioni alla Sapienza Università di Roma.',
+      sub: 'Ingegneria Elettronica e delle Telecomunicazioni alla Sapienza Università di Roma.',
       stats: {
         downloads: 'download su pub.dev',
         per30: '/30g',
@@ -167,7 +164,6 @@ export const UI = {
         prs: 'PR upstream accettate',
         issues: 'issue risolte',
       },
-      heroShots: 'Schermate di Netmap, MPV Studio e MineSync',
       mine: 'Il mio lavoro',
       library: 'Libreria',
       refApp: (pkg: string) => `App di riferimento per ${pkg}`,
@@ -176,7 +172,7 @@ export const UI = {
       likes: 'like',
       latest: 'ultima',
       native: 'Build nativa',
-      caseStudy: 'Caso studio',
+      caseStudy: 'Scopri di più',
       viewScreens: (n: number) => `Guarda ${n} schermate`,
       openScreens: (name: string) => `Apri gli screenshot di ${name}`,
       alsoMine: 'Sempre miei',
@@ -185,11 +181,8 @@ export const UI = {
       pushed: (ago: string) => `aggiornato ${ago}`,
       alsoOnGitHub: 'Anche su GitHub',
       chart: {
-        growth: 'ultime 10 settimane contro le 10 prima',
-        weekly: (n: number) => `Download settimanali, ultime ${n} settimane`,
+        weekly: 'Download a settimana',
         weeksAgo: (n: number) => (n === 0 ? 'Questa settimana' : n === 1 ? 'La settimana scorsa' : `${n} settimane fa`),
-        thisWeek: 'questa settimana',
-        peak: (n: string) => `picco ${n}/sett.`,
         downloadsIn: (label: string, n: string) => `${label} · ${n} download`,
       },
       showcase: {
@@ -209,8 +202,9 @@ export const UI = {
         replay: 'Riguarda la galleria',
         uses: (pkg: string) => `usa ${pkg}`,
         mostStarred: (pkg: string) => `L'app con più stelle su ${pkg}.`,
-        also: 'Sopra le 10 stelle anche:',
-        rest: (n: number) => `e altre ${n} sotto le 10 stelle.`,
+        others: (n: number) => `Altre ${n} costruite con queste librerie`,
+        othersLede: 'Senza screenshot qui, ognuna porta al suo repository.',
+        jellyfin: (n: number) => `+ ${n} su dart_jellyfin`,
         all: (n: number) => `Tutte le ${n} su GitHub`,
       },
       lightbox: {
@@ -239,7 +233,7 @@ export const UI = {
 
     kind: { library: 'libreria', app: 'app', tool: 'strumento', system: 'sistema' },
 
-    timeline: { present: 'oggi', inProgress: 'In corso', thesis: 'Tesi', supervisor: 'Relatore' },
+    timeline: { present: 'oggi', inProgress: 'In corso', thesis: 'Tesi', supervisor: 'Relatore', grade: 'Voto' },
     languages: { title: 'Lingue', native: 'Madrelingua', nativeSpeaker: 'madrelingua', cefr: 'livello QCER' },
     graph: {
       contributions: 'contributi',

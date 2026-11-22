@@ -1,6 +1,6 @@
 ---
-/* Weekly downloads of one package: the last 26 weeks as bars, the last 10 in the accent. The badge compares
-   the last 10 weeks with the 10 before; pointing at a bar reads that week out above the chart. */
+/* Weekly downloads of one package: the last 26 weeks as bars, the last 10 in the accent. Kept to one label
+   and the latest week's count on the right; pointing at a bar reads that week out in place of the label. */
 import { t, type Lang } from '../lib/i18n';
 
 interface Props {
@@ -15,8 +15,6 @@ const T = t(lang).home.chart;
 const fmt = (n: number) => n.toLocaleString(t(lang).locale);
 
 const weekly = Astro.props.weekly.slice(-26);
-const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
-const growth = weekly.length >= 20 && sum(weekly.slice(-20, -10)) > 0 ? sum(weekly.slice(-10)) / sum(weekly.slice(-20, -10)) : null;
 const W = 1000;
 const H = 300;
 const GAP = 8;
@@ -27,18 +25,15 @@ const barH = (v: number) => Math.max(4, (v / wmax) * (H - 8));
 
 {
   weekly.length > 1 && (
-    <figure class:list={['dl-chart', className]} data-chart data-label={T.weekly(weekly.length)}>
+    <figure class:list={['dl-chart', className]} data-chart data-label={T.weekly}>
       <div class="dl-head">
-        <figcaption class="dl-readout" aria-live="polite">{T.weekly(weekly.length)}</figcaption>
-        {growth && growth >= 1.2 && (
-          <span class="dl-growth" title={T.growth}>
-            <b>×{growth.toFixed(1)}</b>
-            <span>{T.growth}</span>
-          </span>
-        )}
+        <figcaption class="dl-readout" aria-live="polite">{T.weekly}</figcaption>
+        <span class="dl-now">
+          {T.weeksAgo(0)} <b>{fmt(weekly[weekly.length - 1])}</b>
+        </span>
       </div>
       <div class="dl-bars">
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={T.weekly(weekly.length)}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={T.weekly}>
           {weekly.map((v, i) => (
             <rect class:list={['bar', i >= weekly.length - 10 && 'hot']} x={i * (bw + GAP)} y={H - barH(v)} width={bw} height={barH(v)} rx="3" />
           ))}
@@ -46,11 +41,6 @@ const barH = (v: number) => Math.max(4, (v / wmax) * (H - 8));
             <rect class="hit" x={i * (bw + GAP) - GAP / 2} y="0" width={bw + GAP} height={H} data-text={T.downloadsIn(T.weeksAgo(weekly.length - 1 - i), fmt(v))} />
           ))}
         </svg>
-      </div>
-      <div class="dl-axis" aria-hidden="true">
-        <span>{T.weeksAgo(weekly.length)}</span>
-        <span>{T.peak(fmt(wmax))}</span>
-        <span>{T.thisWeek}</span>
       </div>
     </figure>
   )
@@ -73,26 +63,17 @@ const barH = (v: number) => Math.max(4, (v / wmax) * (H - 8));
     font-variant-numeric: tabular-nums;
     min-width: 0;
   }
-  .dl-growth {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--c-subtle);
-    text-align: right;
-  }
-  .dl-growth b {
-    font: 600 13px/1 var(--font-mono);
-    padding: 6px 8px;
-    border-radius: 6px;
-    background: var(--c-accent-soft);
-    color: var(--c-accent);
+  .dl-now {
+    font: 12px var(--font-mono);
+    color: var(--c-muted);
     white-space: nowrap;
   }
-  @media (max-width: 479px) {
-    .dl-growth span {
-      display: none;
-    }
+  .dl-now b {
+    margin-left: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-accent);
+    font-variant-numeric: tabular-nums;
   }
   .dl-bars {
     position: relative;
@@ -119,16 +100,6 @@ const barH = (v: number) => Math.max(4, (v / wmax) * (H - 8));
   .hit {
     fill: transparent;
     cursor: crosshair;
-  }
-  .dl-axis {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--c-border);
-    font: 11px var(--font-mono);
-    color: var(--c-subtle);
   }
 </style>
 

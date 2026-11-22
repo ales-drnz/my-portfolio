@@ -1,72 +1,88 @@
 ---
 tagline: Una mappa e una dashboard in tempo reale per una rete ZeroTier.
 summary: >-
-  Una pagina in sola lettura per i membri di una rete ZeroTier privata gestita con ZTNET. Mostra a ogni membro se è connesso e come: una mappa di tutti i dispositivi attorno all'hub, collegamenti diretti o via relay
-  con la loro latenza, disponibilità nelle ultime 24 ore, cosa è cambiato e quando, e i servizi raggiungibili
-  all'interno della rete.
+  Una pagina in sola lettura per i membri di una rete ZeroTier privata gestita con ZTNET. Mostra chi è connesso,
+  come e quanto bene: una mappa di tutti i dispositivi attorno all'hub, collegamenti diretti o via relay con la loro
+  latenza, disponibilità nelle ultime 24 ore, cosa è cambiato e quando, e i servizi raggiungibili all'interno della
+  rete.
 highlights:
-  - Stato della connessione in linguaggio semplice, con i dettagli tecnici su richiesta
+  - Stato della connessione in parole semplici, con i dettagli tecnici a un tocco di distanza
   - DNS, rotte e indirizzi seguiti dal controller fino all'hub
   - Il token ZTNET e gli IP pubblici dei membri non arrivano mai al browser
 coverAlt: >-
-  La mappa di Netmap con "Sei connesso", i tuoi dispositivi, l'hub al centro e un'isola per ogni persona
+  La mappa di Netmap con "Sei connesso tramite un relay", l'hub al centro e un'isola per ogni persona
 ---
 import { Image } from 'astro:assets';
-import map from '../../assets/projects/netmap/map.png';
-import devices from '../../assets/projects/netmap/devices.png';
-import stats from '../../assets/projects/netmap/stats.png';
-import phone from '../../assets/projects/netmap/phone.png';
+import map from '../../assets/projects/netmap/device.png';
+import devices from '../../assets/projects/netmap/device-list.png';
+import stats from '../../assets/projects/netmap/network.png';
+import big from '../../assets/projects/netmap/big-network.png';
+import phone from '../../assets/projects/netmap/phone-map.png';
 
 ## Perché l'ho creato
 
 ZTNET rende facile amministrare una rete ZeroTier, ma non offre agli altri membri alcuna visione della rete.
-Netmap è una pagina che ogni membro può aprire da qualsiasi dispositivo all'interno della rete: indica in
-linguaggio semplice se il dispositivo è connesso e come, direttamente o tramite relay, con latenza, indirizzi IP e
-versioni del client disponibili su richiesta. Non richiede alcun account e non può modificare la rete.
+Netmap è una pagina che ogni membro può aprire da qualsiasi dispositivo all'interno della rete: dice in parole
+semplici se il dispositivo è connesso e come, direttamente o tramite un relay ("funziona, solo un po' più lento"),
+con latenza, indirizzi e versioni del client a un tocco di distanza. Non richiede alcun account e non può
+modificare la rete.
 
-La versione 0.1.0 è riscritta da zero: una nuova mappa, una nuova impaginazione e un nuovo server.
+La versione 0.1.0 è riscritta da zero: un'app web Flutter in Material 3 Expressive, una nuova mappa e un nuovo
+server.
 
 ## La mappa
 
-L'hub sta al centro, i dispositivi di chi guarda sono evidenziati e ogni persona con due o più dispositivi ha la
-sua isola. Ogni collegamento è disegnato come diretto, via relay oppure a senso unico; selezionando un dispositivo
-se ne vedono la posizione, la qualità del collegamento e la disponibilità nelle ultime 24 ore.
+La mappa è la pagina iniziale: una costellazione con l'hub al centro, i dispositivi di chi guarda evidenziati e
+un'isola per ogni persona con due o più dispositivi. Ogni dispositivo è un cerchio con il colore, l'icona e la
+parola del suo collegamento, e ogni linea è disegnata come diretta, tramite relay o a senso unico. Accanto, un
+pannello dice come sei connesso, copia il tuo indirizzo, conta chi è online, elenca i servizi con un pulsante Apri
+e mostra l'attività recente. Selezionando un dispositivo lo si vede spiegato in parole semplici, con i dettagli
+tecnici raccolti sotto.
 
-<Image src={map} alt="Un dispositivo aperto sulla mappa: a casa, il collegamento più veloce, online il 96% delle ultime 24 ore" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={map} alt="Un dispositivo aperto sulla mappa: un collegamento a senso unico, l'hub lo raggiunge ma non risponde da quattro minuti" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+Vista da lontano su una rete grande, la mappa tiene un'isola per persona con quanti dei suoi dispositivi sono
+online.
+
+<Image src={big} alt="Una rete di 190 dispositivi vista da lontano: un'isola per persona attorno all'hub" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Dispositivi e storico
 
-- **Statistiche di latenza**: mediana, 95° percentile e jitter, e ogni dispositivo confrontato con sé
+- **Una latenza che dice qualcosa**: mediana, 95° percentile e jitter, e ogni dispositivo confrontato con sé
   stesso la settimana prima.
 - **Configurato, ricevuto, applicato**: DNS, rotte e indirizzi seguiti dal controller fino all'hub, così vedi dove
   si interrompe la catena.
 - **Cosa è cambiato**: disconnessioni, cambi di percorso e picchi di latenza. Tre dispositivi che cadono nello
   stesso controllo sono un solo incidente, di solito la connessione dell'hub, non tre.
-- **Disponibilità nelle 24 ore** in intervalli da 24 minuti, e un istogramma della latenza a 30 giorni per ogni
-  dispositivo. Finché lo storico non si riempie, gli slot vuoti restano vuoti: la pagina non mostra mai dati che
-  non ha.
+- **Disponibilità nelle 24 ore** in celle da 24 minuti, 30 giorni di traffico e chi usa di più la rete. Finché lo
+  storico non si riempie, gli slot vuoti restano vuoti: la pagina non mostra mai dati che non ha.
 - **Elenco dei servizi**: cosa puoi raggiungere all'interno della rete, come collegarti e se risponde in questo
-  momento.
+  momento, ognuno con la sua icona, recuperata dal server così il browser non contatta mai il servizio.
 
-<Image src={devices} alt="Tutti i dispositivi con percorso e latenza, e i dettagli tecnici di un dispositivo" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={devices} alt="Tutti i dispositivi raggruppati per persona, e un dispositivo in parole semplici: connesso direttamente via internet, tutto bene" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-<Image src={stats} alt="Prestazioni della rete: latenza per dispositivo, i più lenti rispetto alla settimana scorsa e la disponibilità nelle 24 ore" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={stats} alt="La pagina della rete: impostazioni configurate, ricevute e applicate, latenza per dispositivo, disponibilità nelle 24 ore, 30 giorni di traffico e versioni di ZeroTier" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Come funziona
 
-Un piccolo server Node.js interroga l'API REST di ZTNET per i membri e la configurazione della rete, e il servizio
+Un server TypeScript interroga l'API REST di ZTNET per i membri e la configurazione della rete, e il servizio
 ZeroTier locale per latenza, tipi di percorso, versioni del client e cosa è arrivato all'hub. Ogni controllo viene
 confrontato con il precedente per generare gli eventi, e una nuova istantanea viene inviata a ogni pagina aperta
-tramite Server-Sent Events. Il server è un unico bundle senza `node_modules`, e il front end SvelteKit è statico,
-con font e librerie inclusi, così funziona anche senza accesso a internet. Parla inglese e italiano, da computer
-o da telefono.
+tramite Server-Sent Events. Il server è un unico bundle senza `node_modules`, e il contratto dell'API è scritto una
+volta in TypeScript e rispecchiato in Dart.
+
+L'app è Flutter per il web, compilata in WebAssembly dove il browser lo supporta e in JavaScript altrove, con
+motore, font e icone inclusi: niente arriva da una CDN, così funziona anche senza accesso a internet. Ogni stato ha
+un colore, un'icona e una parola, mai solo il colore, con contrasto AA in entrambi i temi, supporto per tastiera e
+screen reader e rispetto della riduzione del movimento. Parla inglese e italiano, da computer o da telefono, e
+gli screenshot di questa pagina li disegnano i suoi test golden.
 
 Gira come container che condivide la rete del container ZeroTier: è raggiungibile solo dall'interno della rete
 ZeroTier e non pubblica nessuna porta sull'host. Lo storico sopravvive ai riavvii in un file scritto in modo
 atomico.
 
 <div class="flex justify-center not-prose">
-  <Image src={phone} alt="Netmap su un telefono" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
+  <Image src={phone} alt="Netmap su un telefono: la mappa con le isole e il pannello che dice che sei connesso tramite un relay" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
 </div>
 
 ## Privacy

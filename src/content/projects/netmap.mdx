@@ -2,80 +2,93 @@
 title: Netmap
 tagline: A live map and dashboard for a ZeroTier network.
 summary: >-
-  A read-only page for the members of a private ZeroTier network managed with ZTNET. It shows each member whether they are connected and how: a map of every device around the hub, direct or relayed links
-  with their latency, 24-hour availability, what changed and when, and the services you can reach inside the
-  network.
+  A read-only page for the members of a private ZeroTier network managed with ZTNET. It shows who is connected,
+  how, and how well: a map of every device around the hub, direct or relayed links with their latency, 24-hour
+  availability, what changed and when, and the services you can reach inside the network.
 kind: tool
 order: 7
 group: network
 featured: true
 repo: netmap
 platforms: [Docker (amd64, arm64), Node.js 22+]
-stack: [SvelteKit, Svelte 5, TypeScript, Node.js, Docker, ZeroTier]
+stack: [Flutter, Dart, TypeScript, Node.js, Docker, ZeroTier]
 highlights:
-  - Connection status in plain language, with technical details on demand
+  - Connection status in plain words, with the technical details one tap away
   - DNS, routes and addresses followed from the controller to the hub
   - The ZTNET token and members' public IPs never reach the browser
-logo: ../../assets/projects/netmap/netmap.png
-cover: ../../assets/projects/netmap/overview.png
-coverDark: ../../assets/projects/netmap/overview-dark.png
-coverAlt: Netmap's map with "You're connected", your devices, the hub in the middle and one island per person
+logo: ../../assets/projects/netmap/netmap-logo.png
+cover: ../../assets/projects/netmap/home.png
+coverDark: ../../assets/projects/netmap/home-dark.png
+coverAlt: Netmap's map with "You're connected through a relay", the hub in the middle and one island per person
 links:
   - { label: GitHub, url: 'https://github.com/ales-drnz/netmap' }
 ---
 import { Image } from 'astro:assets';
-import map from '../../assets/projects/netmap/map.png';
-import devices from '../../assets/projects/netmap/devices.png';
-import stats from '../../assets/projects/netmap/stats.png';
-import phone from '../../assets/projects/netmap/phone.png';
+import map from '../../assets/projects/netmap/device.png';
+import devices from '../../assets/projects/netmap/device-list.png';
+import stats from '../../assets/projects/netmap/network.png';
+import big from '../../assets/projects/netmap/big-network.png';
+import phone from '../../assets/projects/netmap/phone-map.png';
 
 ## Why I built it
 
 ZTNET makes a ZeroTier network easy to administer, but gives its other members no view of it. Netmap is a page
-every member can open from any device inside the network: it states in plain language whether the device is
-connected and how, directly or through a relay, with latency, IP addresses and client versions available on
-demand. It needs no account and cannot change the network.
+every member can open from any device inside the network: it says in plain words whether the device is connected
+and how, directly or through a relay ("it works, just slower"), with latency, addresses and client versions one
+tap away. It needs no account and cannot change the network.
 
-Version 0.1.0 is a rewrite from scratch: a new map, a new layout and a new server.
+Version 0.1.0 is a rewrite from scratch: a Flutter web app in Material 3 Expressive, a new map and a new server.
 
 ## The map
 
-The hub sits in the middle, the viewer's own devices are highlighted, and every person with two or more devices
-has an island. Each link is drawn as direct, relayed or one-way; selecting a device shows its location, link
-quality and availability over the last 24 hours.
+The map is the home page: a constellation with the hub in the middle, the viewer's own devices highlighted and
+one island for every person with two or more devices. Every device is a circle with the colour, icon and word of
+its link, and every line is drawn as direct, through a relay or one-way. Beside it, a panel says how you are
+connected, copies your address, counts who is online, lists the services with an Open button and shows the
+latest activity. Selecting a device explains it in plain words, with the technical details folded underneath.
 
-<Image src={map} alt="A device opened on the map: at home, the fastest link, online 96% of the last 24 hours" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={map} alt="A device opened on the map: a one-way link, the hub reaches it but it hasn't answered for four minutes" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+Zoomed out on a big network, the map keeps one island per person with how many of their devices are online.
+
+<Image src={big} alt="A network of 190 devices from afar: one island per person around the hub" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Devices and history
 
-- **Latency statistics**: median, 95th percentile and jitter, and each device compared with itself
+- **Latency that means something**: median, 95th percentile and jitter, and each device compared with itself
   the week before.
 - **Configured, received, applied**: DNS, routes and addresses followed from the controller to the hub, so you
   see where the chain breaks.
 - **What changed**: disconnections, path changes and latency spikes. Three devices dropping in the same poll are
   one incident, usually the hub's connection, not three.
-- **24-hour availability** in 24-minute buckets, and a 30-day latency histogram per device. Until the history
-  fills up, empty slots stay empty: the page never shows data it doesn't have.
+- **24-hour availability** in 24-minute cells, 30 days of traffic, and who uses the network most. Until the
+  history fills up, empty slots stay empty: the page never shows data it doesn't have.
 - **Services directory**: what you can reach inside the network, how to connect, and whether it answers right
-  now.
+  now, each with its own icon, fetched by the server so the browser never contacts the service.
 
-<Image src={devices} alt="Every device with its path and latency, and the technical details of one device" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={devices} alt="Every device grouped by person, and one device in plain words: connected directly over the internet, all good" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-<Image src={stats} alt="Performance of the network: latency by device, the slowest compared with last week, and availability over 24 hours" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={stats} alt="The network page: configured, received and applied settings, latency by device, 24-hour availability, 30 days of traffic and ZeroTier versions" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## How it works
 
-A small Node.js server polls ZTNET's REST API for the members and the network configuration, and the local
-ZeroTier service for latency, path types, client versions and what reached the hub. Each poll is compared with
-the previous one to produce events, and a new snapshot is pushed to every open page over Server-Sent Events.
-The server is a single bundle with no `node_modules`, and the SvelteKit front end is static, with fonts and
-libraries included, so it works with no internet access. It speaks English and Italian, on a desktop or a phone.
+A TypeScript server polls ZTNET's REST API for the members and the network configuration, and the local ZeroTier
+service for latency, path types, client versions and what reached the hub. Each poll is compared with the
+previous one to produce events, and a new snapshot is pushed to every open page over Server-Sent Events. The
+server is a single bundle with no `node_modules`, and the API contract is written once in TypeScript and mirrored
+in Dart.
+
+The app is Flutter for the web, built to WebAssembly where the browser supports it and to JavaScript elsewhere,
+with the engine, fonts and icons bundled: nothing comes from a CDN, so it works with no internet access. Every
+state has a colour, an icon and a word, never colour alone, with AA contrast in both themes, keyboard and screen
+reader support and reduced motion respected. It speaks English and Italian, on a desktop or a phone, and
+golden tests draw the screenshots on this page.
 
 It runs as a container sharing the ZeroTier container's network: it is reachable only from inside the ZeroTier
 network and publishes no port on the host. History survives restarts in a file written atomically.
 
 <div class="flex justify-center not-prose">
-  <Image src={phone} alt="Netmap on a phone" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
+  <Image src={phone} alt="Netmap on a phone: the map with the islands, and the panel saying you're connected through a relay" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
 </div>
 
 ## Privacy

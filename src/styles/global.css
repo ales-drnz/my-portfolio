@@ -31,8 +31,6 @@
   --c-disc: #ffffff;
   /* the mark, from the brand kit */
   --c-mark: #3e7a0e;
-  --c-wave: #11131838;
-  --c-wave-hot: #3e7a0e4a;
   /* floating screenshots: a long soft shadow and a hairline ring */
   --c-shadow: 0 46px 80px -38px rgb(17 19 24 / 0.42), 0 16px 30px -16px rgb(17 19 24 / 0.25);
   --c-ring: 0 0 0 1px rgb(17 19 24 / 0.07);
@@ -58,47 +56,9 @@
   --c-ramp-4: #c6f432;
   --c-disc: #22252b;
   --c-mark: #c6f432;
-  --c-wave: #ededed2c;
-  --c-wave-hot: #c6f4323a;
   --c-shadow: 0 50px 90px -40px rgb(0 0 0 / 0.85), 0 18px 36px -18px rgb(0 0 0 / 0.6);
   --c-ring: 0 0 0 1px rgb(255 255 255 / 0.07);
   color-scheme: dark;
-}
-
-/* the inverted ground: paper in the dark theme, ink in the light one (the "built with" band on the home) */
-.ground-invert {
-  --c-bg: #17191d;
-  --c-surface: #1e2126;
-  --c-surface-2: #262a30;
-  --c-border: #2e3239;
-  --c-border-strong: #3c414a;
-  --c-fg: #ededed;
-  --c-muted: #a3a6ae;
-  --c-subtle: #71757e;
-  --c-accent: #c6f432;
-  --c-accent-soft: #2a3312;
-  --c-on-accent: #17191d;
-  --c-star: #c6f432;
-  --c-shadow: 0 50px 90px -40px rgb(0 0 0 / 0.85), 0 18px 36px -18px rgb(0 0 0 / 0.6);
-  --c-ring: 0 0 0 1px rgb(255 255 255 / 0.07);
-  color-scheme: dark;
-}
-[data-theme="dark"] .ground-invert {
-  --c-bg: #f2f2ef;
-  --c-surface: #ffffff;
-  --c-surface-2: #e6e6e1;
-  --c-border: #dcdcd6;
-  --c-border-strong: #cfcfc9;
-  --c-fg: #111318;
-  --c-muted: #5c5f68;
-  --c-subtle: #7d8089;
-  --c-accent: #3e7a0e;
-  --c-accent-soft: #e3edd2;
-  --c-on-accent: #ffffff;
-  --c-star: #3e7a0e;
-  --c-shadow: 0 46px 80px -38px rgb(17 19 24 / 0.45), 0 16px 30px -16px rgb(17 19 24 / 0.28);
-  --c-ring: 0 0 0 1px rgb(17 19 24 / 0.07);
-  color-scheme: light;
 }
 
 /* ------------------------------------------------------------
@@ -186,21 +146,6 @@
 }
 [data-theme="dark"] .brand-icon {
   color: color-mix(in oklab, var(--brand) 72%, white);
-}
-
-/* the glyph waves of the banners, behind the whole site: see SiteWaves.astro */
-.site-waves {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  pointer-events: none;
-  /* the blur turns the glyphs into a soft texture, and the mask veils them behind the content column */
-  filter: blur(1.2px);
-  --veil: linear-gradient(90deg, #000 0, rgb(0 0 0 / 0.3) calc(50% - 480px), rgb(0 0 0 / 0.3) calc(50% + 480px), #000 100%);
-  -webkit-mask-image: var(--veil);
-  mask-image: var(--veil);
 }
 
 /* hover for interactive cards: a fixed accent border, no movement. It sits in a pseudo-element above
@@ -391,6 +336,15 @@
   letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+/* the icon on a figure, cropped to its ink (Symbol trim): as tall as the digits, sitting on their baseline */
+.fig-i {
+  display: inline-block;
+  height: 0.74em;
+  width: auto;
+  margin-right: 0.16em;
+  vertical-align: baseline;
+  color: var(--c-accent);
 }
 .fig-n small {
   margin-left: 3px;

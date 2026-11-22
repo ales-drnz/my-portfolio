@@ -1,7 +1,7 @@
 ---
 // One icon family for the UI: Material Symbols Rounded, inline (see lib/symbols.ts).
 // Brand marks stay on BrandIcon.astro (simple-icons) and Icon.astro (social marks).
-import { symbolPaths } from '../lib/symbols';
+import { inkBox, symbolPaths } from '../lib/symbols';
 
 interface Props {
   /** the symbol's file name, e.g. "star", "arrow_outward" */
@@ -12,14 +12,17 @@ interface Props {
   class?: string;
   /** an accessible name; without it the icon is decorative */
   label?: string;
+  /** crop to the glyph's ink, for an icon that must match the height of the text beside it */
+  trim?: boolean;
 }
 
-const { name, fill = false, size = 20, class: className, label } = Astro.props;
+const { name, fill = false, size = 20, class: className, label, trim = false } = Astro.props;
+const box = trim ? inkBox(name) : [0, -960, 960, 960];
 ---
 
 <svg
-  viewBox="0 -960 960 960"
-  width={size}
+  viewBox={box.join(' ')}
+  width={Math.round((size * box[2]) / box[3])}
   height={size}
   fill="currentColor"
   class:list={['symbol', className]}

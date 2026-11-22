@@ -1,6 +1,8 @@
 ---
-// Spoken languages as one line each: name, level, and what backs it.
-import type { Language } from '../lib/site';
+/* Spoken languages under the education timeline, on its columns: the label where the dates are, then one block
+   per language with a round flag, a six-step CEFR bar (A1 to C2, filled up to the level; full for a native
+   speaker, with the same scale under it so the blocks line up) and what backs the level. */
+import { CEFR, type Language } from '../lib/site';
 import { t, type Lang } from '../lib/i18n';
 
 interface Props {
@@ -10,22 +12,66 @@ interface Props {
 
 const { languages, lang } = Astro.props;
 const T = t(lang).languages;
+const filled = (l: Language) => (l.level === 'native' ? CEFR.length : CEFR.indexOf(l.level) + 1);
 ---
 
 <div class="langs">
-  <h3 class="eyebrow">{T.title}</h3>
-  <ul>
+  <h3 class="langs-k">{T.title}</h3>
+  <ul class="langs-list">
     {
       languages.map((l) => (
-        <li>
-          <b>{l.name}</b>
-          <span class="lv" title={l.level === 'native' ? T.nativeSpeaker : `${T.cefr} ${l.level}`}>
-            {l.level === 'native' ? T.native : l.level}
-          </span>
-          <span class="txt">
+        <li class="lang">
+          <p class="lang-head">
+            <span class="flag" aria-hidden="true">
+              {l.flag === 'it' ? (
+                <svg viewBox="0 0 3 3">
+                  <rect width="1" height="3" fill="#009246" />
+                  <rect x="1" width="1" height="3" fill="#ffffff" />
+                  <rect x="2" width="1" height="3" fill="#ce2b37" />
+                </svg>
+              ) : (
+                <svg viewBox="15 0 30 30">
+                  <clipPath id="gb-t">
+                    <path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z" />
+                  </clipPath>
+                  <path d="M0,0 v30 h60 v-30 z" fill="#012169" />
+                  <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6" />
+                  <path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#gb-t)" stroke="#c8102e" stroke-width="4" />
+                  <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10" />
+                  <path d="M30,0 v30 M0,15 h60" stroke="#c8102e" stroke-width="6" />
+                </svg>
+              )}
+            </span>
+            <b>{l.name}</b>
+            <span class="lang-lv">{l.level === 'native' ? T.native : l.level}</span>
+          </p>
+          <div
+            class="cefr"
+            role="img"
+            aria-label={l.level === 'native' ? T.nativeSpeaker : `${T.cefr} ${l.level}`}
+            style={`--n:${filled(l)}`}
+          >
+            <span class="cefr-bar">
+              {CEFR.map((_, i) => (
+                <i class:list={[i < filled(l) && 'on']} />
+              ))}
+            </span>
+            <span class="cefr-steps" aria-hidden="true">
+              {CEFR.map((c) => (
+                <i class:list={[c === l.level && 'on']}>{c}</i>
+              ))}
+            </span>
+          </div>
+          <p class="lang-note">
             {l.levelLabel}
-            {l.certificate && <> · {l.certificate.name}{l.certificate.score && ` (${l.certificate.score})`}</>}
-          </span>
+            {l.certificate && (
+              <>
+                {' · '}
+                {l.certificate.name}
+                {l.certificate.score && `, ${l.certificate.score}`}
+              </>
+            )}
+          </p>
         </li>
       ))
     }
@@ -33,25 +79,111 @@ const T = t(lang).languages;
 </div>
 
 <style>
-  ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2) var(--s-5);
-    margin: var(--s-2) 0 0;
+  /* the timeline's columns: 10.5rem of dates, a 20px rail, the text; gaps of 14px */
+  .langs {
+    display: grid;
+    grid-template-columns: 10.5rem minmax(0, 1fr);
+    column-gap: calc(14px + 20px + 14px);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--c-border);
+  }
+  .langs-k {
+    margin: 0;
+    padding-top: 3px;
+    text-align: right;
+    font: 500 11px var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-subtle);
+  }
+  .langs-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: var(--s-3) var(--s-5);
+    margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 15px;
   }
-  b {
+  p {
+    margin: 0;
+  }
+  .lang-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+  }
+  .flag {
+    flex: none;
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--c-border);
+  }
+  .flag svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .lang-head b {
     font-weight: 600;
-    margin-right: var(--s-1);
+    letter-spacing: -0.01em;
   }
-  .lv {
-    margin-right: var(--s-1);
-    font: 12px var(--font-mono);
+  .lang-lv {
+    margin-left: auto;
+    font: 500 12px var(--font-mono);
     color: var(--c-accent);
   }
-  .txt {
+
+  /* six steps, filled up to the level */
+  .cefr {
+    margin-top: 12px;
+  }
+  .cefr-bar,
+  .cefr-steps {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .cefr-bar i {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--c-surface-2);
+  }
+  :global([data-theme='light']) .cefr-bar i {
+    background: var(--c-border-strong);
+  }
+  .cefr-bar i.on {
+    background: var(--c-accent);
+  }
+  .cefr-steps {
+    margin-top: 6px;
+  }
+  .cefr-steps i {
+    font: normal 10px var(--font-mono);
+    text-align: center;
+    color: var(--c-subtle);
+  }
+  .cefr-steps i.on {
+    font-weight: 600;
+    color: var(--c-accent);
+  }
+  .lang-note {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--c-muted);
+  }
+
+  @media (max-width: 767px) {
+    .langs {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--s-2);
+    }
+    .langs-k {
+      text-align: left;
+    }
   }
 </style>
