@@ -128,6 +128,8 @@
     /* the opsz axis follows the font size: tighter, sturdier shapes for the big headlines */
     font-optical-sizing: auto;
     scroll-behavior: smooth;
+    /* every in-page link lands just under the sticky 56px header */
+    scroll-padding-top: 56px;
   }
   ::selection {
     background: var(--c-accent);

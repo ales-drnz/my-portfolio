@@ -673,7 +673,6 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   /* ---------- the calm part ---------- */
   .calm {
     padding-block: var(--sec);
-    scroll-margin-top: 56px;
   }
   .calm-title {
     margin-top: var(--s-2);
@@ -840,7 +839,6 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   .showcase {
     padding-block: var(--band);
     border-top: 1px solid var(--c-border);
-    scroll-margin-top: 56px;
   }
   .showcase-head {
     text-align: center;
@@ -952,7 +950,6 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   /* ---------- calm sections: a 4 / 8 split of the 12 columns, ruled from each other ---------- */
   .sec {
     padding-top: var(--sec);
-    scroll-margin-top: 56px;
   }
   /* the rule between sections spans the content column, not the gutters */
   .sec + .sec .sec-grid {
@@ -1092,12 +1089,27 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   }
 
   /* ---------- contact ---------- */
+  /* the last section is a whole screen, its content centred: the Contact link can put it right under the
+     header like every other section (a shorter one would stop where the page ends) */
   .contact {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100svh - 56px);
     padding-top: var(--sec);
     text-align: center;
   }
+  .contact > .wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
   .contact-inner {
-    padding-top: var(--band);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-block: var(--band);
     border-top: 1px solid var(--c-border);
   }
   .contact-title {
