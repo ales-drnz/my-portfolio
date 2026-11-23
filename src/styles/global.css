@@ -76,6 +76,8 @@
   --s-4: 32px;
   --s-5: 48px;
   --pad-x: 16px;
+  /* the corner of every box: screenshots, cards, panels. Icons, phone frames and pills keep their own */
+  --r-box: 6px;
 }
 @media (min-width: 640px) {
   :root {
@@ -97,9 +99,10 @@
   }
 }
 
-/* every box on the site shares one corner: 2xl matches xl (12px) instead of Tailwind's 16px */
+/* every box on the site shares one corner, --r-box: rounded-xl and rounded-2xl both use it */
 @theme {
-  --radius-2xl: 0.75rem;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
 }
 
 @theme inline {
@@ -394,7 +397,7 @@
   display: block;
   padding: 0;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--r-box);
   overflow: hidden;
   background: var(--c-surface-2);
   box-shadow: var(--c-shadow), var(--c-ring);
