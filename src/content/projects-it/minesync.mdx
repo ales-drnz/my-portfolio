@@ -1,82 +1,109 @@
 ---
-tagline: Sincronizzazione versionata di server Minecraft per gruppi che li ospitano sui propri PC.
+tagline: Un server Minecraft, condiviso tra amici su una rete ZeroTier.
 summary: >-
-  Sincronizza la cartella di un server Minecraft, vanilla o con mod (Forge, NeoForge, Fabric, Quilt), tra i PC di un
-  gruppo su una rete ZeroTier privata. Un hub self-hosted conserva ogni mondo con tutta la sua storia; il client
-  prende un lock esclusivo, scarica solo i file cambiati, avvia il server e carica una nuova versione ogni cinque
-  minuti.
+  Un hub self-hosted conserva i server Minecraft di un gruppo, vanilla o con mod, con tutta la loro storia. Chi vuole
+  giocare preme Gioca: l'app desktop scarica cosa è cambiato, avvia il server su quel PC e salva sull'hub mentre
+  tutti giocano. Gli altri entrano tramite una rete ZeroTier privata, senza account né password.
 highlights:
-  - Un solo host alla volta, con un lock che scade se l'host si blocca
-  - Mondi versionati, ripristinabili per intero o un file alla volta
-  - Il traffico di gioco passa direttamente tra i giocatori e l'host
-coverAlt: Il client di MineSync mentre ospita una sessione, con la console del server, i giocatori online e l'indirizzo per entrare
+  - Un solo host alla volta, con un lock che mostra quando un host smette di rispondere
+  - Salvato ogni pochi minuti senza fermare il gioco, e ogni salvataggio è una versione
+  - Mod del server da Modrinth, e il pacchetto per i giocatori pronto per il launcher
+coverAlt: >-
+  La home dell'app MineSync, con ogni server, chi lo ospita e l'indirizzo per entrare, e l'attività più recente
 ---
 import { Image } from 'astro:assets';
-import overview from '../../assets/projects/minesync/overview.png';
 import server from '../../assets/projects/minesync/server.png';
-import history from '../../assets/projects/minesync/history.png';
-import players from '../../assets/projects/minesync/players.png';
+import session from '../../assets/projects/minesync/session.png';
 import mods from '../../assets/projects/minesync/mods.png';
-import tuiHome from '../../assets/projects/minesync/tui-home.png';
-import tuiServer from '../../assets/projects/minesync/tui-server.png';
-import tuiHistory from '../../assets/projects/minesync/tui-history.png';
+import history from '../../assets/projects/minesync/history.png';
+import hub from '../../assets/projects/minesync/hub.png';
+import hubAdmin from '../../assets/projects/minesync/hub-admin.png';
+import phoneHome from '../../assets/projects/minesync/phone-home.png';
+import phoneServer from '../../assets/projects/minesync/phone-server.png';
+import phoneDownload from '../../assets/projects/minesync/phone-download.png';
 
 ## Contesto
 
 Un mondo Minecraft condiviso ha bisogno di un host. Un server dedicato aggiunge costi e manutenzione, e quando
-l'host è il PC di uno dei membri, il mondo è disponibile solo finché quel PC è acceso. MineSync permette a
-qualsiasi membro del gruppo di ospitarlo: il mondo risiede su un hub, e ogni sessione parte dalla sua ultima
-versione.
+l'host è il PC di un amico, il mondo c'è solo finché quel PC è acceso. Con MineSync chiunque nel gruppo può
+ospitare: il mondo vive su un piccolo hub, per esempio su un NAS, e ogni sera riparte dalla sua ultima versione sul
+PC di chi preme Gioca.
 
-## Ospitare una sessione
+La versione 0.1.0 è riscritta in Dart e Flutter: l'hub, le sue pagine web, un'app desktop per Windows, macOS e Linux
+e una riga di comando, che condividono un unico protocollo e un unico motore di sincronizzazione.
 
-Il client elenca i server presenti sull'hub. Avviarne uno prende il lock, così ospita un solo membro alla volta,
-poi scarica i file cambiati dall'ultima sessione, sceglie un runtime Java compatibile e avvia il server con una
-console integrata. Ogni cinque minuti salva il mondo e carica una nuova versione; all'arresto del server carica lo
-stato finale e rilascia il lock.
+## Giocare
 
-- **Lock esclusivo**: mantenuto attivo da un heartbeat e rilasciato dopo 90 secondi se l'host si blocca.
-- **Le modifiche locali sono preservate**: quelle mai arrivate all'hub vengono caricate prima, quando è sicuro,
-  oppure conservate in un backup se nel frattempo ha ospitato qualcun altro.
-- **Funzionamento senza supervisione**: il server si arresta dopo 30 minuti senza giocatori online e si riavvia
-  automaticamente dopo un crash, fino a due volte.
-- **Indirizzo fisso**: l'hub può servire il DNS per `zerotier.<server>.internal`, che punta all'host corrente,
-  così i giocatori tengono un solo indirizzo in Minecraft.
+La home elenca ogni server, chi lo sta ospitando e l'indirizzo per entrare. Premendo **Gioca** l'app prende il lock
+del server sull'hub, così due persone non avviano mai lo stesso mondo, scarica cosa è cambiato dall'ultima
+sessione, trova una versione di Java adatta sul PC e avvia il server.
 
-<div class="grid sm:grid-cols-3 gap-4 not-prose">
-  <Image src={tuiHome} alt="Client: i server e l'attività recente" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
-  <Image src={tuiServer} alt="Client: stato di un server, copia locale e storico" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
-  <Image src={tuiHistory} alt="Client: tutte le versioni di un server" widths={[600, 1200]} sizes="(min-width: 768px) 240px, 100vw" class="rounded-xl" />
-</div>
+- **Salvato mentre giochi**: ogni cinque minuti l'app chiede al server di scrivere il mondo su disco, ne fa
+  un'istantanea e carica in background cosa è cambiato, entro un limite di banda. Il gioco non si ferma mai; alla
+  chiusura carica lo stato finale e libera il lock.
+- **Un host che smette di rispondere** viene mostrato come tale: può riprendere dallo stesso PC, e un admin può
+  liberare il server dopo due conferme.
+- **Niente si perde a sorpresa**: le modifiche su un PC che non sono mai arrivate all'hub vengono conservate e
+  mostrate, mai sovrascritte, e le cancellazioni di massa o i salvataggi su una base vecchia vengono rifiutati.
+- **Una vera sessione del server**: i passaggi dall'aggiornamento all'arresto, una console con filtri e comandi, i
+  giocatori online, i riavvii dopo un crash e un arresto automatico quando non c'è nessuno da un po'. L'hub
+  controlla che la porta dell'host risponda.
+
+<Image src={server} alt="Un server che qualcuno sta ospitando: gioca bob, con l'indirizzo fisso da copiare e cosa serve per entrare" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+<Image src={session} alt="La tua sessione: i passaggi dall'aggiornamento all'arresto, la console con avvisi ed errori, l'indirizzo e il test della porta" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Mod e pacchetto per i giocatori
+
+La scheda Mod elenca le mod di un server con le loro icone, ne trova di nuove su Modrinth con le loro dipendenze e
+propone gli aggiornamenti compatibili con la versione di Minecraft e il loader del server. Le modifiche vengono
+raccolte prima e applicate insieme al Gioca successivo. Ogni mod dice dove serve, sul server, ai giocatori o a
+entrambi, e da quella lista l'hub costruisce il **pacchetto per i giocatori**, pronto per Prism Launcher o il
+launcher ufficiale. I nuovi server partono da zero, da un modpack di Modrinth o un `.mrpack`, o da una cartella di
+server che hai già.
+
+<Image src={mods} alt="La scheda Mod: aggiornamenti, mod installate con il loro lato, e ricerca su Modrinth" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## Cronologia
+
+Ogni salvataggio è una versione con un autore, un orario e i file cambiati. Tornare a una versione non cancella mai
+quelle più recenti: aggiunge una nuova versione con il contenuto vecchio, e ogni versione si può scaricare come
+ZIP. I file sono divisi in pezzi salvati una volta sola in base al loro hash, così cento versioni di un mondo costano
+poco più di una. Di base l'hub tiene le ultime 30 versioni, tutte quelle delle ultime 24 ore e una al giorno per una
+settimana, e prima di fare pulizia mostra cosa verrebbe rimosso.
+
+<Image src={history} alt="La cronologia di un server: ogni salvataggio con il suo autore e i file aggiunti, cambiati o rimossi, e Ripristina" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## L'hub
 
-Un unico binario Go statico, distribuito come container Docker su una macchina sempre accesa, per esempio un
-NAS. L'archiviazione è indirizzata per contenuto (SHA-256, con i file di regione divisi in blocchi), quindi ogni
-versione salva solo ciò che è cambiato. Ogni versione si può ripristinare, come mondo intero o come singolo file,
-oppure esportare in ZIP. La pulizia automatica non rimuove mai le ultime 24 ore e conserva una versione al giorno
-per una settimana.
-
-L'interfaccia web mostra l'host corrente e l'indirizzo per entrare, i dettagli del mondo, i giocatori, le mod e
-tutto lo storico. L'hub può anche verificare che la porta di gioco dell'host sia raggiungibile e pubblicare su
-Telegram quando un server si apre o si chiude.
-
-<Image src={overview} alt="Interfaccia web: i server, gli host correnti e l'attività in tempo reale" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+L'hub è un programma Dart in una piccola immagine Docker multi-architettura, che gira accanto a ZeroTier su una
+macchina sempre accesa ed è raggiungibile solo dall'interno della rete ZeroTier. Le sue pagine web, in Flutter per
+il web, mostrano i server, l'attività e i download, e un'area Admin raccoglie le regole della cronologia, la
+protezione, le sessioni, i membri, il DNS e Telegram, ognuna applicata subito senza riavvio. Un DNS integrato
+opzionale fa puntare `zerotier.<server>.<zona>` a chi ospita quella sera, così l'indirizzo in Minecraft non cambia
+mai, e un bot Telegram avvisa quando un server si apre e si chiude.
 
 <div class="grid sm:grid-cols-2 gap-4 not-prose">
-  <Image src={server} alt="Interfaccia web: un server ospitato, con il suo indirizzo e i dettagli del mondo" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
-  <Image src={history} alt="Interfaccia web: storico con ripristino e download" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
-  <Image src={players} alt="Interfaccia web: i giocatori e le loro statistiche" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
-  <Image src={mods} alt="Interfaccia web: le mod con i loro dettagli" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={hub} alt="Le pagine web dell'hub: i server, chi sta giocando, lo spazio su disco e l'attività" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
+  <Image src={hubAdmin} alt="L'area Admin: ZTNET, disco, Telegram e aggiornamenti a colpo d'occhio, e le impostazioni generali" widths={[600, 1200]} sizes="(min-width: 768px) 360px, 100vw" class="rounded-xl" />
 </div>
 
-## Accesso e sicurezza
+Da telefono le stesse pagine permettono di seguire server, cronologia e giocatori; per giocare e ospitare serve
+l'app su un PC.
 
-MineSync non ha password né token propri. L'hub gira dentro la rete del container ZeroTier e identifica ogni
-richiesta tramite ZTNET, quindi l'accesso segue l'appartenenza alla rete: aggiungere un giocatore significa
-autorizzarlo in ZTNET. L'hub coordina soltanto le sessioni; il traffico di gioco passa direttamente tra i giocatori
-e l'host.
+<div class="grid grid-cols-3 gap-3 not-prose">
+  <Image src={phoneHome} alt="Da telefono: i server e i numeri dell'hub" widths={[260, 520]} sizes="(min-width: 768px) 230px, 33vw" class="rounded-xl" />
+  <Image src={phoneServer} alt="Da telefono: un server in gioco, con le sue schede" widths={[260, 520]} sizes="(min-width: 768px) 230px, 33vw" class="rounded-xl" />
+  <Image src={phoneDownload} alt="Da telefono: il download dell'app desktop, passo per passo" widths={[260, 520]} sizes="(min-width: 768px) 230px, 33vw" class="rounded-xl" />
+</div>
 
-I client si aggiornano dall'hub. Ogni download viene verificato con checksum SHA-256 e, se configurata, con una
-firma ed25519, e i downgrade vengono rifiutati. Il client, l'interfaccia web e il bot Telegram sono disponibili in
-inglese e italiano.
+## Accesso e aggiornamenti
+
+MineSync non ha account né password. L'hub riconosce ogni richiesta dalla sua iscrizione alla rete ZeroTier tramite
+ZTNET, quindi aggiungere un amico significa autorizzarlo in ZTNET, e il token di ZTNET non lascia mai l'hub. I mondi
+restano sull'hub e sul PC di chi ospita, e il traffico di gioco va direttamente dai giocatori all'host.
+
+L'app si aggiorna da sola dall'hub, verifica la firma di ogni pacchetto e torna alla versione precedente se quella
+nuova non si avvia. Parla inglese e italiano, con temi chiaro e scuro, due palette, dimensioni dell'interfaccia più
+grandi, supporto per tastiera e screen reader, e mai solo il colore per indicare uno stato; gli screenshot di questa
+pagina li disegnano i suoi stessi test.

@@ -61,12 +61,13 @@ export const OWN_SHOTS: Record<string, OwnShot[]> = {
     shot('netmap/big-network.png', 'a big network', 'una rete grande'),
   ],
   minesync: [
-    shot('minesync/tui-play.png', 'hosting a session', 'una sessione in corso'),
-    shot('minesync/tui-home.png', 'terminal UI', 'interfaccia da terminale'),
-    shot('minesync/tui-server.png', 'server', 'server'),
-    shot('minesync/tui-history.png', 'history', 'cronologia'),
-    shot('minesync/overview.png', 'hub overview', "panoramica dell'hub"),
-    shot('minesync/players.png', 'players', 'giocatori'),
+    shot('minesync/light.png', 'home', 'home', 'minesync/home.png'),
+    shot('minesync/session.png', 'hosting a session', 'una sessione in corso'),
+    shot('minesync/server.png', 'server', 'server'),
+    shot('minesync/mods.png', 'mods', 'mod'),
+    shot('minesync/history.png', 'history', 'cronologia'),
+    shot('minesync/hub.png', "the hub's web pages", "le pagine web dell'hub"),
+    shot('minesync/hub-admin.png', 'admin area', 'area admin'),
   ],
 };
 
