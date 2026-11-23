@@ -129,7 +129,7 @@ const perPackage = [
 const totalApps = perPackage.reduce((s, p) => s + p.count, 0);
 const starsBetween = withStars.reduce((s, d) => s + d.live, 0);
 // packages without an island are only counted, not listed one by one
-const jellyfinCount = OTHER_USED_BY.reduce((s, p) => s + p.count, 0);
+const otherCount = OTHER_USED_BY.reduce((s, p) => s + p.count, 0);
 // each package's own logo on its figure, from its case study
 const logoOf = (pkg: string) => projects.find((p) => p.data.package === pkg)?.data.logo;
 
@@ -385,7 +385,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
 
       <!-- the rest: no screenshots, so each app shows its own icon (or its owner's avatar) -->
       <div class="wrap others">
-        <h3 class="title-3 others-title">{H.showcase.others(others.length + jellyfinCount)}</h3>
+        <h3 class="title-3 others-title">{H.showcase.others(others.length + otherCount)}</h3>
         <p class="others-lede">{H.showcase.othersLede}</p>
         <ul class="others-grid">
           {others.map((d) => {
@@ -413,7 +413,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
           })}
         </ul>
         <p class="others-foot">
-          {jellyfinCount > 0 && <span>{H.showcase.jellyfin(jellyfinCount)}</span>}
+          {OTHER_USED_BY.map((p) => <span>{H.showcase.onPkg(p.count, p.pkg)}</span>)}
           <a class="btn btn-ghost" href={USED_BY_LIST} target="_blank" rel="noopener"><Icon name="github" size={16} /> {H.showcase.all(totalApps)}</a>
         </p>
       </div>

@@ -89,7 +89,7 @@ export const UI = {
         mostStarred: (pkg: string) => `The most-starred app on ${pkg}.`,
         others: (n: number) => `${n} more built with them`,
         othersLede: 'Without screenshots here, each one a link to its repository.',
-        jellyfin: (n: number) => `+ ${n} on dart_jellyfin`,
+        onPkg: (n: number, pkg: string) => `+ ${n} on ${pkg}`,
         all: (n: number) => `All ${n} on GitHub`,
       },
       lightbox: {
@@ -222,7 +222,7 @@ export const UI = {
         mostStarred: (pkg: string) => `L'app con più stelle su ${pkg}.`,
         others: (n: number) => `Altre ${n} costruite con queste librerie`,
         othersLede: 'Senza screenshot qui, ognuna porta al suo repository.',
-        jellyfin: (n: number) => `+ ${n} su dart_jellyfin`,
+        onPkg: (n: number, pkg: string) => `+ ${n} su ${pkg}`,
         all: (n: number) => `Tutte le ${n} su GitHub`,
       },
       lightbox: {

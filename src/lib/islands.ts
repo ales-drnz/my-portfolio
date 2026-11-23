@@ -6,8 +6,9 @@
    "built with" gallery, apart from my own work).
 
    The "used by" lists come from a search of GitHub on
-   2026-11-21 (pubspec dependencies, vendored copies and git
-   dependencies, each checked by hand) and match the public
+   2026-11-23 (code, commits and issues, then the pubspec,
+   vendored copy or git dependency of each repo checked by
+   hand; re-uploads of Mornye left out) and match the public
    list linked below. Stars are refreshed at build time; the
    numbers here are only the fallback.
    ------------------------------------------------------------ */
@@ -64,7 +65,10 @@ export interface Island {
 }
 
 /** packages without an island that other projects depend on too: how many, as on the public list */
-export const OTHER_USED_BY: { pkg: string; count: number }[] = [{ pkg: 'dart_jellyfin', count: 3 }];
+export const OTHER_USED_BY: { pkg: string; count: number }[] = [
+  { pkg: 'dart_jellyfin', count: 3 },
+  { pkg: 'dart_plex', count: 1 },
+];
 
 /** shots('looper', 'Looper', ['home', 'Home'], ['player', 'Player']): one Shot per view, the view also names the file */
 const shots = (project: string, title: string, ...views: [file: string, en: string, it?: string][]): Shot[] =>
@@ -144,6 +148,8 @@ export const ISLANDS: Record<string, Island> = {
       chip('luciferr1212/aestheticy', 0),
       chip('luciferr1212/aestheticy-arg', 0),
       chip('Alizesa/Motif-Music', 0),
+      chip('neckbeard-io/flax', 0),
+      chip('Jonlekern/lafleurmusic-mobile', 0),
     ],
   },
   'dart-smb2': {
@@ -236,6 +242,13 @@ export const ISLANDS: Record<string, Island> = {
       chip('liakos356/VR-App-Manager-Flutter', 0),
       chip('chenshi221/tidyreel', 0),
       chip('TranDangKhoaAutomation/Nas-For-Xiaomi-AC1200-Openwrt', 0),
+      chip('Kimcop-kc/PerchPlay', 3),
+      chip('mangNSXying/SelfMusic', 0),
+      chip('akajimmy/bedereader', 0),
+      chip('GabryXnLab/kagami', 0),
+      chip('goodforus/camera-to-nas-sync', 0),
+      chip('TrapEmAll/neonamp', 0),
+      chip('Recycledj98/megas-inventario', 0),
     ],
   },
 };
