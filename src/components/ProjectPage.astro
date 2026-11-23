@@ -22,7 +22,7 @@ const { Content } = await renderProject(project, lang);
 const [repo, pkg] = await Promise.all([p.repo ? getRepo(p.repo) : undefined, p.package ? getPackage(p.package) : null]);
 const ogSource = p.cover ?? p.logo;
 const ogImage = ogSource ? await getImage({ src: ogSource, width: p.cover ? 1200 : 512, format: 'png' }) : null;
-const poster = p.cover && p.coverVideo ? await getImage({ src: p.cover, width: 1600, format: 'webp' }) : null;
+const poster = p.cover && p.coverVideo ? await getImage({ src: p.coverPoster ?? p.cover, width: 1600, format: 'webp' }) : null;
 
 // GitHub and pub.dev links carry their mark, as on the home page
 const siteMark = (url: string) =>

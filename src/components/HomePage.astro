@@ -111,7 +111,9 @@ const moreRepos = own.filter((r) => !covered.has(r.name)).sort((a, b) => b.starg
 const studioBand = bands.find((b) => b.app);
 const studio = studioBand?.app;
 const studioShots = studio ? (OWN_SHOTS[studio.id] ?? []) : [];
-const studioPoster = studio?.data.cover ? await getImage({ src: studio.data.cover, width: 1400, format: 'webp' }) : null;
+// the video's own first frame as its poster, so nothing jumps when it starts playing
+const studioPosterSrc = studio?.data.coverPoster ?? studio?.data.cover;
+const studioPoster = studioPosterSrc ? await getImage({ src: studioPosterSrc, width: 1400, format: 'webp' }) : null;
 
 /* ---------- other developers' apps ---------- */
 const perPackage = [

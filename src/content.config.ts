@@ -30,6 +30,8 @@ const projects = defineCollection({
       coverAlt: z.string().optional(),
       /** muted looping clip under /public, shown over the cover */
       coverVideo: z.string().optional(),
+      /** the cover video's first frame, so the poster doesn't jump when it starts (cover stays the still) */
+      coverPoster: image().optional(),
       links: z.array(z.object({ label: z.string(), url: z.url() })).default([]),
     }),
 });
