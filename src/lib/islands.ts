@@ -41,8 +41,8 @@ export interface UsedBy {
   repo: string;
   /** used when the GitHub API is unreachable at build time */
   stars: number;
-  /** with screenshots (and MIN_STARS) the project gets a card in the gallery, otherwise it is
-      summed up in the line under it. The first screens are the ones on the card. */
+  /** with screenshots the project gets a card in the gallery, whatever its stars; without, it is
+      an icon in the list under it. The first screens are the ones on the card. */
   shots?: Shot[];
   /** the screenshots already include a phone frame, so no bezel is drawn around them */
   framed?: boolean;
@@ -50,9 +50,6 @@ export interface UsedBy {
   name?: string;
   note?: Record<Lang, string>;
 }
-
-/** only dependents with at least this many stars are shown, the rest are one link to the full list */
-export const MIN_STARS = 10;
 
 export interface Island {
   /** case-study id of the reference app built on the package */
@@ -64,10 +61,17 @@ export interface Island {
   usedBy: UsedBy[];
 }
 
-/** packages without an island that other projects depend on too: how many, as on the public list */
-export const OTHER_USED_BY: { pkg: string; count: number }[] = [
-  { pkg: 'dart_jellyfin', count: 3 },
-  { pkg: 'dart_plex', count: 1 },
+/** packages without an island that other projects depend on too, as on the public list */
+export const OTHER_USED_BY: { pkg: string; usedBy: UsedBy[] }[] = [
+  {
+    pkg: 'dart_jellyfin',
+    usedBy: [
+      { repo: 'daniel-hiller/jellymusic', stars: 2 },
+      { repo: 'jumpingfox-dev/chameleon', stars: 2 },
+      { repo: 'pizi-0/pudding', stars: 1 },
+    ],
+  },
+  { pkg: 'dart_plex', usedBy: [{ repo: 'amitrke/relay-player', stars: 1 }] },
 ];
 
 /** shots('looper', 'Looper', ['home', 'Home'], ['player', 'Player']): one Shot per view, the view also names the file */

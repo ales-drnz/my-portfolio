@@ -119,7 +119,7 @@ export const UI = {
     kind: { library: 'library', app: 'app', tool: 'tool', system: 'system' },
 
     timeline: { present: 'present', inProgress: 'In progress', thesis: 'Thesis', supervisor: 'Supervisor', grade: 'Grade' },
-    languages: { title: 'Languages', native: 'Native', nativeSpeaker: 'native speaker', cefr: 'CEFR level' },
+    languages: { title: 'Languages', native: 'Native' },
     graph: {
       contributions: 'contributions',
       activeDays: 'active days',
@@ -252,7 +252,7 @@ export const UI = {
     kind: { library: 'libreria', app: 'app', tool: 'strumento', system: 'sistema' },
 
     timeline: { present: 'oggi', inProgress: 'In corso', thesis: 'Tesi', supervisor: 'Relatore', grade: 'Voto' },
-    languages: { title: 'Lingue', native: 'Madrelingua', nativeSpeaker: 'madrelingua', cefr: 'livello QCER' },
+    languages: { title: 'Lingue', native: 'Madrelingua' },
     graph: {
       contributions: 'contributi',
       activeDays: 'giorni attivi',

@@ -21,6 +21,7 @@ export const SOCIALS = [
   { id: 'x', label: 'X', url: 'https://x.com/ales_drnz' },
   { id: 'instagram', label: 'Instagram', url: 'https://instagram.com/ales.drnz' },
   { id: 'patreon', label: 'Patreon', url: 'https://www.patreon.com/cw/ales_drnz' },
+  { id: 'discord', label: 'Discord', url: 'https://discord.gg/g2Qf4Mq9MP' },
 ] as const;
 
 export interface EducationEntry {
@@ -107,24 +108,22 @@ export interface Language {
   flag: 'it' | 'gb';
   /** a CEFR level, or 'native' */
   level: (typeof CEFR)[number] | 'native';
-  levelLabel: string;
   certificate?: { name: string; score?: string };
 }
 
 export const LANGUAGES: Language[] = [
-  { name: 'Italian', flag: 'it', level: 'native', levelLabel: 'Mother tongue' },
+  { name: 'Italian', flag: 'it', level: 'native' },
   {
     name: 'English',
     flag: 'gb',
     level: 'B2',
-    levelLabel: 'Upper intermediate',
     certificate: { name: 'Cambridge B2 First', score: '179' },
   },
 ];
 
 const LANGUAGES_IT: Language[] = [
-  { name: 'Italiano', flag: 'it', level: 'native', levelLabel: 'Lingua madre' },
-  { ...LANGUAGES[1], name: 'Inglese', levelLabel: 'Intermedio superiore' },
+  { name: 'Italiano', flag: 'it', level: 'native' },
+  { ...LANGUAGES[1], name: 'Inglese' },
 ];
 
 export const languages = (lang: Lang) => (lang === 'it' ? LANGUAGES_IT : LANGUAGES);

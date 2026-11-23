@@ -19,8 +19,9 @@ import CopyEmail from './CopyEmail.astro';
 import EducationTimeline from './EducationTimeline.astro';
 import Languages from './Languages.astro';
 import { SITE, SOCIALS, education, languages } from '../lib/site';
+const discord = SOCIALS.find((s) => s.id === 'discord')!;
 import { getProjects } from '../lib/projects';
-import { ISLANDS, MIN_STARS, OTHER_USED_BY, USED_BY_LIST, appIcon, islandMembers } from '../lib/islands';
+import { ISLANDS, OTHER_USED_BY, USED_BY_LIST, appIcon, islandMembers } from '../lib/islands';
 import { OWN_SHOTS, type GalleryApp, type LightboxShot } from '../lib/showcase';
 import { t, localePath, type Lang } from '../lib/i18n';
 import {
@@ -113,23 +114,26 @@ const studioShots = studio ? (OWN_SHOTS[studio.id] ?? []) : [];
 const studioPoster = studio?.data.cover ? await getImage({ src: studio.data.cover, width: 1400, format: 'webp' }) : null;
 
 /* ---------- other developers' apps ---------- */
-const deps = Object.entries(ISLANDS).flatMap(([id, island]) => island.usedBy.map((u) => ({ ...u, pkg: byId(id)?.data.package ?? id })));
+const perPackage = [
+  ...Object.entries(ISLANDS).map(([id, island]) => ({ pkg: byId(id)?.data.package ?? id, usedBy: island.usedBy })),
+  ...OTHER_USED_BY,
+];
+const deps = perPackage.flatMap((p) => p.usedBy.map((u) => ({ ...u, pkg: p.pkg })));
 const live = await Promise.all(deps.map((d) => getExternalRepo(d.repo)));
 const withStars = deps.map((d, i) => ({ ...d, live: live[i]?.stargazers_count ?? d.stars }));
 const topOf = new Map<string, string>();
 for (const d of [...withStars].sort((a, b) => b.live - a.live)) if (!topOf.has(d.pkg)) topOf.set(d.pkg, d.repo);
-// the threshold uses the stars written in islands.ts, so a rebuild never drops a card over a few stars
-const inGallery = withStars.filter((d) => d.stars >= MIN_STARS && d.shots?.length).sort((a, b) => b.live - a.live);
-// everything that gets no card in the gallery, as an icon grid under it
-const others = withStars.filter((d) => !inGallery.includes(d)).sort((a, b) => b.live - a.live || a.repo.localeCompare(b.repo));
-const perPackage = [
-  ...Object.entries(ISLANDS).map(([id, island]) => ({ pkg: byId(id)?.data.package ?? id, count: island.usedBy.length })),
-  ...OTHER_USED_BY,
-];
-const totalApps = perPackage.reduce((s, p) => s + p.count, 0);
+// screenshots: a card in the gallery; the app's own icon: a tile in the grid under it; neither: only counted, per package
+const inGallery = withStars.filter((d) => d.shots?.length).sort((a, b) => b.live - a.live);
+const others = withStars
+  .filter((d) => !d.shots?.length && appIcon(d.repo))
+  .sort((a, b) => b.live - a.live || a.repo.localeCompare(b.repo));
+const unlisted = perPackage
+  .map((p) => ({ pkg: p.pkg, count: withStars.filter((d) => d.pkg === p.pkg && !d.shots?.length && !appIcon(d.repo)).length }))
+  .filter((p) => p.count > 0);
+const totalApps = deps.length;
 const starsBetween = withStars.reduce((s, d) => s + d.live, 0);
-// packages without an island are only counted, not listed one by one
-const otherCount = OTHER_USED_BY.reduce((s, p) => s + p.count, 0);
+const unlistedCount = unlisted.reduce((s, p) => s + p.count, 0);
 // each package's own logo on its figure, from its case study
 const logoOf = (pkg: string) => projects.find((p) => p.data.package === pkg)?.data.logo;
 
@@ -215,6 +219,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
       <div class="hero-cta">
         <CopyEmail primary lang={lang} />
         <a class="btn btn-ghost" href={SOCIALS[0].url} target="_blank" rel="noopener"><Icon name="github" size={16} /> GitHub</a>
+        <a class="btn btn-ghost" href={discord.url} target="_blank" rel="noopener"><Icon name="discord" size={16} /> Discord</a>
         <a class="btn btn-ghost" href={SOCIALS[1].url} target="_blank" rel="noopener"><Icon name="pubdev" size={16} /> pub.dev</a>
       </div>
 
@@ -374,7 +379,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
                 ) : (
                   <Symbol name="deployed_code" fill size={32} trim class="fig-i" />
                 )}
-                {fmt(p.count)}
+                {fmt(p.usedBy.length)}
               </dd></div>
           ))}
           <div class="stat"><dt class="fig-l">{H.showcase.starsBetween}</dt><dd class="fig-n"><Symbol name="star" fill size={32} trim class="fig-i" />{compact(starsBetween)}</dd></div>
@@ -383,22 +388,18 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
 
       <AppGallery apps={apps} lang={lang} />
 
-      <!-- the rest: no screenshots, so each app shows its own icon (or its owner's avatar) -->
+      <!-- the rest: no screenshots, so each app shows its own icon; apps without one are only counted -->
       <div class="wrap others">
-        <h3 class="title-3 others-title">{H.showcase.others(others.length + otherCount)}</h3>
+        <h3 class="title-3 others-title">{H.showcase.others(others.length + unlistedCount)}</h3>
         <p class="others-lede">{H.showcase.othersLede}</p>
         <ul class="others-grid">
           {others.map((d) => {
-            const icon = appIcon(d.repo);
+            const icon = appIcon(d.repo)!;
             const [owner, name] = d.repo.split('/');
             return (
               <li>
                 <a class="other" href={`https://github.com/${d.repo}`} target="_blank" rel="noopener">
-                  {icon ? (
-                    <Image src={icon} alt="" width={48} height={48} densities={[1, 2, 3]} class="other-icon" loading="lazy" />
-                  ) : (
-                    <img src={`https://avatars.githubusercontent.com/${owner}?s=96`} alt="" width="48" height="48" loading="lazy" class="other-icon is-avatar" />
-                  )}
+                  <Image src={icon} alt="" width={48} height={48} densities={[1, 2, 3]} class="other-icon" loading="lazy" />
                   <span class="other-main">
                     <span class="other-name">{name}</span>
                     <span class="other-meta">{owner}</span>
@@ -413,7 +414,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
           })}
         </ul>
         <p class="others-foot">
-          {OTHER_USED_BY.map((p) => <span>{H.showcase.onPkg(p.count, p.pkg)}</span>)}
+          {unlisted.map((p) => <span>{H.showcase.onPkg(p.count, p.pkg)}</span>)}
           <a class="btn btn-ghost" href={USED_BY_LIST} target="_blank" rel="noopener"><Icon name="github" size={16} /> {H.showcase.all(totalApps)}</a>
         </p>
       </div>
@@ -893,9 +894,6 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     object-fit: cover;
     background: var(--c-surface-2);
   }
-  .other-icon.is-avatar {
-    border-radius: 50%;
-  }
   .other-main {
     flex: 1;
     min-width: 0;
@@ -1018,6 +1016,9 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     .prs .pr:nth-child(-n + 2) {
       padding-top: 0;
     }
+    .prs .pr:nth-child(odd):nth-last-child(2) {
+      border-bottom: 0;
+    }
   }
   .pr {
     padding: var(--s-3) 0;
@@ -1026,6 +1027,10 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   }
   .prs .pr:first-child {
     padding-top: 0;
+  }
+  /* no rule under the last row: the section's own border closes it */
+  .prs .pr:last-child {
+    border-bottom: 0;
   }
   .pr-repo {
     display: flex;
@@ -1091,25 +1096,16 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   /* ---------- contact ---------- */
   /* the last section is a whole screen, its content centred: the Contact link can put it right under the
      header like every other section (a shorter one would stop where the page ends) */
+  /* the last section: as tall as its content, not a whole screen */
   .contact {
-    display: flex;
-    flex-direction: column;
-    min-height: calc(100svh - 56px);
     padding-top: var(--sec);
     text-align: center;
   }
-  .contact > .wrap {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
   .contact-inner {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding-block: var(--band);
+    padding-block: var(--sec);
     border-top: 1px solid var(--c-border);
   }
   .contact-title {

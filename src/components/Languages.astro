@@ -1,8 +1,7 @@
 ---
 /* Spoken languages under the education timeline, on its columns: the label where the dates are, then one block
-   per language with a round flag, a six-step CEFR bar (A1 to C2, filled up to the level; full for a native
-   speaker, with the same scale under it so the blocks line up) and what backs the level. */
-import { CEFR, type Language } from '../lib/site';
+   per language with a round flag, its level (native or CEFR) and the certificate behind it, if any. */
+import type { Language } from '../lib/site';
 import { t, type Lang } from '../lib/i18n';
 
 interface Props {
@@ -12,7 +11,6 @@ interface Props {
 
 const { languages, lang } = Astro.props;
 const T = t(lang).languages;
-const filled = (l: Language) => (l.level === 'native' ? CEFR.length : CEFR.indexOf(l.level) + 1);
 ---
 
 <div class="langs">
@@ -45,33 +43,12 @@ const filled = (l: Language) => (l.level === 'native' ? CEFR.length : CEFR.index
             <b>{l.name}</b>
             <span class="lang-lv">{l.level === 'native' ? T.native : l.level}</span>
           </p>
-          <div
-            class="cefr"
-            role="img"
-            aria-label={l.level === 'native' ? T.nativeSpeaker : `${T.cefr} ${l.level}`}
-            style={`--n:${filled(l)}`}
-          >
-            <span class="cefr-bar">
-              {CEFR.map((_, i) => (
-                <i class:list={[i < filled(l) && 'on']} />
-              ))}
-            </span>
-            <span class="cefr-steps" aria-hidden="true">
-              {CEFR.map((c) => (
-                <i class:list={[c === l.level && 'on']}>{c}</i>
-              ))}
-            </span>
-          </div>
-          <p class="lang-note">
-            {l.levelLabel}
-            {l.certificate && (
-              <>
-                {' · '}
-                {l.certificate.name}
-                {l.certificate.score && `, ${l.certificate.score}`}
-              </>
-            )}
-          </p>
+          {l.certificate && (
+            <p class="lang-note">
+              {l.certificate.name}
+              {l.certificate.score && `, ${l.certificate.score}`}
+            </p>
+          )}
         </li>
       ))
     }
@@ -137,39 +114,6 @@ const filled = (l: Language) => (l.level === 'native' ? CEFR.length : CEFR.index
     color: var(--c-accent);
   }
 
-  /* six steps, filled up to the level */
-  .cefr {
-    margin-top: 12px;
-  }
-  .cefr-bar,
-  .cefr-steps {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 4px;
-  }
-  .cefr-bar i {
-    height: 6px;
-    border-radius: 3px;
-    background: var(--c-surface-2);
-  }
-  :global([data-theme='light']) .cefr-bar i {
-    background: var(--c-border-strong);
-  }
-  .cefr-bar i.on {
-    background: var(--c-accent);
-  }
-  .cefr-steps {
-    margin-top: 6px;
-  }
-  .cefr-steps i {
-    font: normal 10px var(--font-mono);
-    text-align: center;
-    color: var(--c-subtle);
-  }
-  .cefr-steps i.on {
-    font-weight: 600;
-    color: var(--c-accent);
-  }
   .lang-note {
     margin-top: 10px;
     font-size: 14px;
