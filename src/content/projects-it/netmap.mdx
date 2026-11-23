@@ -6,11 +6,11 @@ summary: >-
   latenza, disponibilità nelle ultime 24 ore, cosa è cambiato e quando, e i servizi raggiungibili all'interno della
   rete.
 highlights:
-  - Stato della connessione in parole semplici, con i dettagli tecnici a un tocco di distanza
+  - Stato della connessione in parole semplici, con i dettagli tecnici subito sotto
   - DNS, rotte e indirizzi seguiti dal controller fino all'hub
   - Il token ZTNET e gli IP pubblici dei membri non arrivano mai al browser
 coverAlt: >-
-  La mappa di Netmap con "Sei connesso tramite un relay", l'hub al centro e un'isola per ogni persona
+  La mappa di Netmap, con l'hub collegato a una corsia per ogni stato, accanto al pannello che dice "Tramite un relay"
 ---
 import { Image } from 'astro:assets';
 import map from '../../assets/projects/netmap/device.png';
@@ -23,28 +23,32 @@ import phone from '../../assets/projects/netmap/phone-map.png';
 
 ZTNET rende facile amministrare una rete ZeroTier, ma non offre agli altri membri alcuna visione della rete.
 Netmap è una pagina che ogni membro può aprire da qualsiasi dispositivo all'interno della rete: dice in parole
-semplici se il dispositivo è connesso e come, direttamente o tramite un relay ("funziona, solo un po' più lento"),
-con latenza, indirizzi e versioni del client a un tocco di distanza. Non richiede alcun account e non può
-modificare la rete.
+semplici se il dispositivo è connesso e come, direttamente o tramite un relay, con latenza, indirizzi e versioni del
+client subito sotto. Non richiede alcun account e non può modificare la rete.
 
-La versione 0.1.0 è riscritta da zero: un'app web Flutter in Material 3 Expressive, una nuova mappa e un nuovo
-server.
+La versione 0.1.0 è riscritta da zero: un'app web Flutter in Material 3 Expressive, con un aspetto piatto e senza
+animazioni, una nuova mappa e un nuovo server.
 
 ## La mappa
 
-La mappa è la pagina iniziale: una costellazione con l'hub al centro, i dispositivi di chi guarda evidenziati e
-un'isola per ogni persona con due o più dispositivi. Ogni dispositivo è un cerchio con il colore, l'icona e la
-parola del suo collegamento, e ogni linea è disegnata come diretta, tramite relay o a senso unico. Accanto, un
-pannello dice come sei connesso, copia il tuo indirizzo, conta chi è online, elenca i servizi con un pulsante Apri
-e mostra l'attività recente. Selezionando un dispositivo lo si vede spiegato in parole semplici, con i dettagli
-tecnici raccolti sotto.
+La mappa è la pagina iniziale: l'hub e una corsia per ogni stato (diretto, online, tramite relay, nessuna risposta,
+offline, inattivo), ognuna collegata all'hub da una linea nel colore dello stato. In una corsia i dispositivi di
+ogni persona stanno insieme, e quando sono due o più condividono una fascia arrotondata con il nome del
+proprietario, "Tu" per i tuoi. Ogni dispositivo è un cerchio della stessa dimensione con il colore, l'icona e la
+parola del suo collegamento, e una legenda sotto la mappa conta i dispositivi in ogni stato. Accanto, un piccolo
+pannello dice come sei connesso, copia il tuo indirizzo ed elenca i servizi, ognuno con la sua icona, a un tocco
+di distanza.
 
-<Image src={map} alt="Un dispositivo aperto sulla mappa: un collegamento a senso unico, l'hub lo raggiunge ma non risponde da quattro minuti" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+Toccando un dispositivo lo si apre accanto alla mappa: prima lo stato, quando è stato visto l'ultima volta e la
+disponibilità nelle 24 ore, poi indirizzi, versione del client, percorsi, latenza rispetto alla settimana prima e
+pacchetti, tutto in una pagina.
 
-Vista da lontano su una rete grande, la mappa tiene un'isola per persona con quanti dei suoi dispositivi sono
-online.
+<Image src={map} alt="carol-pc aperto accanto alla mappa: nessuna risposta, 50 ms di solito, disponibile al 96,3% nelle 24 ore, e i suoi dettagli tecnici" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-<Image src={big} alt="Una rete di 190 dispositivi vista da lontano: un'isola per persona attorno all'hub" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+Su una rete grande le corsie semplicemente si allungano: ogni dispositivo resta nella corsia del suo stato, quelli
+di ogni persona insieme.
+
+<Image src={big} alt="Una rete di 190 dispositivi: lunghe corsie di dispositivi diretti, via relay, che non rispondono e offline accanto all'hub" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Dispositivi e storico
 
@@ -54,12 +58,12 @@ online.
   si interrompe la catena.
 - **Cosa è cambiato**: disconnessioni, cambi di percorso e picchi di latenza. Tre dispositivi che cadono nello
   stesso controllo sono un solo incidente, di solito la connessione dell'hub, non tre.
-- **Disponibilità nelle 24 ore** in celle da 24 minuti, 30 giorni di traffico e chi usa di più la rete. Finché lo
+- **Disponibilità nelle 24 ore** in celle da 24 minuti, 30 giorni di traffico e il traffico per persona. Finché lo
   storico non si riempie, gli slot vuoti restano vuoti: la pagina non mostra mai dati che non ha.
 - **Elenco dei servizi**: cosa puoi raggiungere all'interno della rete, come collegarti e se risponde in questo
   momento, ognuno con la sua icona, recuperata dal server così il browser non contatta mai il servizio.
 
-<Image src={devices} alt="Tutti i dispositivi raggruppati per persona, e un dispositivo in parole semplici: connesso direttamente via internet, tutto bene" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={devices} alt="Tutti i dispositivi raggruppati per persona e filtrati per stato, e accanto alice-pc: diretto, 47 ms, disponibile al 96,4%" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 <Image src={stats} alt="La pagina della rete: impostazioni configurate, ricevute e applicate, latenza per dispositivo, disponibilità nelle 24 ore, 30 giorni di traffico e versioni di ZeroTier" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
@@ -74,7 +78,7 @@ volta in TypeScript e rispecchiato in Dart.
 L'app è Flutter per il web, compilata in WebAssembly dove il browser lo supporta e in JavaScript altrove, con
 motore, font e icone inclusi: niente arriva da una CDN, così funziona anche senza accesso a internet. Ogni stato ha
 un colore, un'icona e una parola, mai solo il colore, con contrasto AA in entrambi i temi, supporto per tastiera e
-screen reader e rispetto della riduzione del movimento. Parla inglese e italiano, da computer o da telefono, e
+screen reader, e niente che si muova. Parla inglese e italiano, da computer o da telefono, e
 gli screenshot di questa pagina li disegnano i suoi test golden.
 
 Gira come container che condivide la rete del container ZeroTier: è raggiungibile solo dall'interno della rete
@@ -82,7 +86,7 @@ ZeroTier e non pubblica nessuna porta sull'host. Lo storico sopravvive ai riavvi
 atomico.
 
 <div class="flex justify-center not-prose">
-  <Image src={phone} alt="Netmap su un telefono: la mappa con le isole e il pannello che dice che sei connesso tramite un relay" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
+  <Image src={phone} alt="Netmap su un telefono: le corsie sotto l'hub e il pannello che dice che sei connesso tramite un relay" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
 </div>
 
 ## Privacy

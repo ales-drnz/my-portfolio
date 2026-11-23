@@ -13,13 +13,13 @@ repo: netmap
 platforms: [Docker (amd64, arm64), Node.js 22+]
 stack: [Flutter, Dart, TypeScript, Node.js, Docker, ZeroTier]
 highlights:
-  - Connection status in plain words, with the technical details one tap away
+  - Connection status in plain words, with the technical details right under it
   - DNS, routes and addresses followed from the controller to the hub
   - The ZTNET token and members' public IPs never reach the browser
 logo: ../../assets/projects/netmap/netmap-logo.png
 cover: ../../assets/projects/netmap/home.png
 coverDark: ../../assets/projects/netmap/home-dark.png
-coverAlt: Netmap's map with "You're connected through a relay", the hub in the middle and one island per person
+coverAlt: Netmap's map, the hub joined to one lane per state, beside the panel saying "Through a relay"
 links:
   - { label: GitHub, url: 'https://github.com/ales-drnz/netmap' }
 ---
@@ -34,24 +34,29 @@ import phone from '../../assets/projects/netmap/phone-map.png';
 
 ZTNET makes a ZeroTier network easy to administer, but gives its other members no view of it. Netmap is a page
 every member can open from any device inside the network: it says in plain words whether the device is connected
-and how, directly or through a relay ("it works, just slower"), with latency, addresses and client versions one
-tap away. It needs no account and cannot change the network.
+and how, directly or through a relay, with latency, addresses and client versions right under it. It needs no
+account and cannot change the network.
 
-Version 0.1.0 is a rewrite from scratch: a Flutter web app in Material 3 Expressive, a new map and a new server.
+Version 0.1.0 is a rewrite from scratch: a Flutter web app in Material 3 Expressive with a flat look and no
+animations, a new map and a new server.
 
 ## The map
 
-The map is the home page: a constellation with the hub in the middle, the viewer's own devices highlighted and
-one island for every person with two or more devices. Every device is a circle with the colour, icon and word of
-its link, and every line is drawn as direct, through a relay or one-way. Beside it, a panel says how you are
-connected, copies your address, counts who is online, lists the services with an Open button and shows the
-latest activity. Selecting a device explains it in plain words, with the technical details folded underneath.
+The map is the home page: the hub, and one lane for each state (direct, online, through a relay, no reply,
+offline, inactive), each joined to the hub by a line in the state's colour. In a lane each person's devices sit
+together, and two or more share a rounded band with their owner's name, "You" for your own. Every device is a
+circle of the same size with the colour, icon and word of its link, and a legend under the map counts the devices
+in each state. Beside it, a small panel says how you are connected, copies your address and lists the services,
+each with its own icon, a tap away.
 
-<Image src={map} alt="A device opened on the map: a one-way link, the hub reaches it but it hasn't answered for four minutes" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+Tapping a device opens it beside the map: its state, when it was last seen and its availability over 24 hours
+first, then addresses, client version, paths, latency against the week before and packets, all on one page.
 
-Zoomed out on a big network, the map keeps one island per person with how many of their devices are online.
+<Image src={map} alt="carol-pc opened beside the map: no reply, 50 ms typical, 96.3% available over 24 hours, and its technical details" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-<Image src={big} alt="A network of 190 devices from afar: one island per person around the hub" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+On a big network the lanes simply grow: every device stays in its state's lane, each person's together.
+
+<Image src={big} alt="A network of 190 devices: long lanes of direct, relayed, silent and offline devices beside the hub" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Devices and history
 
@@ -61,12 +66,12 @@ Zoomed out on a big network, the map keeps one island per person with how many o
   see where the chain breaks.
 - **What changed**: disconnections, path changes and latency spikes. Three devices dropping in the same poll are
   one incident, usually the hub's connection, not three.
-- **24-hour availability** in 24-minute cells, 30 days of traffic, and who uses the network most. Until the
+- **24-hour availability** in 24-minute cells, 30 days of traffic, and traffic by person. Until the
   history fills up, empty slots stay empty: the page never shows data it doesn't have.
 - **Services directory**: what you can reach inside the network, how to connect, and whether it answers right
   now, each with its own icon, fetched by the server so the browser never contacts the service.
 
-<Image src={devices} alt="Every device grouped by person, and one device in plain words: connected directly over the internet, all good" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={devices} alt="Every device grouped by person and filtered by state, and alice-pc beside them: direct, 47 ms, 96.4% available" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 <Image src={stats} alt="The network page: configured, received and applied settings, latency by device, 24-hour availability, 30 days of traffic and ZeroTier versions" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
@@ -81,14 +86,14 @@ in Dart.
 The app is Flutter for the web, built to WebAssembly where the browser supports it and to JavaScript elsewhere,
 with the engine, fonts and icons bundled: nothing comes from a CDN, so it works with no internet access. Every
 state has a colour, an icon and a word, never colour alone, with AA contrast in both themes, keyboard and screen
-reader support and reduced motion respected. It speaks English and Italian, on a desktop or a phone, and
+reader support, and nothing that moves. It speaks English and Italian, on a desktop or a phone, and
 golden tests draw the screenshots on this page.
 
 It runs as a container sharing the ZeroTier container's network: it is reachable only from inside the ZeroTier
 network and publishes no port on the host. History survives restarts in a file written atomically.
 
 <div class="flex justify-center not-prose">
-  <Image src={phone} alt="Netmap on a phone: the map with the islands, and the panel saying you're connected through a relay" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
+  <Image src={phone} alt="Netmap on a phone: the lanes under the hub, and the panel saying you're connected through a relay" widths={[390, 780]} sizes="320px" class="rounded-xl w-80" />
 </div>
 
 ## Privacy
