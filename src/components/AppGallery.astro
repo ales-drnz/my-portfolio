@@ -262,14 +262,16 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
     max-width: 40ch;
   }
   @media (max-width: 1023px) {
-    .ag-name {
-      display: inline;
-    }
+    /* the name and its stars share a row, bottoms aligned: baseline alignment of a two-line name
+       (a button inside the h3) differs between engines, and Safari pushed the name up over the label */
     .ag-copy {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      align-items: baseline;
+      align-items: end;
       column-gap: var(--s-2);
+    }
+    .ag-stars {
+      padding-bottom: 2px;
     }
     .ag-uses,
     .ag-who,
