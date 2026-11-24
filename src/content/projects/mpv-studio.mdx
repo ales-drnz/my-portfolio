@@ -2,29 +2,38 @@
 title: MPV Studio
 tagline: Cross-platform audio player built on mpv_audio_kit.
 summary: >-
-  The reference client for the mpv_audio_kit engine: an audio player with a signal chain rack, real-time
-  visualizers, Jellyfin, Plex and Samba streaming, an engine inspector and a built-in mpv command console. It
-  adapts to every window, from a phone in portrait to an ultrawide desktop.
+  The reference app for the mpv_audio_kit engine: an audio player with an effects rack, live visualizers, Jellyfin,
+  Plex and Samba streaming, an engine inspector and an mpv console. It fits any window, from a phone to an
+  ultrawide desktop, and the whole app also runs in the browser, with libmpv as WebAssembly.
 kind: app
 order: 6
 group: flutter
 featured: true
 repo: mpv_studio
-platforms: [Android, iOS, macOS, Windows, Linux]
+platforms: [Android, iOS, macOS, Windows, Linux, Web]
 stack: [Flutter, Dart, mpv_audio_kit, dart_smb2, dart_jellyfin, dart_plex]
 highlights:
   - Waveform seekbar, chapters, A-B loop, spectrum and VU meters
   - Jellyfin, Plex and Samba sources next to plain URLs
-  - Signal chain rack and a raw mpv command console
+  - Runs in the browser, libmpv included, as WebAssembly
 logo: ../../assets/projects/mpv-audio-kit/mpv_studio.png
 cover: ../../assets/projects/mpv-audio-kit/playback-poster.jpg
 coverAlt: MPV Studio playing a track with its waveform, chapters, A-B loop and live spectrum
 coverVideo: /media/mpv-audio-kit/playback.mp4
 coverPoster: ../../assets/projects/mpv-audio-kit/playback-first.jpg
 links:
+  - { label: Try it in the browser, url: 'https://ales-drnz.github.io/mpv_studio/' }
   - { label: GitHub, url: 'https://github.com/ales-drnz/mpv_studio' }
   - { label: mpv_audio_kit, url: 'https://pub.dev/packages/mpv_audio_kit' }
 ---
+import Video from '../../components/mdx/Video.astro';
+import queuePoster from '../../assets/projects/mpv-audio-kit/queue-first.jpg';
+import enginePoster from '../../assets/projects/mpv-audio-kit/engine-first.jpg';
+import settingsPoster from '../../assets/projects/mpv-audio-kit/settings-first.jpg';
+import mPlayback from '../../assets/projects/mpv-audio-kit/mobile-playback-first.jpg';
+import mQueue from '../../assets/projects/mpv-audio-kit/mobile-queue-first.jpg';
+import mStream from '../../assets/projects/mpv-audio-kit/mobile-stream-first.jpg';
+import mEffects from '../../assets/projects/mpv-audio-kit/mobile-effects-first.jpg';
 
 ## Overview
 
@@ -32,18 +41,40 @@ MPV Studio is where [mpv_audio_kit](/projects/mpv-audio-kit) gets used the way a
 where new engine features are tried first. The media server clients plug into it as well:
 [dart_smb2](/projects/dart-smb2), [dart_jellyfin](/projects/dart-jellyfin) and [dart_plex](/projects/dart-plex).
 
+It runs on Android, iOS, macOS, Windows and Linux, and **[in the browser](https://ales-drnz.github.io/mpv_studio/)**:
+the full app, with libmpv running as WebAssembly, best in Chrome or Edge. There a web page can't open an SMB
+connection or reach `http://` servers from an HTTPS page, so Samba and plain-HTTP sources are left out.
+
 ## Features
 
-- **Playback**: cover art, metadata, a scrubbable waveform, chapters, an A-B loop with a repeat count, speed
+- **Playback**: cover art, metadata, a scrubbable waveform with chapters, an A-B loop with a repeat count, speed
   and volume, all driven by the engine's reactive streams.
-- **Visualizers**: a log-spaced spectrum, a VU meter and a waveform seekbar that fills in as network tracks
+- **Visualizers**: a smooth real-time spectrum, a VU meter and a waveform seekbar that fills in as network tracks
   decode.
-- **Queue**: reorderable, gapless, and each row says where the track comes from and whether it played, was
-  skipped or failed.
-- **Stream**: reference streams in every common codec, any URL with its own HTTP options, a source resolver
-  for links that expire, and Jellyfin, Plex and Samba libraries.
-- **Effects**: the signal chain rack, with interactive editors for each stage.
-- **Engine and console**: an inspector for the engine's state and a raw mpv command console.
+- **Queue**: reorderable and gapless; each row shows the track's tags and source, and whether it played, was
+  skipped or failed, and why.
+- **Stream**: a lab of reference streams, chapters, a source resolver for links that expire, and Jellyfin, Plex
+  and Samba libraries to browse and search.
+- **Effects**: a signal chain rack edited while the music plays, with quick editors for EQ, compressor and the
+  rest, the whole lavfi catalog, and a live view for each stage with before and after meters.
+- **Engine, settings and console**: what the engine is doing right now (cache, scans, formats, the chain), every
+  setting a search away, and an mpv command console with the live engine log.
+
+<div class="grid sm:grid-cols-2 gap-4 not-prose">
+  <Video src="/media/mpv-audio-kit/queue.mp4" poster={queuePoster} caption="The queue" />
+  <Video src="/media/mpv-audio-kit/engine.mp4" poster={enginePoster} caption="The engine inspector" />
+</div>
+
+<Video src="/media/mpv-audio-kit/settings.mp4" poster={settingsPoster} caption="Settings, with search" />
+
+## Desktop and mobile
 
 The layout adapts from a phone in portrait to an ultrawide desktop, in a dark and a light theme, with a
 right-click menu and keyboard control on desktop and long press and swipe on phones.
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 not-prose">
+  <Video src="/media/mpv-audio-kit/mobile-playback.mp4" poster={mPlayback} caption="Playback" />
+  <Video src="/media/mpv-audio-kit/mobile-queue.mp4" poster={mQueue} caption="Queue" />
+  <Video src="/media/mpv-audio-kit/mobile-stream.mp4" poster={mStream} caption="Stream" />
+  <Video src="/media/mpv-audio-kit/mobile-effects.mp4" poster={mEffects} caption="Effects" />
+</div>

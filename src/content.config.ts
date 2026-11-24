@@ -45,6 +45,8 @@ const projectsIt = defineCollection({
     highlights: z.array(z.string()).optional(),
     platforms: z.array(z.string()).optional(),
     coverAlt: z.string().optional(),
+    /** translated link labels; when absent the English links are used */
+    links: z.array(z.object({ label: z.string(), url: z.url() })).optional(),
   }),
 });
 

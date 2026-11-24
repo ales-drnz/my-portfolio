@@ -1,139 +1,185 @@
 ---
 title: mpv_audio_kit
-tagline: Audio engine for Flutter and Dart, built on mpv 0.41.
+tagline: Audio engine for Flutter, built on mpv and FFmpeg.
 summary: >-
-  The audio engine for Flutter apps that play from your own server. It talks to Jellyfin, Plex and Samba,
-  plays live PCM as it arrives, and exposes mpv and FFmpeg through a typed Dart API: libmpv
-  driven from a background isolate, a chain of typed effects, live spectrum and waveform, and native media
-  sessions on Android, iOS, macOS, Windows and Linux.
+  An audio player for Flutter apps that play a media library, from a server or from the device. It runs mpv 0.42
+  and FFmpeg 9 behind a typed Dart API: Jellyfin, Plex and Samba, live PCM as it arrives, 86 typed FFmpeg effects
+  and a live spectrum, waveform and loudness meter, on twelve platforms from phones and desktops to TVs, watches
+  and the browser.
 kind: library
 order: 1
 group: dart
 featured: true
 repo: mpv_audio_kit
 package: mpv_audio_kit
-platforms: [Android, iOS, macOS, Windows, Linux]
-stack: [Dart, Flutter, FFI, C, libmpv, FFmpeg, Go]
+platforms: [Android, iOS, macOS, Windows, Linux, Web, Android TV, tvOS, Wear OS, Tizen, webOS, HarmonyOS]
+stack: [Dart, Flutter, FFI, C, libmpv, FFmpeg, WebAssembly, Go]
 highlights:
-  - 100+ reactive streams from a non-blocking event isolate
-  - 18-band EQ, compressor, pitch/tempo and any lavfi filter as a typed stage
-  - Live PCM input for audio that arrives in chunks, such as generated speech
+  - One typed Dart API on twelve platforms, the browser included
+  - 86 FFmpeg effects with typed options, and a live spectrum, waveform and loudness scan
+  - Live PCM input, URLs resolved when they play, and the system media controls
 logo: ../../assets/projects/mpv-audio-kit/mpv_audio_kit.png
 links:
   - { label: GitHub, url: 'https://github.com/ales-drnz/mpv_audio_kit' }
   - { label: pub.dev, url: 'https://pub.dev/packages/mpv_audio_kit' }
+  - { label: Try MPV Studio in the browser, url: 'https://ales-drnz.github.io/mpv_studio/' }
   - { label: libmpv build system, url: 'https://github.com/ales-drnz/libmpv-scripts' }
 ---
 import { Image } from 'astro:assets';
 import Video from '../../components/mdx/Video.astro';
+import lifecycle from '../../assets/projects/mpv-audio-kit/player_lifecycle.png';
 import architecture from '../../assets/projects/mpv-audio-kit/architecture.png';
+import bundling from '../../assets/projects/mpv-audio-kit/libmpv_bundling.png';
+import web from '../../assets/projects/mpv-audio-kit/web_pipeline.png';
 import effectsChain from '../../assets/projects/mpv-audio-kit/effects_chain.png';
 import spectrum from '../../assets/projects/mpv-audio-kit/spectrum_pipeline.png';
+import resolver from '../../assets/projects/mpv-audio-kit/source_resolver.png';
+import tls from '../../assets/projects/mpv-audio-kit/tls_trust.png';
 import effectsPoster from '../../assets/projects/mpv-audio-kit/effects-first.jpg';
 import consolePoster from '../../assets/projects/mpv-audio-kit/console-first.jpg';
 import streamPoster from '../../assets/projects/mpv-audio-kit/stream-first.jpg';
 
 ## Why I built it
 
-Many Flutter audio libraries are built on an old version of mpv, or are too restrictive and hide the audio
-processing features. mpv_audio_kit exposes the whole engine through a typed Dart API, without blocking the UI
-thread, and is made for apps that play from your own media library:
+Many Flutter audio libraries are built on an old version of mpv, or hide its audio processing. mpv_audio_kit
+exposes the whole engine through a typed Dart API, without blocking the UI, for apps that play a media library:
 
 - **Jellyfin**: direct or transcoded streams, and transcoded HLS stays seekable while the server converts.
-- **Plex**: each track asks the server for its stream only when it loads, through a source resolver, so a
-  long queue starts at once and the server isn't flooded with requests.
+- **Plex**: tracks and playlists over HLS or DASH; each entry asks the server for its stream only when it opens,
+  so a long queue starts at once.
 - **Samba**: play straight from a NAS or any network share over SMB2 and SMB3.
 
 The project is split across three repositories:
 
-- **mpv_audio_kit**: the Dart/Flutter library, published on pub.dev.
-- **[libmpv-scripts](https://github.com/ales-drnz/libmpv-scripts)**: an audio-only build of libmpv and FFmpeg
-  with custom patches, cross-compiled for five operating systems and driven by a Go TUI.
-- **[MPV Studio](/projects/mpv-studio)**: the reference app built on the library.
+- **mpv_audio_kit**: the Dart and Flutter package, published on pub.dev.
+- **[libmpv-scripts](https://github.com/ales-drnz/libmpv-scripts)**: mpv and FFmpeg built without video, with
+  the patches the package relies on (waveform, loudness scan, audio taps, live PCM), for every platform it runs
+  on, from a terminal menu written in Go.
+- **[MPV Studio](/projects/mpv-studio)**: the reference app built on the package, which also
+  [runs in the browser](https://ales-drnz.github.io/mpv_studio/).
+
+## Getting started
+
+```yaml
+dependencies:
+  mpv_audio_kit: ^0.8.0
+```
+
+```dart
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  MpvAudioKit.ensureInitialized();
+  runApp(const MyApp());
+}
+
+// then, in the app
+final player = Player();
+await player.open(Media('https://example.com/audio.flac'));
+await player.play();
+player.stream.position.listen((position) => print(position));
+await player.dispose(); // when you are done
+```
+
+`player.state` holds the current values and `player.stream` sends each change.
+
+<Image src={lifecycle} alt="Player lifecycle: ensureInitialized once, then for each player create, open, listen and control, and dispose" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Architecture
 
-The `Player` lives on your main isolate and exposes a synchronous state snapshot plus more than 100 streams.
-Commands go to libmpv through its async API; a dedicated isolate blocks on `mpv_wait_event` and posts state
-back, so slow network streams and heavy filter graphs don't block the UI.
+The `Player` lives on the main isolate and calls libmpv without waiting on it. A background isolate blocks on
+`mpv_wait_event` and brings state back, so slow network streams and heavy filter graphs never block the UI. On the
+web the module wakes the player on the main thread instead.
 
-<Image src={architecture} alt="Architecture: UI and Player on the main isolate, event isolate and libmpv in the background, platform plugin bridging to OS media controls" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+<Image src={architecture} alt="Architecture: Your UI and the Player on the main isolate, the event isolate, libmpv on native threads with mpv 0.42 and FFmpeg, and the platform plugin bridging to the system media controls" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-Media sessions (the media notification on Android, Now Playing on Apple, MPRIS on Linux, SMTC on Windows)
-are driven from Dart, so lock-screen controls and notifications work the same way on every platform.
+The media session is driven from Dart too: the media notification on Android, Now Playing on Apple, MPRIS on
+Linux, the media controls on Windows and AVSession on HarmonyOS, everywhere but Tizen and webOS. On Android and
+HarmonyOS it also keeps the app playing in the background.
+
+## Twelve platforms
+
+Android, iOS, macOS, Windows and Linux; Android TV, tvOS, Tizen and webOS on TVs; Wear OS on watches; HarmonyOS;
+and the browser. A Dart build hook downloads the libmpv build for each native target from the project's releases
+and checks it against a pinned SHA-256. The toolchains that run no build hook get theirs another way: Swift
+Package Manager on tvOS, CMake on webOS, and the web module ships inside the package.
+
+<Image src={bundling} alt="How each toolchain gets libmpv: the build hook for Flutter, Tizen and HarmonyOS, the package's own assets on the web, Swift Package Manager on tvOS and CMake on webOS" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+
+## In the browser
+
+On the web, mpv and FFmpeg run as one WebAssembly module with libmpv's threads in web workers, network reads go
+through `fetch`, and the sound plays from an AudioWorklet fed through a ring in shared memory. The page has to be
+cross-origin isolated, and a user gesture starts the audio. [MPV Studio](https://ales-drnz.github.io/mpv_studio/)
+runs this way, the whole app in a browser tab.
+
+<Image src={web} alt="The web pipeline: the Player on the main thread, libmpv.wasm and a network thread in web workers, PCM through shared memory to an AudioWorklet, and fetch for the network" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## A typed effects chain
 
-Audio effects are an ordered list of typed stages (18-band graphic EQ, compressor, loudness normalisation,
-pitch and tempo, bass/treble, stereo width, headphone crossfeed, silence trim) compiled into a single ffmpeg
-filter graph. Anything not covered by a typed stage can still be dropped in as a raw lavfi filter. Dragging a
-slider that only changes a stage's parameters is applied to the running graph in place, with no audible rebuild.
+Each of the 86 effects is an FFmpeg filter with typed options: equalizers, compressors and limiters, loudness
+normalisation, pitch and tempo, stereo width, crossfeed and more, applied in list order. Changing only an
+effect's parameters is applied to the running graph in place, with no audible rebuild, and a tap can read the
+signal after any stage.
 
-<Image src={effectsChain} alt="Effects chain: typed effect stages compiled into an ffmpeg lavfi graph" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+```dart
+await player.setAudioEffects(const [
+  EqualizerEffect(frequency: 100, width: 50, widthType: EqualizerWidthType.h, gain: 3),
+  LoudnormEffect(i: -16),
+  AlimiterEffect(limit: 0.9),
+]);
+```
+
+<Image src={effectsChain} alt="Effects in list order between the decoder and the volume, with a tap reading the signal before and after each stage" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 <Video src="/media/mpv-audio-kit/effects.mp4" poster={effectsPoster} caption="Tweaking the EQ and effects live in MPV Studio" />
 
 ## Seeing the sound
 
-Spectrum, PCM, waveform overviews and loudness scans come out of patched FFmpeg filters and reach Dart as
-streams.
+A live spectrum, the raw PCM, a waveform of the whole file and a loudness scan come out of patched FFmpeg
+filters and reach Dart as streams.
 
-<Image src={spectrum} alt="Spectrum pipeline from ffmpeg filter tap to Dart stream" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
+```dart
+player.stream.fft.listen((frame) => paintSpectrum(frame));
+```
+
+<Image src={spectrum} alt="Spectrum pipeline: output samples, window, FFT, log bands and smoothing, to stream.pcm and stream.fft" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 ## Live PCM input
 
-New in 0.5.0: a `PcmSource` plays raw PCM chunks while they arrive, such as speech generated piece by piece or
-samples sent over a socket. There's no file, no local server and no header: the chunks go straight to mpv,
-and playback starts about 0.2 s after the first one (about 0.13 s with `lowLatency: true`).
+A `PcmSource` plays raw PCM chunks while they arrive, such as speech generated piece by piece or samples sent over
+a socket. There's no file, no local server and no header: the chunks go straight to mpv through a `mak-pcm`
+protocol patched into it, and playback starts about 0.2 s after the first one.
 
 ```dart
-final socket = await WebSocket.connect('wss://example.com/speech');
 final source = await player.openPcmStream(
   const PcmFormat(sampleRate: 24000, channels: 1), // s16le by default
 );
-await source.addStream(
-  socket.where((m) => m is List<int>).map(
-    (m) => m is Uint8List ? m : Uint8List.fromList(m as List<int>),
-  ),
-);
-await source.close();
+await source.addStream(chunks);
+await source.close(); // plays out what's buffered, then ends the entry
 ```
 
-`close` plays out what's buffered and ends the entry after its last sample; `abort` cuts it at once. Sources
-can also be queued in the playlist, each starting when the previous one ends. This needed a new `mak-pcm`
-protocol patched into mpv in libmpv-scripts.
+## URLs that expire
 
-## Getting libmpv into the app
-
-A Dart build hook downloads the libmpv build for each target from the project's releases, verifies it
-against a pinned SHA-256 and bundles it with the app. The builds
-themselves come from libmpv-scripts: Docker for Linux, Windows and Android, Xcode for Apple, with a verify
-stage that checks every artifact before release.
-
-```yaml
-dependencies:
-  mpv_audio_kit: ^0.5.0
-```
+A source resolver gives each entry its stream URL when it opens, prefetch included, so the tokens in a long
+queue never go stale, and an open that fails gets one retry with a fresh URL.
 
 ```dart
-final player = Player();
-await player.open(Media('https://example.com/audio.mp3'));
-
-await player.setAudioEffects([
-  // +3 dB around 100 Hz, then compress and limit
-  EqualizerEffect(frequency: 100, width: 50, widthType: EqualizerWidthType.h, gain: 3),
-  AcompressorEffect(threshold: 0.1, ratio: 4),
-  AlimiterEffect(limit: 0.9),
-]);
-
-player.stream.audioEffects.listen((fx) => print('${fx.length} stages'));
+await player.setSourceResolver((request) async {
+  final id = request.media.extras?['trackId'] as String?;
+  return id == null ? null : api.streamUrl(id); // null keeps the URL
+});
 ```
 
-## Streams and protocols
+<Image src={resolver} alt="The source resolver: on_load before the open, one retry with a fresh token after a failure, and stream.error when it fails again" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
-HTTP(S), HLS, DASH and SMB2/3 play like local files, with control over the cache size, where it's kept and
-the pause on an empty cache. Hooks run your code while a file loads, prefetch included, to resolve URLs,
-redirect or add headers.
+## Streams, network and TLS
+
+HTTP(S), HLS, DASH and SMB2/3 play like local files, with control over the cache, timeouts, proxies and
+reconnects. Since 0.8.0 TLS certificates are verified by default, as in mpv and FFmpeg; a home server with a
+self-signed certificate is trusted on top of the built-in roots with `setTlsExtraCaFile`, while every other server
+is still checked.
+
+<Image src={tls} alt="TLS trust: the default roots, setTlsExtraCaFile adding a home server's certificate, setTlsCaFile replacing the roots, and tlsVerify off" widths={[800, 1600]} sizes="(min-width: 768px) 720px, 100vw" />
 
 <div class="grid sm:grid-cols-2 gap-4 not-prose">
   <Video src="/media/mpv-audio-kit/stream.mp4" poster={streamPoster} caption="Network streams" />

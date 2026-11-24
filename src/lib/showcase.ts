@@ -32,6 +32,9 @@ export const OWN_SHOTS: Record<string, OwnShot[]> = {
     shot('mpv-audio-kit/architecture.png', 'architecture', 'architettura'),
     shot('mpv-audio-kit/spectrum_pipeline.png', 'spectrum pipeline', 'pipeline dello spettro'),
     shot('mpv-audio-kit/effects_chain.png', 'effects chain', 'catena degli effetti'),
+    shot('mpv-audio-kit/web_pipeline.png', 'in the browser', 'nel browser'),
+    shot('mpv-audio-kit/libmpv_bundling.png', 'libmpv on every platform', 'libmpv su ogni piattaforma'),
+    shot('mpv-audio-kit/source_resolver.png', 'source resolver', 'source resolver'),
   ],
   'mpv-studio': [
     shot('mpv-audio-kit/playback-poster.jpg', 'playback', 'riproduzione'),
