@@ -380,8 +380,11 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    transform: scale(0.9);
-    transition: opacity 0.4s, transform 0.4s, visibility 0.4s;
+    transform: scale(0.96);
+    transition:
+      opacity var(--dur-2) var(--ease-out),
+      transform var(--dur-2) var(--ease-out),
+      visibility var(--dur-2);
   }
   .ag.is-visible .ag-controls {
     opacity: 1;
@@ -417,7 +420,9 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
     background: color-mix(in oklab, var(--c-fg) 42%, transparent);
     cursor: pointer;
     overflow: hidden;
-    transition: width 0.25s, background-color 0.15s;
+    transition:
+      width var(--dur-2) var(--ease-out),
+      background-color var(--dur-1) var(--ease-out);
   }
   /* a bigger target than the dot itself */
   .ag-dot::before {
@@ -432,13 +437,16 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
     width: 48px;
     background: color-mix(in oklab, var(--c-fg) 42%, transparent);
   }
+  /* the slide timer: a full-width bar scaled from the left, so it runs on the compositor
+     (animating its width relaid out the dot on every frame); the dot's rounded clip shapes it */
   .ag-dot::after {
     content: '';
     position: absolute;
     inset: 0 auto 0 0;
-    width: 0;
-    border-radius: inherit;
+    width: 115%;
     background: var(--c-accent);
+    transform: scaleX(0);
+    transform-origin: left;
   }
   .ag-dot.is-current::after {
     animation: ag-fill var(--ag-dur) linear forwards;
@@ -448,15 +456,15 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
     animation-play-state: running;
   }
   .ag[data-state='ended'] .ag-dot.is-current::after {
-    width: 115%;
+    transform: none;
     animation: none;
   }
   @keyframes ag-fill {
     from {
-      width: 0;
+      transform: scaleX(0);
     }
     to {
-      width: 115%;
+      transform: scaleX(1);
     }
   }
   .ag-play {
@@ -468,7 +476,7 @@ const ratio = (a: GalleryApp) => a.shots[0].src.width / a.shots[0].src.height;
     padding: 0;
     color: var(--c-fg);
     cursor: pointer;
-    transition: background-color 0.15s;
+    transition: background-color var(--dur-1) var(--ease-out);
   }
   .ag-play:hover {
     background: color-mix(in oklab, var(--c-surface-2) 92%, var(--c-fg));

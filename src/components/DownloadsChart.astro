@@ -90,7 +90,7 @@ const barH = (v: number) => Math.max(4, (v / wmax) * (H - 8));
   }
   .bar {
     fill: color-mix(in oklab, var(--c-fg) 16%, transparent);
-    transition: fill 0.12s;
+    transition: fill var(--dur-1) var(--ease-out);
   }
   .bar.hot {
     fill: var(--c-accent);

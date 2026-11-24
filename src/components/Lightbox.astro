@@ -51,6 +51,35 @@ const T = t(lang).home.lightbox;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
   }
+  /* opens with a short fade and a 2% settle; closes faster (is-closing, then close() on transitionend,
+     since exit transitions of a dialog don't run in Safari) */
+  .lb {
+    transition:
+      opacity var(--dur-2) var(--ease-out),
+      transform var(--dur-2) var(--ease-out);
+  }
+  .lb::backdrop {
+    transition: opacity var(--dur-2) var(--ease-out);
+  }
+  @starting-style {
+    .lb[open] {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+    .lb[open]::backdrop {
+      opacity: 0;
+    }
+  }
+  .lb.is-closing {
+    opacity: 0;
+    transform: scale(0.98);
+    transition-duration: 140ms;
+    transition-timing-function: var(--ease-in);
+  }
+  .lb.is-closing::backdrop {
+    opacity: 0;
+    transition: opacity 140ms var(--ease-in);
+  }
   /* ::backdrop does not inherit the theme's custom properties everywhere, so its colours are spelled out */
   .lb::backdrop {
     background: rgb(242 242 239 / 0.95);
@@ -103,7 +132,7 @@ const T = t(lang).home.lightbox;
     background: var(--c-surface);
     color: var(--c-muted);
     cursor: pointer;
-    transition: color 0.15s, background-color 0.15s;
+    transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
   }
   .lb-btn:hover {
     color: var(--c-fg);
@@ -128,7 +157,7 @@ const T = t(lang).home.lightbox;
     align-self: center;
     border-radius: var(--r-box);
     box-shadow: 0 0 0 1px var(--c-border), 0 30px 80px -30px rgb(0 0 0 / 0.6);
-    transition: opacity 0.2s;
+    transition: opacity var(--dur-2) var(--ease-out);
   }
   .lb-stage img.portrait {
     border-radius: 24px;
@@ -140,8 +169,10 @@ const T = t(lang).home.lightbox;
     box-shadow: none;
     margin: 0;
   }
+  /* a new picture fades in once it has loaded, rather than showing half-dimmed */
   .lb-stage img.loading {
-    opacity: 0.4;
+    opacity: 0;
+    transition: none;
   }
   .lb-cap {
     display: flex;
@@ -203,6 +234,26 @@ const T = t(lang).home.lightbox;
   let at = 0;
   let dlg: HTMLDialogElement | null = null;
   const dark = () => document.documentElement.dataset.theme === 'dark';
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  // close with the exit fade; at once under reduced motion. A timeout covers a transitionend that never comes.
+  function closeLb() {
+    const d = dlg;
+    if (!d?.open || d.classList.contains('is-closing')) return;
+    if (reduced.matches) return d.close();
+    d.classList.add('is-closing');
+    let done = false;
+    const onEnd = (e: TransitionEvent) => e.target === d && finish();
+    const finish = () => {
+      if (done) return;
+      done = true;
+      d.removeEventListener('transitionend', onEnd);
+      d.close();
+      d.classList.remove('is-closing');
+    };
+    d.addEventListener('transitionend', onEnd);
+    setTimeout(finish, 220);
+  }
 
   function show(k: number) {
     if (!dlg || !set.length) return;
@@ -242,10 +293,15 @@ const T = t(lang).home.lightbox;
     const d = dlg;
     d.querySelector('.lb-prev')!.addEventListener('click', () => show(at - 1));
     d.querySelector('.lb-next')!.addEventListener('click', () => show(at + 1));
-    d.querySelector('.lb-close')!.addEventListener('click', () => d.close());
+    d.querySelector('.lb-close')!.addEventListener('click', closeLb);
     // a click on the backdrop (the dialog itself or the empty stage) closes it
     d.addEventListener('click', (e) => {
-      if (e.target === d || e.target === d.querySelector('.lb-stage')) d.close();
+      if (e.target === d || e.target === d.querySelector('.lb-stage')) closeLb();
+    });
+    // Escape takes the same way out
+    d.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      closeLb();
     });
     d.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft') show(at - 1);

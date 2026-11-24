@@ -49,8 +49,8 @@ const pct = (v: number) => `${((v / boxH) * 100).toFixed(2)}%`;
   <div class="wrap lib-grid">
     <div class="lib-copy">
       <h2 id={headingId} class="display-3 lib-title">
-        {p.logo && <Image src={p.logo} alt="" width={64} height={64} densities={[1, 2, 3]} class="lib-logo" />}
-        <span>{p.title}</span>
+        {p.logo && <Image src={p.logo} alt="" width={64} height={64} densities={[1, 2, 3]} class="lib-logo" style={`view-transition-name: logo-${project.id}`} />}
+        <span style={`view-transition-name: title-${project.id}`}>{p.title}</span>
       </h2>
       <p class="lede lib-lede">{p.tagline}</p>
 

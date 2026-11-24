@@ -101,6 +101,54 @@ const ogImage = new URL(image, Astro.site).href;
       document.addEventListener('astro:page-load', () => {
         document.querySelectorAll('video[data-autoplay]').forEach((v) => io.observe(v));
       });
+
+      // section entrances: each block rises into place once, the first time it scrolls into view;
+      // siblings follow 40ms apart, at most four steps. Anything already on screen (or above it, after a
+      // back navigation) shows at once, and reduced motion skips all of it.
+      const REVEAL = [
+        '.lib-copy > *',
+        '.lib-media',
+        '.studio .wrap > *',
+        '#more .wrap > :not(.tools)',
+        '.tools > .tool',
+        '.showcase-head > *',
+        '.ag',
+        '.others > :not(.others-grid)',
+        '.others-grid > li',
+        '.sec-head > *',
+        '.sec-body:not(.prs)',
+        '.prs > .pr',
+        '.contact-inner > *',
+      ].join(',');
+      let reveal: IntersectionObserver | undefined;
+      document.addEventListener('astro:page-load', () => {
+        reveal?.disconnect();
+        if (reduced.matches) return;
+        const items = [...document.querySelectorAll<HTMLElement>(REVEAL)];
+        reveal = new IntersectionObserver(
+          (entries) => {
+            // the stagger counts only the blocks entering together, per container
+            const step = new Map<Element, number>();
+            for (const { target, isIntersecting } of entries) {
+              if (!isIntersecting) continue;
+              const el = target as HTMLElement;
+              reveal!.unobserve(el);
+              const parent = el.parentElement!;
+              const i = step.get(parent) ?? 0;
+              step.set(parent, i + 1);
+              el.style.setProperty('--rv-delay', `${Math.min(i, 4) * 40}ms`);
+              el.dataset.rvIn = 'anim';
+            }
+          },
+          { rootMargin: '0px 0px -10% 0px' },
+        );
+        for (const el of items) {
+          el.dataset.rv = '';
+          if (el.getBoundingClientRect().top < innerHeight) el.dataset.rvIn = 'now';
+          else reveal.observe(el);
+        }
+        document.documentElement.classList.add('reveal');
+      });
     </script>
     <!-- GoatCounter: privacy-friendly, no cookies. Counted manually so client-side navigations register too. -->
     <script is:inline>

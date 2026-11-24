@@ -91,6 +91,20 @@ const nav = [
 </header>
 
 <style>
+  /* a hairline under the header once the page has scrolled under it, fading in; the header stays solid */
+  .site-header::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 1px;
+    background: var(--c-border);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-2) var(--ease-out);
+  }
+  .site-header[data-scrolled]::after {
+    opacity: 1;
+  }
   .nav-link[aria-current='true'] {
     color: var(--c-fg);
     background: var(--c-surface-2);
@@ -144,8 +158,20 @@ const nav = [
       { signal },
     );
 
-    // the menu below 1024px: a link, Escape, a click outside or a wider window close it
     const header = document.querySelector<HTMLElement>('[data-header]');
+
+    // the hairline: a 1px sentinel at the top of the page tells when content has gone under the header
+    if (header) {
+      const sentinel = document.createElement('div');
+      sentinel.setAttribute('aria-hidden', 'true');
+      sentinel.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:1px;pointer-events:none';
+      document.body.prepend(sentinel);
+      const io = new IntersectionObserver(([e]) => header.toggleAttribute('data-scrolled', !e.isIntersecting));
+      io.observe(sentinel);
+      signal.addEventListener('abort', () => (io.disconnect(), sentinel.remove()));
+    }
+
+    // the menu below 1024px: a link, Escape, a click outside or a wider window close it
     const btn = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
     const menu = document.querySelector<HTMLElement>('#site-menu');
     if (header && btn && menu) {

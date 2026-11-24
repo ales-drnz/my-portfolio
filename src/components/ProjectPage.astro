@@ -46,10 +46,10 @@ const facts = [
     <header class="mt-8 grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
       <div class="max-w-2xl">
         <div class="flex items-center gap-3">
-          {p.logo && <Image src={p.logo} alt="" width={48} height={48} densities={[1, 2, 3]} loading="eager" class="size-12 rounded-xl object-contain" />}
+          {p.logo && <Image src={p.logo} alt="" width={48} height={48} densities={[1, 2, 3]} loading="eager" class="size-12 rounded-xl object-contain" style={`view-transition-name: logo-${project.id}`} />}
           <p class="font-mono text-xs text-accent uppercase tracking-[0.14em]">{t(lang).kind[p.kind]}</p>
         </div>
-        <h1 class="mt-4 text-3xl sm:text-5xl font-semibold tracking-tight">{p.title}</h1>
+        <h1 class="mt-4 text-3xl sm:text-5xl font-semibold tracking-tight"><span class="inline-block" style={`view-transition-name: title-${project.id}`}>{p.title}</span></h1>
         <p class="mt-4 text-lg text-muted leading-relaxed">{p.summary}</p>
       </div>
       <!-- the same pills as the home page: the first link filled, the next one outlined, with the site's mark -->
@@ -151,13 +151,13 @@ const facts = [
     <!-- next -->
     {next.id !== project.id && (
       <a href={localePath(lang, `/projects/${next.id}`)} class="hover-card group mt-20 flex items-center gap-5 rounded-2xl bg-surface p-6 sm:p-8">
-        {next.data.logo && <Image src={next.data.logo} alt="" width={56} height={56} densities={[1, 2, 3]} class="size-12 sm:size-14 shrink-0 rounded-xl object-contain" />}
+        {next.data.logo && <Image src={next.data.logo} alt="" width={56} height={56} densities={[1, 2, 3]} class="size-12 sm:size-14 shrink-0 rounded-xl object-contain" style={`view-transition-name: logo-${next.id}`} />}
         <div class="min-w-0 mr-auto">
           <p class="text-xs text-subtle">{T.next}</p>
-          <p class="mt-1 text-xl font-semibold tracking-tight">{next.data.title}</p>
+          <p class="mt-1 text-xl font-semibold tracking-tight"><span class="inline-block" style={`view-transition-name: title-${next.id}`}>{next.data.title}</span></p>
           <p class="mt-1 text-sm text-muted">{next.data.tagline}</p>
         </div>
-        <Symbol name="arrow_forward" size={22} class="shrink-0 text-subtle group-hover:text-fg group-hover:translate-x-1 transition-all" />
+        <Symbol name="arrow_forward" size={22} class="shrink-0 text-subtle group-hover:text-fg group-hover:translate-x-1 transition-transform" />
       </a>
     )}
   </article>

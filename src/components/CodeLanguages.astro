@@ -174,7 +174,7 @@ const wedges = rows.map((r) => {
   .slice-icon {
     fill: #fff;
     pointer-events: none;
-    transition: opacity 0.2s;
+    transition: opacity var(--dur-2) var(--ease-out);
   }
   .code-languages[data-active] .slice-icon:not(.is-active) {
     opacity: 0.35;
@@ -182,7 +182,7 @@ const wedges = rows.map((r) => {
   .slice {
     cursor: pointer;
     outline: none;
-    transition: opacity 0.2s;
+    transition: opacity var(--dur-2) var(--ease-out);
   }
   /* the slice being looked at stays, the rest step back */
   .code-languages[data-active] .slice:not(.is-active) {
@@ -191,7 +191,7 @@ const wedges = rows.map((r) => {
   .tip {
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.12s;
+    transition: opacity var(--dur-1) var(--ease-out);
   }
   .tip.is-active {
     opacity: 1;

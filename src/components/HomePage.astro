@@ -259,8 +259,8 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
           <div class="wrap">
             <p class="eyebrow"><b>{H.mine}</b> · {H.refApp(b.project.data.title)}</p>
             <h2 id="band-studio" class="display-2 studio-title">
-              {studio.data.logo && <Image src={studio.data.logo} alt="" width={80} height={80} densities={[1, 2, 3]} class="studio-logo" />}
-              <span>{studio.data.title}</span>
+              {studio.data.logo && <Image src={studio.data.logo} alt="" width={80} height={80} densities={[1, 2, 3]} class="studio-logo" style={`view-transition-name: logo-${studio.id}`} />}
+              <span style={`view-transition-name: title-${studio.id}`}>{studio.data.title}</span>
             </h2>
             <p class="lede studio-lede">{studio.data.tagline}</p>
             <p class="studio-platforms">
@@ -305,7 +305,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
             {libs.map(({ p, pkg }) => (
               <li>
                 <a class="lib-row" href={caseStudy(p.id)}>
-                  {p.data.logo && <Image src={p.data.logo} alt="" width={40} height={40} densities={[1, 2, 3]} class="lib-row-logo" />}
+                  {p.data.logo && <Image src={p.data.logo} alt="" width={40} height={40} densities={[1, 2, 3]} class="lib-row-logo" style={`view-transition-name: logo-${p.id}`} />}
                   <span class="lib-row-main">
                     <span class="lib-row-name">{p.data.title}{pkg?.version && <span>v{pkg.version}</span>}</span>
                     <span class="lib-row-tag">{p.data.tagline} {pkg && `${H.likesN(pkg.likes)}.`}</span>
@@ -336,9 +336,9 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
                     </button>
                   )}
                   <div class="tool-head">
-                    {p.data.logo && <Image src={p.data.logo} alt="" width={44} height={44} densities={[1, 2, 3]} class="tool-logo" />}
+                    {p.data.logo && <Image src={p.data.logo} alt="" width={44} height={44} densities={[1, 2, 3]} class="tool-logo" style={`view-transition-name: logo-${p.id}`} />}
                     <div class="tool-titles">
-                      <h3 class="tool-name"><a href={caseStudy(p.id)}>{p.data.title}</a></h3>
+                      <h3 class="tool-name"><a href={caseStudy(p.id)} style={`display: inline-block; view-transition-name: title-${p.id}`}>{p.data.title}</a></h3>
                       <p class="tool-tag">{p.data.tagline}</p>
                     </div>
                   </div>
@@ -765,6 +765,7 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
   }
   /* one proportion for the three, so the captions line up; the screens are cropped from the top */
   .tool-pic {
+    position: relative;
     display: block;
     width: 100%;
     aspect-ratio: 16 / 10;
@@ -775,6 +776,21 @@ const prGroups = Object.entries(prs.reduce<Record<string, typeof prs>>((acc, pr)
     background: var(--c-surface-2);
     box-shadow: var(--c-shadow), var(--c-ring);
     cursor: zoom-in;
+  }
+  /* the same accent ring as the screenshots, fading in over a picture that doesn't move */
+  .tool-pic::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px var(--c-accent);
+    opacity: 0;
+    transition: opacity var(--dur-1) var(--ease-out);
+  }
+  .tool-pic:hover::after,
+  .tool-pic:focus-visible::after {
+    opacity: 1;
   }
   .tool-pic :global(img) {
     width: 100%;
